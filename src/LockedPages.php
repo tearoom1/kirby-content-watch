@@ -23,10 +23,20 @@ class LockedPages
             $userString = $user ? '' . $user->name()->or($user->email()) : $userId;
 
             // remove the content root, order numbers and the lock file extension
-            $filename = preg_replace('%' . $contentRoot . '/|\d*_?|/.lock$%', '', $file);
+            $fileDir = preg_replace('%' . $contentRoot . '/|/.lock$%', '', $file);
+            $fileId = preg_replace('%_?drafts/%', '', $fileDir);
+            $fileId = preg_replace('%\d+_%', '', $fileId);
+
+            $title = 'Unknown';
+            $page = kirby()->page($fileId);
+            if ($page) {
+                $title = $page->title()->value();
+            }
 
             $lockFiles[] = [
-                'file' => $filename,
+                'id' => $fileId,
+                'title' => $title,
+                'dir' => $fileDir,
                 'date' => $date,
                 'user' => $userString
             ];

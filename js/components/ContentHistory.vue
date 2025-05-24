@@ -2,7 +2,7 @@
   <k-panel-inside class="k-content-history-view">
     <section v-if="files.length" class="k-section">
       <k-header class="k-section-header">
-        Content History
+        <k-headline>Content History</k-headline>
         <k-button-group slot="right">
           <k-button icon="refresh" @click="refresh"/>
         </k-button-group>
@@ -20,12 +20,51 @@
         </k-column>
       </k-grid>
 
-      <k-collection
-          v-if="filteredFiles.length"
-          :items="items"
-          layout="list"
-          @action="open"
-      />
+      <div v-if="filteredFiles.length" class="k-content-history-files">
+        <div 
+          v-for="(file, index) in filteredFiles" 
+          :key="file.id" 
+          class="k-content-history-file"
+          :class="{'k-content-history-file-open': expandedFiles.includes(file.id)}"
+        >
+          <div class="k-content-history-file-header" @click="toggleFileExpand(file.id)">
+            <div class="k-content-history-file-info">
+              <span class="k-content-history-file-path">
+                <strong>{{ file.title }}</strong>
+                <br>{{ file.id }}
+              </span>
+              <span class="k-content-history-file-editor">
+                {{ file.editor.name || file.editor.email || 'Unknown' }}<br>
+                  {{ formatRelative(file.modified) }}
+              </span>
+            </div>
+            <div class="k-content-history-file-actions">
+              <k-button icon="angle-down" :class="{'k-button-rotated': expandedFiles.includes(file.id)}" />
+              <k-button @click.stop="openFile(file)" icon="edit" />
+            </div>
+          </div>
+          
+          <div v-if="expandedFiles.includes(file.id)" class="k-content-history-file-timeline">
+            <div v-if="file.history && file.history.length > 0" class="k-timeline-list">
+              <div v-for="(entry, entryIndex) in file.history" :key="entryIndex" class="k-timeline-item">
+                <div class="k-timeline-item-time">
+                  {{ entry.time_formatted }}
+                </div>
+                <div class="k-timeline-item-time-rel">
+                  {{ formatRelative(entry.time) }}
+                </div>
+                <div class="k-timeline-item-content">
+                  <span class="k-timeline-item-editor">edited by {{ entry.editor.name || entry.editor.email || 'Unknown' }}</span>
+                </div>
+              </div>
+            </div>
+            <k-empty v-else icon="history" text="No history entries found" />
+            <div class="k-timeline-footer">
+              <span>Showing changes for the last {{ retentionDays }} days</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <k-empty v-else icon="page" :text="$t('no.files.found')"/>
 
@@ -36,7 +75,7 @@
       <k-header class="k-section-header">
         <k-headline>Locked pages</k-headline>
       </k-header>
-      <k-collection :items="lockItems"/>
+      <k-collection :items="lockItems" class="k-content-history-locked"/>
     </section>
   </k-panel-inside>
 </template>
@@ -47,9 +86,14 @@ import {formatDistance} from 'date-fns';
 export default {
   props: {
     files: Array,
+    historyEntries: Array,
+    retentionDays: {
+      type: Number,
+      default: 30
+    },
     lockedPages: {
       type: Array,
-      default: []
+      default: () => []
     },
   },
 
@@ -58,7 +102,7 @@ export default {
       isLoading: false,
       search: '',
       filteredFiles: [],
-      lockedPages: this.lockedPages
+      expandedFiles: []
     };
   },
 
@@ -87,16 +131,20 @@ export default {
       });
     },
     lockItems() {
-      const items = []
+      const items = [];
 
       this.lockedPages.forEach(lock => {
         items.push({
-          text: lock.file,
-          info: lock.user + ' / ' + lock.date + ' (' + this.formatRelative(lock.date) + ')',
-        })
-      })
+          text: '<span class="k-content-history-file-path"><strong>'+lock.title + '</strong><br>' + lock.id + '</span>',
+          info: lock.user + ' <br> ' + lock.date + ' (' + this.formatRelative(lock.date) + ')',
+          options: [{
+            icon: 'edit',
+            click: () => this.open(lock.id)
+          }]
+        });
+      });
 
-      return items
+      return items;
     },
   },
 
@@ -110,6 +158,21 @@ export default {
       const file = this.filteredFiles.find(f => f.id === id);
       if (file?.panel_url) {
         window.location.href = '/panel' + file.panel_url;
+      }
+    },
+    
+    openFile(file) {
+      if (file?.panel_url) {
+        window.location.href = '/panel' + file.panel_url;
+      }
+    },
+    
+    toggleFileExpand(id) {
+      const index = this.expandedFiles.indexOf(id);
+      if (index === -1) {
+        this.expandedFiles.push(id);
+      } else {
+        this.expandedFiles.splice(index, 1);
       }
     },
 
@@ -127,11 +190,160 @@ export default {
           file.path.toLowerCase().includes(searchLower)
       );
     },
+    
     formatRelative(date) {
-      return formatDistance(new Date(date), new Date(), {
+      if (typeof date === 'string') {
+        return formatDistance(new Date(date), new Date(), {
+          addSuffix: true
+        });
+      }
+      return formatDistance(new Date(date * 1000), new Date(), {
         addSuffix: true
-      })
+      });
     }
   }
 };
 </script>
+
+<style>
+.k-content-history-files {
+  margin-top: 1rem;
+}
+
+.k-content-history-file {
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.k-content-history-file-open {
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.k-content-history-file-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  background-color: var(--color-white);
+}
+
+.k-content-history-file-info {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  line-height: 1.2rem;
+}
+
+.k-content-history-file-path {
+  font-size: .875rem;
+  opacity: 0.7;
+  margin-top: 0.25rem;
+}
+
+.k-content-history-file-editor {
+  font-size: .875rem;
+  margin-top: 0.25rem;
+  text-align: right;
+  opacity: 0.7;
+}
+
+.k-content-history-file-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.k-button-rotated {
+  transform: rotate(180deg);
+}
+
+.k-content-history-file-timeline {
+  padding: 0.5rem 1rem;
+  background-color: var(--color-light);
+  border-top: 1px solid var(--color-border);
+}
+
+.k-timeline-list {
+  padding: 0;
+  margin: 0;
+}
+
+.k-timeline-item {
+  display: flex;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.k-timeline-item:last-child {
+  border-bottom: none;
+}
+
+.k-timeline-item-time {
+  min-width: 180px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.k-timeline-item-time-rel {
+  min-width: 180px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.k-timeline-item-content {
+  flex-grow: 1;
+  margin-left: 1rem;
+  text-align: right;
+  opacity: 0.7;
+}
+
+.k-timeline-item-editor {
+  font-size: .875rem;
+}
+
+.k-timeline-footer {
+  border-top: 1px solid var(--color-border);
+  padding: 0.5rem 1rem 0;
+  font-size: 0.75rem;
+  color: var(--color-gray-800);
+  text-align: right;
+}
+
+.k-content-history-locked .k-item {
+  padding: 0rem 0.5rem;
+  height: unset;
+}
+.k-content-history-locked .k-item-content {
+  line-height: 1.2rem;
+}
+.k-content-history-locked .k-item-content .k-item-info {
+  text-align: right;
+}
+
+@media (prefers-color-scheme: dark) {
+  .k-content-history-file {
+    border-color: var(--color-gray-300);
+  }
+  
+  .k-content-history-file-header {
+    background-color: var(--color-gray-100);
+  }
+  
+  .k-content-history-file-timeline {
+    background-color: var(--color-gray-100);
+    border-color: var(--color-gray-300);
+  }
+  
+  .k-timeline-item {
+    border-color: var(--color-gray-300);
+  }
+  
+  .k-timeline-footer {
+    border-color: var(--color-gray-300);
+    color: var(--color-gray-300);
+  }
+}
+</style>

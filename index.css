@@ -1,0 +1,118 @@
+
+.k-content-history-files {
+  margin-top: 1rem;
+}
+.k-content-history-file {
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.k-content-history-file-open {
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.k-content-history-file-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  background-color: var(--color-white);
+}
+.k-content-history-file-info {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  line-height: 1.2rem;
+}
+.k-content-history-file-path {
+  font-size: .875rem;
+  opacity: 0.7;
+  margin-top: 0.25rem;
+}
+.k-content-history-file-editor {
+  font-size: .875rem;
+  margin-top: 0.25rem;
+  text-align: right;
+  opacity: 0.7;
+}
+.k-content-history-file-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.k-button-rotated {
+  transform: rotate(180deg);
+}
+.k-content-history-file-timeline {
+  padding: 0.5rem 1rem;
+  background-color: var(--color-light);
+  border-top: 1px solid var(--color-border);
+}
+.k-timeline-list {
+  padding: 0;
+  margin: 0;
+}
+.k-timeline-item {
+  display: flex;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.k-timeline-item:last-child {
+  border-bottom: none;
+}
+.k-timeline-item-time {
+  min-width: 180px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+.k-timeline-item-time-rel {
+  min-width: 180px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+.k-timeline-item-content {
+  flex-grow: 1;
+  margin-left: 1rem;
+  text-align: right;
+  opacity: 0.7;
+}
+.k-timeline-item-editor {
+  font-size: .875rem;
+}
+.k-timeline-footer {
+  border-top: 1px solid var(--color-border);
+  padding: 0.5rem 1rem 0;
+  font-size: 0.75rem;
+  color: var(--color-gray-800);
+  text-align: right;
+}
+.k-content-history-locked .k-item {
+  padding: 0rem 0.5rem;
+  height: unset;
+}
+.k-content-history-locked .k-item-content {
+  line-height: 1.2rem;
+}
+.k-content-history-locked .k-item-content .k-item-info {
+  text-align: right;
+}
+@media (prefers-color-scheme: dark) {
+.k-content-history-file {
+    border-color: var(--color-gray-300);
+}
+.k-content-history-file-header {
+    background-color: var(--color-gray-100);
+}
+.k-content-history-file-timeline {
+    background-color: var(--color-gray-100);
+    border-color: var(--color-gray-300);
+}
+.k-timeline-item {
+    border-color: var(--color-gray-300);
+}
+.k-timeline-footer {
+    border-color: var(--color-gray-300);
+    color: var(--color-gray-300);
+}
+}

@@ -24,10 +24,8 @@ function trackContentChange(ModelWithContent $content)
     ];
 
     // Determine the history file path and filename key
-    $contentPath = $content->root();
-    $fileName = $content->slug();
-    $dirPath = kirby()->root('content') . '/' . is_dir($contentPath) ? $contentPath : dirname($contentPath);
-    $fileKey = $fileName ?? (is_file($contentPath) ? basename($contentPath) : null);
+    $dirPath = $content->root();
+    $fileKey = $content->slug();
 
     if (!$fileKey) return;
 
@@ -38,20 +36,46 @@ function trackContentChange(ModelWithContent $content)
     if (file_exists($editorFile)) {
         try {
             $history = json_decode(file_get_contents($editorFile), true) ?: [];
+            
+            // Convert old format (direct key => value) to new format (key => [array of entries])
+            foreach ($history as $key => $value) {
+                if (is_array($value)) {
+                    if (!isset($value[0]) || !is_array($value[0])) {
+                        // Convert to new format
+                        $history[$key] = [$value];
+                    }
+                } else {
+                    // Handle non-array values
+                    $history[$key] = [];
+                }
+            }
         } catch (\Exception $e) {
             // Ignore errors, start with empty history
         }
     }
 
-    // Add new entry with the file key
-    $history[$fileKey] = $editorData;
+    // Initialize file history if it doesn't exist
+    if (!isset($history[$fileKey]) || !is_array($history[$fileKey])) {
+        $history[$fileKey] = [];
+    }
+
+    // Get history retention period from options (default 30 days)
+    $retentionDays = (int)option('tearoom1.content-history.retentionDays', 30);
+    $cutoffTime = time() - ($retentionDays * 86400); // 86400 seconds per day
+
+    // Add new history entry to the beginning of the array
+    array_unshift($history[$fileKey], $editorData);
+
+    // Filter out entries older than the retention period
+    $history[$fileKey] = array_filter($history[$fileKey], function($entry) use ($cutoffTime) {
+        return isset($entry['time']) && $entry['time'] >= $cutoffTime;
+    });
 
     // Save the updated history
     try {
         file_put_contents($editorFile, json_encode($history));
     } catch (\Exception $e) {
         // Silently fail if we can't write the file
-        echo $e->getMessage();
     }
 }
 
@@ -78,5 +102,7 @@ Kirby::plugin('tearoom1/content-history', [
     ],
     'options' => [
         'pagination' => 20,
+        'retentionDays' => 30, // default to 30 days of history
+        'enableLockedPages' => true,
     ],
 ]);
