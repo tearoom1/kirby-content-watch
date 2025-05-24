@@ -1,5 +1,5 @@
 <?php
-namespace ContentHistory;
+namespace TearoomOne\ContentHistory;
 
 class LockedPages
 {

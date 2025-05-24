@@ -3,7 +3,9 @@
 // support manual installation in plugins folder
 use Kirby\Cms\ModelWithContent;
 
-@include_once __DIR__ . '/vendor/autoload.php';
+load([
+    'TearoomOne\\ContentHistory\\LockedPages' => 'src/LockedPages.php',
+], __DIR__);
 
 // don't load plugin if it's disabled in the config.
 if (option('tearoom1.content-history.disable', false)) {

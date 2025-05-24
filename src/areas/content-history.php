@@ -1,8 +1,8 @@
 <?php
 
-namespace ContentHistory;
+namespace TearoomOne\ContentHistory;
 
-use ContentHistory\LockedPages;
+use TearoomOne\ContentHistory\LockedPages;
 
 return [
     'label' => 'Content History',
