@@ -680,13 +680,18 @@
   }
   const _sfc_main = {
     props: {
-      files: Array
+      files: Array,
+      lockedPages: {
+        type: Array,
+        default: []
+      }
     },
     data() {
       return {
         isLoading: false,
         search: "",
-        filteredFiles: []
+        filteredFiles: [],
+        lockedPages: this.lockedPages
       };
     },
     created() {
@@ -702,7 +707,7 @@
           return {
             id: file.id,
             text: file.title,
-            info: `${file.modified_formatted} (${timeAgo}) by ${editorName}`,
+            info: `${editorName} / ${file.modified_formatted} (${timeAgo})`,
             link: file.panel_url,
             icon: "page",
             options: [{
@@ -711,6 +716,16 @@
             }]
           };
         });
+      },
+      lockItems() {
+        const items = [];
+        this.lockedPages.forEach((lock) => {
+          items.push({
+            text: lock.file,
+            info: lock.user + " / " + lock.date + " (" + this.formatRelative(lock.date) + ")"
+          });
+        });
+        return items;
       }
     },
     methods: {
@@ -734,14 +749,19 @@
         this.filteredFiles = this.files.filter(
           (file) => file.title.toLowerCase().includes(searchLower) || file.path.toLowerCase().includes(searchLower)
         );
+      },
+      formatRelative(date) {
+        return formatDistance(new Date(date), /* @__PURE__ */ new Date(), {
+          addSuffix: true
+        });
       }
     }
   };
   var _sfc_render = function render() {
     var _vm = this, _c = _vm._self._c;
-    return _c("k-panel-inside", { staticClass: "k-content-history-view" }, [_c("k-header", [_vm._v(" Content History "), _c("k-button-group", { attrs: { "slot": "right" }, slot: "right" }, [_c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1), _c("k-grid", { attrs: { "gutter": "large" } }, [_c("k-column", { attrs: { "width": "1/1" } }, [_c("k-input", { attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.updateSearch }, model: { value: _vm.search, callback: function($$v) {
+    return _c("k-panel-inside", { staticClass: "k-content-history-view" }, [_vm.files.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_vm._v(" Content History "), _c("k-button-group", { attrs: { "slot": "right" }, slot: "right" }, [_c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1), _c("k-grid", { attrs: { "gutter": "large" } }, [_c("k-column", { attrs: { "width": "1/1" } }, [_c("k-input", { attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.updateSearch }, model: { value: _vm.search, callback: function($$v) {
       _vm.search = $$v;
-    }, expression: "search" } })], 1)], 1), _vm.filteredFiles.length ? _c("k-collection", { attrs: { "items": _vm.items, "layout": "list" }, on: { "action": _vm.open } }) : _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }), _vm.isLoading ? _c("k-loader") : _vm._e()], 1);
+    }, expression: "search" } })], 1)], 1), _vm.filteredFiles.length ? _c("k-collection", { attrs: { "items": _vm.items, "layout": "list" }, on: { "action": _vm.open } }) : _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }), _vm.isLoading ? _c("k-loader") : _vm._e()], 1) : _vm._e(), _vm.lockedPages.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("k-headline", [_vm._v("Locked pages")])], 1), _c("k-collection", { attrs: { "items": _vm.lockItems } })], 1) : _vm._e()]);
   };
   var _sfc_staticRenderFns = [];
   _sfc_render._withStripped = true;

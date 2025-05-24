@@ -2,6 +2,8 @@
 
 namespace ContentHistory;
 
+use ContentHistory\LockedPages;
+
 return [
     'label' => 'Content History',
     'icon' => 'text-justify',
@@ -82,10 +84,12 @@ return [
                 // Sort by modification date (newest first)
                 usort($files, fn($a, $b) => $b['modified'] <=> $a['modified']);
 
+                $lockedPages = new LockedPages();
                 return [
                     'component' => 'content-history',
                     'title' => 'Content History',
                     'props' => [
+                        'lockedPages' => (bool)option('tearoom1.content-history.enableLockedPages', true) ? $lockedPages->getLockedPages() : [],
                         'files' => $files
                     ],
                 ];
