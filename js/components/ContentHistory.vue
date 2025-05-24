@@ -1,7 +1,7 @@
 <template>
   <k-panel-inside class="k-content-history-view">
     <k-header>
-      {{ $t('content-history') }}
+      Content History
       <k-button-group slot="right">
         <k-button icon="refresh" @click="refresh" />
       </k-button-group>
@@ -83,7 +83,7 @@ export default {
     open(id) {
       const file = this.filteredFiles.find(f => f.id === id);
       if (file?.panel_url) {
-        window.location.href = file.panel_url;
+        window.location.href = '/panel' + file.panel_url;
       }
     },
     

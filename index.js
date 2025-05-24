@@ -721,7 +721,7 @@
       open(id) {
         const file = this.filteredFiles.find((f) => f.id === id);
         if (file == null ? void 0 : file.panel_url) {
-          window.location.href = file.panel_url;
+          window.location.href = "/panel" + file.panel_url;
         }
       },
       updateSearch() {
@@ -739,7 +739,7 @@
   };
   var _sfc_render = function render() {
     var _vm = this, _c = _vm._self._c;
-    return _c("k-panel-inside", { staticClass: "k-content-history-view" }, [_c("k-header", [_vm._v(" " + _vm._s(_vm.$t("content-history")) + " "), _c("k-button-group", { attrs: { "slot": "right" }, slot: "right" }, [_c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1), _c("k-grid", { attrs: { "gutter": "large" } }, [_c("k-column", { attrs: { "width": "1/1" } }, [_c("k-input", { attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.updateSearch }, model: { value: _vm.search, callback: function($$v) {
+    return _c("k-panel-inside", { staticClass: "k-content-history-view" }, [_c("k-header", [_vm._v(" Content History "), _c("k-button-group", { attrs: { "slot": "right" }, slot: "right" }, [_c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1), _c("k-grid", { attrs: { "gutter": "large" } }, [_c("k-column", { attrs: { "width": "1/1" } }, [_c("k-input", { attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.updateSearch }, model: { value: _vm.search, callback: function($$v) {
       _vm.search = $$v;
     }, expression: "search" } })], 1)], 1), _vm.filteredFiles.length ? _c("k-collection", { attrs: { "items": _vm.items, "layout": "list" }, on: { "action": _vm.open } }) : _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }), _vm.isLoading ? _c("k-loader") : _vm._e()], 1);
   };

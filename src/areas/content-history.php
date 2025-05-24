@@ -52,14 +52,12 @@ return [
                         }
 
                         // Try to determine panel URL
-                        $panelUrl = '';
                         $pathParts = explode('/', $relativePath);
-                        $filename = array_pop($pathParts);
 
                         if (empty($pathParts)) {
-                            $panelUrl = '/panel/site';
+                            $panelUrl = '/site';
                         } else {
-                            $panelUrl = '/panel/pages/' . $basename;
+                            $panelUrl = '/pages/' . $basename;
                         }
 
                         // remove the prefix number_ from relativePath for id
