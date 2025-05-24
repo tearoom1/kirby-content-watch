@@ -104,9 +104,3 @@ export default {
   }
 };
 </script>
-
-<style>
-.k-content-history-view {
-  /* Custom styles here if needed */
-}
-</style>
