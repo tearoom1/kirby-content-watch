@@ -5,8 +5,8 @@
   "license": "MIT",
   "authors": [
     {
-      "name": "Your Name",
-      "email": "your.email@example.com"
+      "name": "Mathis Koblin",
+      "email": "wunderbar@mailbox.org"
     }
   ],
   "require": {
@@ -20,6 +20,10 @@
     "psr-4": {
       "ContentHistory\\": "src/"
     }
+  },
+  "extra": {
+    "installer-name": "content-history",
+    "kirby-cms-path": false
   },
   "config": {
     "optimize-autoloader": true
