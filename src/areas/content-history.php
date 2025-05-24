@@ -4,70 +4,86 @@ namespace ContentHistory;
 
 return [
     'label' => 'Content History',
-    'icon'  => 'history',
-    'menu'  => true,
-    'link'  => 'content-history',
+    'icon' => 'text-justify',
+    'menu' => true,
+    'link' => 'content-history',
     'views' => [
         [
             'pattern' => 'content-history',
-            'action'  => function () {
+            'action' => function () {
                 $contentDir = kirby()->root('content');
                 $files = [];
-                
+
                 // Recursively find all content files
                 $iterator = new \RecursiveIteratorIterator(
                     new \RecursiveDirectoryIterator($contentDir)
                 );
-                
+
                 foreach ($iterator as $file) {
                     if ($file->isFile() && $file->getExtension() === 'txt') {
                         $relativePath = str_replace($contentDir . '/', '', $file->getPathname());
                         $modified = $file->getMTime();
                         $content = \Kirby\Filesystem\F::read($file->getPathname());
-                        
+
                         // Try to extract title from content
-                        $title = '';
-                        if (preg_match('/title:\s*(.+)$/m', $content, $matches)) {
-                            $title = trim($matches[1]);
-                        } else {
-                            $title = basename($file->getPathname(), '.txt');
-                        }
-                        
-                        // Get editor info
+                        $title = basename($file->getPathname(), '.txt');
+
+                        // Get editor info from hidden history file if it exists
                         $editor = [
                             'id' => 'unknown',
                             'name' => 'Unknown',
-                            'email' => ''
+                            'email' => '',
+                            'time' => $modified
                         ];
-                        
+                        $historyFile = dirname($file->getPathname()) . '/.content-history.json';
+                        $pathInfo = pathinfo($file->getPathname());
+                        $basename = $pathInfo['filename'];
+                        // remove the langue from the filename
+                        $basename = preg_replace('/(\.[a-z]{2})/', '', $basename);
+                        if (file_exists($historyFile)) {
+                            try {
+                                $history = json_decode(file_get_contents($historyFile), true) ?: [];
+                                if (isset($history[$basename])) {
+                                    $editor = $history[$basename];
+                                }
+                            } catch (\Exception $e) {
+                                // Silently fail, use default editor info
+                            }
+                        }
+
                         // Try to determine panel URL
                         $panelUrl = '';
                         $pathParts = explode('/', $relativePath);
                         $filename = array_pop($pathParts);
-                        
+
                         if (empty($pathParts)) {
                             $panelUrl = '/panel/site';
                         } else {
-                            $pageId = implode('/', $pathParts);
-                            $panelUrl = '/panel/pages/' . $pageId;
+                            $panelUrl = '/panel/pages/' . $basename;
                         }
-                        
+
+                        // remove the prefix number_ from relativePath for id
+
                         $files[] = [
-                            'id' => $relativePath,
+                            'id' => $basename,
                             'path' => $relativePath,
                             'title' => $title,
                             'parent' => end($pathParts) ?: 'root',
-                            'modified' => $modified,
-                            'modified_formatted' => date('Y-m-d H:i:s', $modified),
-                            'editor' => $editor,
+                            'modified' => $editor['time'] ?? $modified, // Use editor time if available
+                            'modified_formatted' => date('Y-m-d H:i:s', $editor['time'] ?? $modified),
+                            'editor' => [
+                                'id' => $editor['id'],
+                                'name' => $editor['name'],
+                                'email' => $editor['email']
+                            ],
                             'panel_url' => $panelUrl
                         ];
                     }
                 }
-                
+
                 // Sort by modification date (newest first)
                 usort($files, fn($a, $b) => $b['modified'] <=> $a['modified']);
-                
+
                 return [
                     'component' => 'content-history',
                     'title' => 'Content History',

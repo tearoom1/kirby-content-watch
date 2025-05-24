@@ -57,15 +57,15 @@ export default {
       return this.filteredFiles.map(file => {
         const modifiedDate = new Date(file.modified * 1000);
         const timeAgo = formatDistance(modifiedDate, new Date(), { addSuffix: true });
+        const editorName = file.editor?.name || file.editor?.email || 'Unknown';
         
         return {
           id: file.id,
           text: file.title,
-          info: `${this.$t('modified')}: ${file.modified_formatted} (${timeAgo})`,
+          info: `${file.modified_formatted} (${timeAgo}) by ${editorName}`,
           link: file.panel_url,
           icon: 'page',
           options: [{
-            text: this.$t('edit'),
             icon: 'edit',
             click: () => this.open(file.id)
           }]

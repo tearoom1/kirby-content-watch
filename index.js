@@ -695,16 +695,17 @@
     computed: {
       items() {
         return this.filteredFiles.map((file) => {
+          var _a, _b;
           const modifiedDate = new Date(file.modified * 1e3);
           const timeAgo = formatDistance(modifiedDate, /* @__PURE__ */ new Date(), { addSuffix: true });
+          const editorName = ((_a = file.editor) == null ? void 0 : _a.name) || ((_b = file.editor) == null ? void 0 : _b.email) || "Unknown";
           return {
             id: file.id,
             text: file.title,
-            info: `${this.$t("modified")}: ${file.modified_formatted} (${timeAgo})`,
+            info: `${file.modified_formatted} (${timeAgo}) by ${editorName}`,
             link: file.panel_url,
             icon: "page",
             options: [{
-              text: this.$t("edit"),
               icon: "edit",
               click: () => this.open(file.id)
             }]
