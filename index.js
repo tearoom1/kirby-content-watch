@@ -803,7 +803,7 @@
         try {
           const response = await this.$api.post("/content-watch/restore", {
             dirPath: file.dir_path,
-            fileKey: file.id,
+            fileKey: file.uid,
             timestamp: entry.time
           });
           if (response.status === "success") {

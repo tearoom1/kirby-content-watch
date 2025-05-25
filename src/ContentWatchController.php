@@ -232,12 +232,12 @@ class ContentWatchController
         $pathId = preg_replace('%/%', '+', $pathShort);
 
         if ($isMediaFile) {
-            $fileName = basename($relativePath);
-            $fileName = preg_replace('%(\.[a-z]{2})?\.txt$%', '', $fileName);
-            $title = 'File: ' . $fileName;
-            $fileId = $fileName;
+            $fileUid = basename($relativePath);
+            $fileUid = preg_replace('%(\.[a-z]{2})?\.txt$%', '', $fileUid);
+            $title = 'File: ' . $fileUid;
+            $fileId = $fileUid;
         } else {
-            $fileName = basename($fileId);
+            $fileUid = basename($fileId);
 
             $page = kirby()->page($fileId);
             $title = 'Unknown';
@@ -248,8 +248,8 @@ class ContentWatchController
 
         // Get editor history for this file
         $historyEntries = [];
-        if (isset($historyFiles[$dirPath]) && isset($historyFiles[$dirPath][$fileName])) {
-            $historyEntries = $historyFiles[$dirPath][$fileName];
+        if (isset($historyFiles[$dirPath]) && isset($historyFiles[$dirPath][$fileUid])) {
+            $historyEntries = $historyFiles[$dirPath][$fileUid];
         }
 
         // Use latest history entry for file display
@@ -280,6 +280,7 @@ class ContentWatchController
         // Build file data
         $fileData = [
             'id' => $fileId,
+            'uid' => $fileUid,
             'path_short' => $pathShort,
             'path' => dirname($relativePath),
             'title' => $title,
@@ -327,6 +328,7 @@ class ContentWatchController
 
             $historyEntry = [
                 'file_id' => $fileId,
+                'uid' => $fileUid,
                 'file_path' => dirname($relativePath),
                 'file_title' => $title,
                 'panel_url' => $panelUrl,
