@@ -72,12 +72,12 @@ class ContentWatchController
         // Add version number - get the latest version number and increment
         $latestVersion = 1;
         if (count($history[$fileKey]) > 0) {
-            $previousEntry = $history[$fileKey][0];
-            if (isset($previousEntry['version'])) {
-                $latestVersion = $previousEntry['version'] + 1;
-            }
+            // find the greatest version without changing the array
+            $latestVersion = max(array_map(function ($entry) {
+                return $entry['version'] ?? 1;
+            }, $history[$fileKey]));
         }
-        $editorData['version'] = $latestVersion;
+        $editorData['version'] = $latestVersion + 1;
 
         // Get history retention period from options (default 30 days, 10 entries)
         $retentionDays = (int)option('tearoom1.content-watch.retentionDays', 30);
@@ -309,7 +309,8 @@ class ContentWatchController
             ],
             'panel_url' => $panelUrl,
             'history' => [],
-            'dir_path' => $dirPath
+            'dir_path' => $dirPath,
+            'is_media_file' => $isMediaFile
         ];
 
         // Add history entries

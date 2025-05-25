@@ -8,15 +8,22 @@
         </k-button-group>
       </k-header>
 
-      <k-grid gutter="large">
-        <k-column width="1/1">
+      <k-grid gutter="small">
+        <k-column width="2/3">
           <k-input
-              type="text"
-              :placeholder="$t('search') + '...'"
-              v-model="search"
-              @input="updateSearch"
-              icon="search"
+            class="k-content-watch-search"
+            type="text"
+            :placeholder="$t('search') + '...'"
+            v-model="search"
+            @input="filterFiles"
+            icon="search"
           />
+        </k-column>
+        <k-column width="1/3">
+          <k-button-group>
+            <k-button :class="{'k-button-active': showOnlyPages}" @click="toggleShowOnlyPages" icon="page">Pages only</k-button>
+            <k-button :class="{'k-button-active': !showOnlyPages}" @click="toggleShowAll" icon="file-document">All files</k-button>
+          </k-button-group>
         </k-column>
       </k-grid>
 
@@ -145,12 +152,14 @@ export default {
       search: '',
       filteredFiles: [],
       expandedFiles: [],
-      restoreTarget: null
+      restoreTarget: null,
+      showOnlyPages: true
     };
   },
 
   created() {
     this.filteredFiles = this.files || [];
+    this.filterFiles();
   },
 
   computed: {
@@ -219,19 +228,31 @@ export default {
       }
     },
 
-    updateSearch() {
-      if (!this.files) return;
-
-      if (!this.search.length) {
-        this.filteredFiles = this.files;
-        return;
-      }
-
+    filterFiles() {
       const searchLower = this.search.toLowerCase();
-      this.filteredFiles = this.files.filter(file =>
+      let filtered = this.files;
+
+      // First apply page/file filter
+      if (this.showOnlyPages) {
+        filtered = filtered.filter(file => file.panel_url && file.panel_url.startsWith('/pages/') && !file.is_media_file);
+      }
+      
+      // Then apply search filter
+      this.filteredFiles = filtered.filter(
+        file =>
           file.title.toLowerCase().includes(searchLower) ||
           file.path.toLowerCase().includes(searchLower)
       );
+    },
+
+    toggleShowOnlyPages() {
+      this.showOnlyPages = true;
+      this.filterFiles();
+    },
+
+    toggleShowAll() {
+      this.showOnlyPages = false;
+      this.filterFiles();
     },
 
     formatRelative(date) {
@@ -451,5 +472,11 @@ export default {
     border-color: var(--color-gray-300);
     color: var(--color-gray-300);
   }
+}
+
+.k-button-active {
+  background-color: var(--color-gray-200);
+  color: var(--color-black);
+  font-weight: 500;
 }
 </style>

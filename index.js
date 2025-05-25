@@ -705,11 +705,13 @@
         search: "",
         filteredFiles: [],
         expandedFiles: [],
-        restoreTarget: null
+        restoreTarget: null,
+        showOnlyPages: true
       };
     },
     created() {
       this.filteredFiles = this.files || [];
+      this.filterFiles();
     },
     computed: {
       items() {
@@ -770,16 +772,23 @@
           this.expandedFiles.splice(index, 1);
         }
       },
-      updateSearch() {
-        if (!this.files) return;
-        if (!this.search.length) {
-          this.filteredFiles = this.files;
-          return;
-        }
+      filterFiles() {
         const searchLower = this.search.toLowerCase();
-        this.filteredFiles = this.files.filter(
+        let filtered = this.files;
+        if (this.showOnlyPages) {
+          filtered = filtered.filter((file) => file.panel_url && file.panel_url.startsWith("/pages/") && !file.is_media_file);
+        }
+        this.filteredFiles = filtered.filter(
           (file) => file.title.toLowerCase().includes(searchLower) || file.path.toLowerCase().includes(searchLower)
         );
+      },
+      toggleShowOnlyPages() {
+        this.showOnlyPages = true;
+        this.filterFiles();
+      },
+      toggleShowAll() {
+        this.showOnlyPages = false;
+        this.filterFiles();
       },
       formatRelative(date) {
         if (typeof date === "string") {
@@ -824,9 +833,9 @@
   var _sfc_render = function render() {
     var _a, _b, _c2;
     var _vm = this, _c = _vm._self._c;
-    return _c("k-panel-inside", { staticClass: "k-content-watch-view" }, [_vm.files.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("k-headline", [_vm._v("Content Watch")]), _c("k-button-group", { attrs: { "slot": "right" }, slot: "right" }, [_c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1), _c("k-grid", { attrs: { "gutter": "large" } }, [_c("k-column", { attrs: { "width": "1/1" } }, [_c("k-input", { attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.updateSearch }, model: { value: _vm.search, callback: function($$v) {
+    return _c("k-panel-inside", { staticClass: "k-content-watch-view" }, [_vm.files.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("k-headline", [_vm._v("Content Watch")]), _c("k-button-group", { attrs: { "slot": "right" }, slot: "right" }, [_c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1), _c("k-grid", { attrs: { "gutter": "small" } }, [_c("k-column", { attrs: { "width": "2/3" } }, [_c("k-input", { staticClass: "k-content-watch-search", attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.filterFiles }, model: { value: _vm.search, callback: function($$v) {
       _vm.search = $$v;
-    }, expression: "search" } })], 1)], 1), _vm.filteredFiles.length ? _c("div", { staticClass: "k-content-watch-files" }, _vm._l(_vm.filteredFiles, function(file, index) {
+    }, expression: "search" } })], 1), _c("k-column", { attrs: { "width": "1/3" } }, [_c("k-button-group", [_c("k-button", { class: { "k-button-active": _vm.showOnlyPages }, attrs: { "icon": "page" }, on: { "click": _vm.toggleShowOnlyPages } }, [_vm._v("Pages only")]), _c("k-button", { class: { "k-button-active": !_vm.showOnlyPages }, attrs: { "icon": "file-document" }, on: { "click": _vm.toggleShowAll } }, [_vm._v("All files")])], 1)], 1)], 1), _vm.filteredFiles.length ? _c("div", { staticClass: "k-content-watch-files" }, _vm._l(_vm.filteredFiles, function(file, index) {
       return _c("div", { key: file.id, staticClass: "k-content-watch-file", class: { "k-content-watch-file-open": _vm.expandedFiles.includes(file.id) } }, [_c("div", { staticClass: "k-content-watch-file-header", on: { "click": function($event) {
         return _vm.toggleFileExpand(file.id);
       } } }, [_c("div", { staticClass: "k-content-watch-file-info" }, [_c("span", { staticClass: "k-content-watch-file-path" }, [_c("strong", [_vm._v(_vm._s(file.title))]), _c("br"), _vm._v(_vm._s(file.path_short) + " ")]), _c("span", { staticClass: "k-content-watch-file-editor" }, [_vm._v(" " + _vm._s(file.editor.name || file.editor.email || "Unknown")), _c("br"), _vm._v(" " + _vm._s(_vm.formatRelative(file.modified)) + " ")])]), _c("div", { staticClass: "k-content-watch-file-actions" }, [_c("k-button", { class: { "k-button-rotated": _vm.expandedFiles.includes(file.id) }, attrs: { "icon": "angle-down" } }), _c("k-button", { attrs: { "icon": "edit" }, on: { "click": function($event) {
