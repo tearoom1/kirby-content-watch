@@ -60,7 +60,7 @@ History entries are automatically pruned based on your retention settings.
 
 ## Requirements
 
-- Kirby 3.6+ or Kirby 4.x
+- Kirby 4.x or 5.x
 - PHP 8.0+
 
 ## License
