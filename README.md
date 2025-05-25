@@ -20,9 +20,11 @@ Additionally it provides a view to see which pages are currently locked and by w
 
 ## Known Limitations
 
-The restoration feature has to be considered BETA and has some limitations
+The restoration feature  has some limitations
 - binary files are not supported
 - when restoring a page, its files are not restored
+
+> Beware the restoration feature is BETA and may have bugs. Use at your own risk!
 
 ## Installation
 
@@ -87,13 +89,20 @@ When restore functionality is disabled:
 2. No content snapshots are stored, reducing disk usage
 3. The restore buttons will not be displayed in the interface
 
-> NOTE: The restore functionality only works for page content. It does not track changes of media/binary files.
+> NOTE: The restore functionality only works for page content.
+> It does not track changes of media/binary files. 
+> And when restoring a page, it does not restore its files.
 
 
 ## Requirements
 
-- Kirby 4.x or 5.x
+- Kirby 4.x or 5.x (not tested yet)
 - PHP 8.0+
+
+## Todo
+
+- Add support for restoring media/binary files ?
+- Cleanup code. The code is still a bit messy. If someone wants to clean up? :)
 
 ## License
 
@@ -102,3 +111,4 @@ MIT
 ## Credits
 
 - Developed by TearoomOne
+- Assisted by AI Claude 3.7 Sonnet
