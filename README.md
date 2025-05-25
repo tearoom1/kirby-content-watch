@@ -105,6 +105,7 @@ When restore functionality is disabled:
 
 - Add support for restoring media/binary files ?
 - Cleanup code. The code is still a bit messy. If someone wants to clean up? :)
+- Language support is not perfect yet. Currently only 2 digit codes work and the display of the versions may also be improved.
 
 ## License
 
