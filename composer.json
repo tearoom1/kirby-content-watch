@@ -1,6 +1,6 @@
 {
   "name": "tearoom1/kirby-content-watch",
-  "description": "A Kirby plugin that shows a list of all content files sorted by modification date with editor information",
+  "description": "A Kirby CMS plugin that shows a list of all content files sorted by modification date with editor information",
   "type": "kirby-plugin",
   "license": "MIT",
   "authors": [
