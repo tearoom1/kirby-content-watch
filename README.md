@@ -1,6 +1,10 @@
 # Content Watch Plugin for Kirby
 
-This plugin adds a panel view that tracks and displays all content changes in your Kirby site, showing detailed editor information and allowing for content history management.
+This plugin tracks all content changes in your Kirby site and adds a panel view that displays those changes.
+It shows modification date and editor information and the history of changes for each file.
+This allows you to keep track of what has been changed and who made the changes.
+
+Additionally it provides a view to see which pages are currently locked and by whom.
 
 ## Features
 
