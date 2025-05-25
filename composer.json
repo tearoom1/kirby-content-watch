@@ -1,6 +1,6 @@
 {
   "name": "tearoom1/kirby-content-watch",
-  "description": "A Kirby CMS plugin that shows a list of all content files sorted by modification date with editor information",
+  "description": "Kirby plugin that allows you to keep track of what has been changed and by whom.",
   "type": "kirby-plugin",
   "license": "MIT",
   "authors": [
