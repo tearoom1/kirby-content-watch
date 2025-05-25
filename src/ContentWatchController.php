@@ -7,8 +7,7 @@ use Kirby\Filesystem\F;
 
 class ContentWatchController
 {
-
-// Helper function to track content changes
+    // Helper function to track content changes
     public function trackContentChange(ModelWithContent $content)
     {
         $user = kirby()->user();
@@ -28,12 +27,14 @@ class ContentWatchController
             $dirPath = $content->root();
             $fileKey = $content->uid();
             $contentFile = $dirPath . '/' . $fileKey . '.' . $language . '.txt';
-            $contentSnapshot = F::read($contentFile);
+            if (option('tearoom1.content-watch.enableRestore') === true) {
+                $contentSnapshot = F::read($contentFile);
+                $editorData['content'] = $contentSnapshot;
+                $editorData['content_file'] = $contentFile;
+            }
         } else {
             $dirPath = dirname($content->root());
             $fileKey = $content->filename();
-            $contentFile = $content->root();
-            $contentSnapshot = F::read($contentFile);
         }
 
         if (!$fileKey) return;
@@ -73,10 +74,6 @@ class ContentWatchController
         $retentionCount = (int)option('tearoom1.content-watch.retentionCount', 10);
         $cutoffTime = time() - ($retentionDays * 86400); // 86400 seconds per day
 
-        // Add content snapshot to editor data
-        $editorData['content'] = $contentSnapshot;
-        $editorData['content_file'] = $contentFile;
-
         // Add new history entry to the beginning of the array
         array_unshift($history[$fileKey], $editorData);
 
@@ -108,6 +105,11 @@ class ContentWatchController
      */
     public function restoreContent(string $dirPath, string $fileKey, int $timestamp): bool
     {
+        // Check if restore functionality is enabled
+        if (option('tearoom1.content-watch.enableRestore') !== true) {
+            return false;
+        }
+
         $editorFile = $dirPath . '/.content-watch.json';
 
         if (!file_exists($editorFile)) {
@@ -343,7 +345,6 @@ class ContentWatchController
             $allHistoryEntries[] = $historyEntry;
         }
     }
-
 
     public function getLockedPages(): array
     {

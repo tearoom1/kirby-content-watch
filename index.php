@@ -38,6 +38,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         'pagination' => 20,
         'retentionDays' => 30, // default to 30 days of history
         'enableLockedPages' => true,
+        'enableRestore' => false, // enable or disable the restore functionality
     ],
     'api' => [
         'routes' => [
@@ -51,6 +52,14 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                             'status' => 'error',
                             'message' => 'Unauthorized'
                         ], 401);
+                    }
+
+                    // Check if restore functionality is enabled
+                    if (option('tearoom1.content-watch.enableRestore') !== true) {
+                        return Response::json([
+                            'status' => 'error',
+                            'message' => 'Restore functionality is disabled'
+                        ], 403);
                     }
 
                     // Get data from request

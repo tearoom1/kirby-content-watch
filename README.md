@@ -16,7 +16,7 @@ Additionally it provides a view to see which pages are currently locked and by w
 - **Search Functionality**: Quickly find specific content files
 - **Direct Panel Links**: One-click access to edit content in the Panel
 - **Customizable Retention**: Configure how long history is kept
-- **Version Restore**: Restore previous versions of content with a single click
+- **Version Restore**: Restore previous versions of content with a single click (optional)
 
 ## Installation
 
@@ -54,21 +54,35 @@ return [
         'retentionCount' => 10,
         
         // Whether to show locked pages in the interface (default: true)
-        'enableLockedPages' => true
+        'enableLockedPages' => true,
+        
+        // Whether to enable content restore functionality (default: false)
+        // When disabled, content snapshots are not stored to save disk space
+        'enableRestore' => true
     ]
 ];
 ```
 
 ## How It Works
 
-The plugin creates a `.content-watch.json` file in each content directory that has been modified. This file stores the history of changes including editor information, timestamps, and content snapshots for restoration.
-
-When you restore a previous version, the plugin will:
-1. Extract the content from the saved snapshot
-2. Overwrite the current content file
-3. Record this restoration in the history with a reference to the restored version
-
+The plugin creates a `.content-watch.json` file in each content directory that has been modified. This file stores the history of changes including editor information, timestamps, and content snapshots for restoration (if restore is enabled).
 History entries are automatically pruned based on your retention settings.
+
+When restore functionality is enabled:
+1. Each time content is changed, a snapshot of the content is saved
+2. You can view and restore previous versions through the interface
+3. When you restore a previous version, the plugin will:
+   - Extract the content from the saved snapshot
+   - Overwrite the current content file
+   - Record this restoration in the history with a reference to the restored version
+
+When restore functionality is disabled:
+1. The plugin only tracks metadata like timestamps and editor information
+2. No content snapshots are stored, reducing disk usage
+3. The restore buttons will not be displayed in the interface
+
+> NOTE: The restore functionality only works for page content. It does not track changes of media/binary files.
+
 
 ## Requirements
 

@@ -57,7 +57,7 @@
                   <span class="k-timeline-item-editor">
                     {{ entry.restored_from ? 'restored by' : 'edited by' }} {{ entry.editor.name || entry.editor.email || 'Unknown' }}
                     <k-button 
-                      v-if="entry.has_snapshot && entryIndex > 0" 
+                      v-if="enableRestore && entry.has_snapshot && entryIndex > 0" 
                       @click.stop="confirmRestore(file, entry)" 
                       icon="refresh" 
                       class="k-restore-button" 
@@ -89,6 +89,7 @@
     
     <!-- Confirmation dialog for restore -->
     <k-dialog
+      v-if="enableRestore"
       ref="restoreDialog"
       :button="$t('restore')"
       theme="positive"
@@ -124,6 +125,10 @@ export default {
       type: Array,
       default: () => []
     },
+    enableRestore: {
+      type: Boolean,
+      default: false
+    }
   },
 
   data() {
@@ -233,12 +238,14 @@ export default {
     },
     
     confirmRestore(file, entry) {
+      if (!this.enableRestore) return;
+      
       this.restoreTarget = { file, entry };
       this.$refs.restoreDialog.open();
     },
     
     async restoreContent() {
-      if (!this.restoreTarget) return;
+      if (!this.enableRestore || !this.restoreTarget) return;
       
       const { file, entry } = this.restoreTarget;
       
