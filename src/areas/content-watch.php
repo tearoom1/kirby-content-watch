@@ -15,7 +15,7 @@ return [
             'action' => function () {
                 // Get content files
                 $contentWatchController = new ContentWatchController();
-                list($files, $allHistoryEntries) = $contentWatchController->getContentFiles();
+                $files = $contentWatchController->getContentFiles();
 
                 $lockedPages = (bool)option('tearoom1.content-watch.enableLockedPages', true) ? $contentWatchController->getLockedPages() : [];
                 $retentionDays = (int)option('tearoom1.content-watch.retentionDays', 30);
@@ -27,7 +27,6 @@ return [
                     'props' => [
                         'lockedPages' => $lockedPages,
                         'files' => $files,
-                        'historyEntries' => $allHistoryEntries,
                         'retentionDays' => $retentionDays,
                         'retentionCount' => $retentionCount,
                         'enableRestore' => option('tearoom1.content-watch.enableRestore', false),

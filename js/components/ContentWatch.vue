@@ -21,11 +21,11 @@
       </k-grid>
 
       <div v-if="filteredFiles.length" class="k-content-watch-files">
-        <div 
-          v-for="(file, index) in filteredFiles" 
-          :key="file.id" 
-          class="k-content-watch-file"
-          :class="{'k-content-watch-file-open': expandedFiles.includes(file.id)}"
+        <div
+            v-for="(file, index) in filteredFiles"
+            :key="file.id"
+            class="k-content-watch-file"
+            :class="{'k-content-watch-file-open': expandedFiles.includes(file.id)}"
         >
           <div class="k-content-watch-file-header" @click="toggleFileExpand(file.id)">
             <div class="k-content-watch-file-info">
@@ -39,35 +39,42 @@
               </span>
             </div>
             <div class="k-content-watch-file-actions">
-              <k-button icon="angle-down" :class="{'k-button-rotated': expandedFiles.includes(file.id)}" />
-              <k-button @click.stop="openFile(file)" icon="edit" />
+              <k-button icon="angle-down" :class="{'k-button-rotated': expandedFiles.includes(file.id)}"/>
+              <k-button @click.stop="openFile(file)" icon="edit"/>
             </div>
           </div>
-          
+
           <div v-if="expandedFiles.includes(file.id)" class="k-content-watch-file-timeline">
             <div v-if="file.history && file.history.length > 0" class="k-timeline-list">
               <div v-for="(entry, entryIndex) in file.history" :key="entryIndex" class="k-timeline-item">
+                <div class="k-timeline-item-version">
+                  v{{ entry.version }}
+                </div>
                 <div class="k-timeline-item-time">
                   {{ entry.time_formatted }}
                 </div>
                 <div class="k-timeline-item-time-rel">
                   {{ formatRelative(entry.time) }}
                 </div>
-                <div class="k-timeline-item-content">
-                  <span class="k-timeline-item-editor">
-                    {{ entry.restored_from ? 'restored by' : 'edited by' }} {{ entry.editor.name || entry.editor.email || 'Unknown' }}
-                    <k-button 
-                      v-if="enableRestore && entry.has_snapshot && entryIndex > 0" 
-                      @click.stop="confirmRestore(file, entry)" 
-                      icon="refresh" 
-                      class="k-restore-button" 
-                      title="Restore this version"
-                    />
+                <span class="k-timeline-item-editor-label">
+                    {{ entry.restored_from ? 'restored by' : 'edited by' }}
                   </span>
+                <span class="k-timeline-item-editor">
+                    {{ entry.editor.name || entry.editor.email || 'Unknown' }}
+                  </span>
+                <div class="k-timeline-item-actions">
+                  <k-button
+                      v-if="enableRestore && entry.has_snapshot && entryIndex > 0"
+                      @click.stop="confirmRestore(file, entry)"
+                      icon="refresh"
+                      class="k-restore-button"
+                      title="Restore this version"
+                  />
                 </div>
+                <div class="k-timeline-item-line"></div>
               </div>
             </div>
-            <k-empty v-else icon="history" text="No history entries found" />
+            <k-empty v-else icon="history" text="No history entries found"/>
             <div class="k-timeline-footer">
               <span>Showing changes for the last {{ retentionDays }} days (max {{ retentionCount }})</span>
             </div>
@@ -86,20 +93,21 @@
       </k-header>
       <k-collection :items="lockItems" class="k-content-watch-locked"/>
     </section>
-    
+
     <!-- Confirmation dialog for restore -->
     <k-dialog
-      v-if="enableRestore"
-      ref="restoreDialog"
-      :button="$t('restore')"
-      theme="positive"
-      icon="refresh"
-      @submit="restoreContent"
+        v-if="enableRestore"
+        ref="restoreDialog"
+        :button="$t('restore')"
+        theme="positive"
+        icon="refresh"
+        @submit="restoreContent"
     >
       <k-text>Are you sure you want to restore this version?</k-text>
       <k-text v-if="restoreTarget">
         <strong>File:</strong> {{ restoreTarget.file?.title }}<br>
-        <strong>Version:</strong> {{ restoreTarget.entry?.time_formatted }} ({{ formatRelative(restoreTarget.entry?.time) }})
+        <strong>Version:</strong> {{ restoreTarget.entry?.time_formatted }}
+        ({{ formatRelative(restoreTarget.entry?.time) }})
       </k-text>
       <k-text>This will overwrite the current content with this previous version.</k-text>
     </k-dialog>
@@ -170,7 +178,7 @@ export default {
 
       this.lockedPages.forEach(lock => {
         items.push({
-          text: '<span class="k-content-watch-file-path"><strong>'+lock.title + '</strong><br>' + lock.id + '</span>',
+          text: '<span class="k-content-watch-file-path"><strong>' + lock.title + '</strong><br>' + lock.id + '</span>',
           info: lock.user + ' <br> ' + lock.date + ' (' + this.formatRelative(lock.date) + ')',
           options: [{
             icon: 'edit',
@@ -195,13 +203,13 @@ export default {
         window.location.href = '/panel' + file.panel_url;
       }
     },
-    
+
     openFile(file) {
       if (file?.panel_url) {
         window.location.href = '/panel' + file.panel_url;
       }
     },
-    
+
     toggleFileExpand(id) {
       const index = this.expandedFiles.indexOf(id);
       if (index === -1) {
@@ -225,7 +233,7 @@ export default {
           file.path.toLowerCase().includes(searchLower)
       );
     },
-    
+
     formatRelative(date) {
       if (typeof date === 'string') {
         return formatDistance(new Date(date), new Date(), {
@@ -236,28 +244,28 @@ export default {
         addSuffix: true
       });
     },
-    
+
     confirmRestore(file, entry) {
       if (!this.enableRestore) return;
-      
-      this.restoreTarget = { file, entry };
+
+      this.restoreTarget = {file, entry};
       this.$refs.restoreDialog.open();
     },
-    
+
     async restoreContent() {
       if (!this.enableRestore || !this.restoreTarget) return;
-      
-      const { file, entry } = this.restoreTarget;
-      
+
+      const {file, entry} = this.restoreTarget;
+
       this.isLoading = true;
-      
+
       try {
         const response = await this.$api.post('/content-watch/restore', {
           dirPath: file.dir_path,
           fileKey: file.uid,
           timestamp: entry.time
         });
-        
+
         if (response.status === 'success') {
           this.$store.dispatch('notification/success', 'Content restored successfully');
           this.refresh();
@@ -289,7 +297,7 @@ export default {
 }
 
 .k-content-watch-file-open {
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .k-content-watch-file-header {
@@ -337,58 +345,71 @@ export default {
 }
 
 .k-timeline-list {
-  padding: 0;
+  display: grid;
+  align-items: center;
+  grid-template-columns: repeat(15, minmax(0, 1fr));
   margin: 0;
+  padding: 0.75rem 0.5rem;
+  font-size: .875rem;
+  opacity: 0.7;
 }
 
 .k-timeline-item {
-  display: flex;
-  padding: 0.75rem 0.5rem;
-  border-bottom: 1px solid var(--color-border);
+  display: contents;
+}
+
+.k-timeline-item > :not(:last-child) {
+  padding: 0.6rem 0.5rem;
 }
 
 .k-timeline-item:last-child {
   border-bottom: none;
 }
 
-.k-timeline-item-time {
-  min-width: 180px;
-  font-family: var(--font-mono);
+.k-timeline-item-version {
   font-size: 0.8rem;
+  grid-column: span 1;
+}
+
+.k-timeline-item-time {
+  font-size: 0.8rem;
+  grid-column: span 3;
 }
 
 .k-timeline-item-time-rel {
-  min-width: 180px;
-  font-family: var(--font-mono);
   font-size: 0.7rem;
+  grid-column: span 2;
 }
 
-.k-timeline-item-content {
-  flex-grow: 1;
-  margin-left: 1rem;
+.k-timeline-item-editor-label {
+  font-size: 0.7rem;
   text-align: right;
-  opacity: 0.7;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
+  grid-column: span 3;
 }
 
 .k-timeline-item-editor {
-  font-size: .875rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  text-align: right;
+  grid-column: span 5;
+}
+
+.k-timeline-item-actions {
+  text-align: right;
+  display: inline-block;
+  font-size: 0.8rem;
+  grid-column: span 1;
+}
+.k-timeline-item-line {
+  grid-column: span 15;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .k-restore-button {
-  padding: 0.2rem !important;
   height: auto !important;
   line-height: 1 !important;
   color: var(--color-positive) !important;
 }
 
 .k-timeline-footer {
-  border-top: 1px solid var(--color-border);
   padding: 0.5rem 1rem 0;
   font-size: 0.75rem;
   color: var(--color-gray-800);
@@ -399,9 +420,11 @@ export default {
   padding: 0rem 0.5rem;
   height: unset;
 }
+
 .k-content-watch-locked .k-item-content {
   line-height: 1.2rem;
 }
+
 .k-content-watch-locked .k-item-content .k-item-info {
   text-align: right;
 }
@@ -410,20 +433,20 @@ export default {
   .k-content-watch-file {
     border-color: var(--color-gray-300);
   }
-  
+
   .k-content-watch-file-header {
     background-color: var(--color-gray-100);
   }
-  
+
   .k-content-watch-file-timeline {
     background-color: var(--color-gray-100);
     border-color: var(--color-gray-300);
   }
-  
+
   .k-timeline-item {
     border-color: var(--color-gray-300);
   }
-  
+
   .k-timeline-footer {
     border-color: var(--color-gray-300);
     color: var(--color-gray-300);

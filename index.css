@@ -10,7 +10,7 @@
   transition: all 0.3s ease;
 }
 .k-content-watch-file-open {
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 .k-content-watch-file-header {
   display: flex;
@@ -50,50 +50,60 @@
   border-top: 1px solid var(--color-border);
 }
 .k-timeline-list {
-  padding: 0;
+  display: grid;
+  align-items: center;
+  grid-template-columns: repeat(15, minmax(0, 1fr));
   margin: 0;
+  padding: 0.75rem 0.5rem;
+  font-size: .875rem;
+  opacity: 0.7;
 }
 .k-timeline-item {
-  display: flex;
-  padding: 0.75rem 0.5rem;
-  border-bottom: 1px solid var(--color-border);
+  display: contents;
+}
+.k-timeline-item > :not(:last-child) {
+  padding: 0.6rem 0.5rem;
 }
 .k-timeline-item:last-child {
   border-bottom: none;
 }
-.k-timeline-item-time {
-  min-width: 180px;
-  font-family: var(--font-mono);
+.k-timeline-item-version {
   font-size: 0.8rem;
+  grid-column: span 1;
+}
+.k-timeline-item-time {
+  font-size: 0.8rem;
+  grid-column: span 3;
 }
 .k-timeline-item-time-rel {
-  min-width: 180px;
-  font-family: var(--font-mono);
   font-size: 0.7rem;
+  grid-column: span 2;
 }
-.k-timeline-item-content {
-  flex-grow: 1;
-  margin-left: 1rem;
+.k-timeline-item-editor-label {
+  font-size: 0.7rem;
   text-align: right;
-  opacity: 0.7;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
+  grid-column: span 3;
 }
 .k-timeline-item-editor {
-  font-size: .875rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  text-align: right;
+  grid-column: span 5;
+}
+.k-timeline-item-actions {
+  text-align: right;
+  display: inline-block;
+  font-size: 0.8rem;
+  grid-column: span 1;
+}
+.k-timeline-item-line {
+  grid-column: span 15;
+  border-bottom: 1px solid var(--color-border);
 }
 .k-restore-button {
-  padding: 0.2rem !important;
   height: auto !important;
   line-height: 1 !important;
   color: var(--color-positive) !important;
 }
 .k-timeline-footer {
-  border-top: 1px solid var(--color-border);
   padding: 0.5rem 1rem 0;
   font-size: 0.75rem;
   color: var(--color-gray-800);

@@ -69,6 +69,16 @@ class ContentWatchController
             $history[$fileKey] = [];
         }
 
+        // Add version number - get the latest version number and increment
+        $latestVersion = 1;
+        if (count($history[$fileKey]) > 0) {
+            $previousEntry = $history[$fileKey][0];
+            if (isset($previousEntry['version'])) {
+                $latestVersion = $previousEntry['version'] + 1;
+            }
+        }
+        $editorData['version'] = $latestVersion;
+
         // Get history retention period from options (default 30 days, 10 entries)
         $retentionDays = (int)option('tearoom1.content-watch.retentionDays', 30);
         $retentionCount = (int)option('tearoom1.content-watch.retentionCount', 10);
@@ -142,6 +152,14 @@ class ContentWatchController
             // Add restoration note to history
             $user = kirby()->user();
             if ($user) {
+
+                // remove that version
+                if (isset($entryToRestore['version'])) {
+                    $history[$fileKey] = array_filter($history[$fileKey], function ($entry) use ($entryToRestore) {
+                        return !isset($entry['version']) || $entry['version'] !== $entryToRestore['version'];
+                    });
+                }
+
                 $editorData = [
                     'id' => $user->id(),
                     'name' => (string)$user->name(),
@@ -149,7 +167,8 @@ class ContentWatchController
                     'time' => time(),
                     'restored_from' => $timestamp,
                     'content' => $entryToRestore['content'],
-                    'content_file' => $entryToRestore['content_file']
+                    'content_file' => $entryToRestore['content_file'],
+                    'version' => $entryToRestore['version'],
                 ];
 
                 array_unshift($history[$fileKey], $editorData);
@@ -169,7 +188,6 @@ class ContentWatchController
     {
         $contentDir = kirby()->root('content');
         $files = [];
-        $allHistoryEntries = [];
 
         // Recursively find all content files
         $iterator = new \RecursiveIteratorIterator(
@@ -193,16 +211,14 @@ class ContentWatchController
         // Process all content files
         foreach ($iterator as $file) {
             if ($file->isFile() && $file->getExtension() === 'txt') {
-                $this->processFile($file, $contentDir, $historyFiles, $files, $allHistoryEntries);
+                $this->processFile($file, $contentDir, $historyFiles, $files);
             }
         }
 
         // Sort by modification date (newest first)
         usort($files, fn($a, $b) => $b['modified'] <=> $a['modified']);
 
-        // Sort all history entries by time (newest first)
-        usort($allHistoryEntries, fn($a, $b) => $b['time'] <=> $a['time']);
-        return array($files, $allHistoryEntries);
+        return $files;
     }
 
     /**
@@ -215,8 +231,7 @@ class ContentWatchController
     public function processFile(mixed   $file,
                                 ?string $contentDir,
                                 array   $historyFiles,
-                                array   &$files,
-                                array   &$allHistoryEntries): void
+                                array   &$files): void
     {
         $filePath = $file->getPathname();
         $isMediaFile = file_exists(preg_replace('%(\.[a-z]{2})?\.txt$%', '', $filePath));
@@ -312,40 +327,14 @@ class ContentWatchController
                 'time' => $entry['time'] ?? 0,
                 'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0),
                 'has_snapshot' => isset($entry['content']),
-                'restored_from' => $entry['restored_from'] ?? null
+                'restored_from' => $entry['restored_from'] ?? null,
+                'version' => $entry['version'] ?? 1
             ];
 
             $fileData['history'][] = $historyEntry;
         }
 
         $files[] = $fileData;
-
-        // Add to global history entries list for timeline view
-        foreach ($historyEntries as $entry) {
-            if (!is_array($entry)) {
-                continue; // Skip non-array entries
-            }
-
-            $historyEntry = [
-                'file_id' => $fileId,
-                'uid' => $fileUid,
-                'file_path' => dirname($relativePath),
-                'file_title' => $title,
-                'panel_url' => $panelUrl,
-                'editor' => [
-                    'id' => $entry['id'] ?? 'unknown',
-                    'name' => $entry['name'] ?? 'Unknown',
-                    'email' => $entry['email'] ?? ''
-                ],
-                'time' => $entry['time'] ?? 0,
-                'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0),
-                'has_snapshot' => isset($entry['content']),
-                'restored_from' => $entry['restored_from'] ?? null,
-                'dir_path' => $dirPath
-            ];
-
-            $allHistoryEntries[] = $historyEntry;
-        }
     }
 
     public function getLockedPages(): array
