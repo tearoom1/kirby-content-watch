@@ -13,24 +13,26 @@ class ContentWatchController
         $user = kirby()->user();
         if (!$user) return;
 
-        $editorData = [
-            'id' => $user->id(),
-            'name' => (string)$user->name(),
-            'email' => (string)$user->email(),
+        $record = [
+            'editor' => [
+                'id' => $user->id(),
+                'name' => (string)$user->name(),
+                'email' => (string)$user->email(),
+            ],
             'time' => time()
         ];
 
-        $language = kirby()->language();
+        $language = kirby()->language()->code();
 
         // Determine the history file path and filename key
         if ($content instanceof \Kirby\Cms\Page) {
             $dirPath = $content->root();
-            $fileKey = $content->uid();
-            $contentFile = $dirPath . '/' . $fileKey . '.' . $language . '.txt';
+            $fileKey = $content->template()->name();
             if (option('tearoom1.content-watch.enableRestore') === true) {
+                $contentFile = $dirPath . '/' . $fileKey . '.' . $language . '.txt';
                 $contentSnapshot = F::read($contentFile);
-                $editorData['content'] = $contentSnapshot;
-                $editorData['content_file'] = $contentFile;
+                $record['content'] = $contentSnapshot;
+                $record['language'] = $language;
             }
         } else {
             $dirPath = dirname($content->root());
@@ -70,14 +72,14 @@ class ContentWatchController
         }
 
         // Add version number - get the latest version number and increment
-        $latestVersion = 1;
+        $latestVersion = 0;
         if (count($history[$fileKey]) > 0) {
             // find the greatest version without changing the array
             $latestVersion = max(array_map(function ($entry) {
                 return $entry['version'] ?? 1;
             }, $history[$fileKey]));
         }
-        $editorData['version'] = $latestVersion + 1;
+        $record['version'] = $latestVersion + 1;
 
         // Get history retention period from options (default 30 days, 10 entries)
         $retentionDays = (int)option('tearoom1.content-watch.retentionDays', 30);
@@ -85,7 +87,7 @@ class ContentWatchController
         $cutoffTime = time() - ($retentionDays * 86400); // 86400 seconds per day
 
         // Add new history entry to the beginning of the array
-        array_unshift($history[$fileKey], $editorData);
+        array_unshift($history[$fileKey], $record);
 
         // Filter out entries older than the retention period
         $history[$fileKey] = array_filter($history[$fileKey], function ($entry) use ($retentionCount) {
@@ -142,12 +144,13 @@ class ContentWatchController
                 }
             }
 
-            if (!$entryToRestore || !isset($entryToRestore['content']) || !isset($entryToRestore['content_file'])) {
+            $content_file = $dirPath . '/' . $fileKey . '.' . $entryToRestore['language'] . '.txt';
+            if (!$entryToRestore || empty($entryToRestore['content']) || empty($content_file)) {
                 return false;
             }
 
             // Restore the content
-            F::write($entryToRestore['content_file'], $entryToRestore['content']);
+            F::write($content_file, $entryToRestore['content']);
 
             // Add restoration note to history
             $user = kirby()->user();
@@ -160,18 +163,20 @@ class ContentWatchController
                     });
                 }
 
-                $editorData = [
-                    'id' => $user->id(),
-                    'name' => (string)$user->name(),
-                    'email' => (string)$user->email(),
+                $record = [
+                    'editor' => [
+                        'id' => $user->id(),
+                        'name' => (string)$user->name(),
+                        'email' => (string)$user->email(),
+                    ],
                     'time' => time(),
                     'restored_from' => $timestamp,
                     'content' => $entryToRestore['content'],
-                    'content_file' => $entryToRestore['content_file'],
+                    'language' => $entryToRestore['language'],
                     'version' => $entryToRestore['version'],
                 ];
 
-                array_unshift($history[$fileKey], $editorData);
+                array_unshift($history[$fileKey], $record);
                 file_put_contents($editorFile, json_encode($history));
             }
 
@@ -247,37 +252,41 @@ class ContentWatchController
         $pathId = preg_replace('%/%', '+', $pathShort);
 
         if ($isMediaFile) {
-            $fileUid = basename($relativePath);
-            $fileUid = preg_replace('%(\.[a-z]{2})?\.txt$%', '', $fileUid);
-            $title = 'File: ' . $fileUid;
-            $fileId = $fileUid;
+            $fileKey = basename($relativePath);
+            $fileKey = preg_replace('%(\.[a-z]{2})?\.txt$%', '', $fileKey);
+            $title = 'File: ' . $fileKey;
+            $fileId = $fileKey;
         } else {
-            $fileUid = basename($fileId);
-
             $page = kirby()->page($fileId);
+
             $title = 'Unknown';
+            $fileKey = basename($fileId);
+
             if ($page) {
                 $title = $page->title()->value();
+                $fileKey = $page->template()->name();
             }
         }
 
         // Get editor history for this file
         $historyEntries = [];
-        if (isset($historyFiles[$dirPath]) && isset($historyFiles[$dirPath][$fileUid])) {
-            $historyEntries = $historyFiles[$dirPath][$fileUid];
+        if (isset($historyFiles[$dirPath]) && isset($historyFiles[$dirPath][$fileKey])) {
+            $historyEntries = $historyFiles[$dirPath][$fileKey];
         }
 
         // Use latest history entry for file display
-        $editor = [
-            'id' => 'unknown',
-            'name' => 'Unknown',
-            'email' => '',
+        $record = [
+            'editor' => array(
+                'id' => 'unknown',
+                'name' => 'Unknown',
+                'email' => '',
+            ),
             'time' => $modified
         ];
 
         if (!empty($historyEntries) && is_array($historyEntries) && isset($historyEntries[0])) {
             // The latest entry is at index 0 because we used array_unshift when adding
-            $editor = $historyEntries[0];
+            $record = $historyEntries[0];
         }
 
         // Try to determine panel URL
@@ -295,18 +304,14 @@ class ContentWatchController
         // Build file data
         $fileData = [
             'id' => $fileId,
-            'uid' => $fileUid,
+            'uid' => $fileKey,
             'path_short' => $pathShort,
             'path' => dirname($relativePath),
             'title' => $title,
             'parent' => end($pathParts) ?: 'root',
-            'modified' => $editor['time'] ?? $modified,
-            'modified_formatted' => date('Y-m-d H:i:s', $editor['time'] ?? $modified),
-            'editor' => [
-                'id' => $editor['id'],
-                'name' => $editor['name'],
-                'email' => $editor['email']
-            ],
+            'modified' => $record['time'] ?? $modified,
+            'modified_formatted' => date('Y-m-d H:i:s', $record['time'] ?? $modified),
+            'editor' => $record['editor'],
             'panel_url' => $panelUrl,
             'history' => [],
             'dir_path' => $dirPath,
@@ -320,14 +325,10 @@ class ContentWatchController
             }
 
             $historyEntry = [
-                'editor' => [
-                    'id' => $entry['id'] ?? 'unknown',
-                    'name' => $entry['name'] ?? 'Unknown',
-                    'email' => $entry['email'] ?? ''
-                ],
+                'editor' => $record['editor'],
                 'time' => $entry['time'] ?? 0,
                 'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0),
-                'has_snapshot' => isset($entry['content']),
+                'has_snapshot' => !empty($entry['content']),
                 'restored_from' => $entry['restored_from'] ?? null,
                 'version' => $entry['version'] ?? 1
             ];

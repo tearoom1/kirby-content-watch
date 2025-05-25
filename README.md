@@ -18,6 +18,12 @@ Additionally it provides a view to see which pages are currently locked and by w
 - **Customizable Retention**: Configure how long history is kept
 - **Version Restore**: Restore previous versions of content with a single click (optional)
 
+## Known Limitations
+
+The restoration feature has to be considered BETA and has some limitations
+- binary files are not supported
+- when restoring a page, its files are not restored
+
 ## Installation
 
 ### Manual
