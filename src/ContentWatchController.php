@@ -14,11 +14,7 @@ class ContentWatchController
         if (!$user) return;
 
         $record = [
-            'editor' => [
-                'id' => $user->id(),
-                'name' => (string)$user->name(),
-                'email' => (string)$user->email(),
-            ],
+            'editor_id' => $user->id(),
             'time' => time()
         ];
 
@@ -164,11 +160,7 @@ class ContentWatchController
                 }
 
                 $record = [
-                    'editor' => [
-                        'id' => $user->id(),
-                        'name' => (string)$user->name(),
-                        'email' => (string)$user->email(),
-                    ],
+                    'editor_id' => $user->id(),
                     'time' => time(),
                     'restored_from' => $timestamp,
                     'content' => $entryToRestore['content'],
@@ -274,19 +266,25 @@ class ContentWatchController
             $historyEntries = $historyFiles[$dirPath][$fileKey];
         }
 
-        // Use latest history entry for file display
-        $record = [
-            'editor' => array(
-                'id' => 'unknown',
-                'name' => 'Unknown',
-                'email' => '',
-            ),
-            'time' => $modified
-        ];
-
         if (!empty($historyEntries) && is_array($historyEntries) && isset($historyEntries[0])) {
             // The latest entry is at index 0 because we used array_unshift when adding
             $record = $historyEntries[0];
+        }
+
+        if (isset($record) && !empty($record['editor_id']) && $record['editor_id'] !== 'unknown') {
+            $user = kirby()->user($record['editor_id']);
+            $editor = [
+                'id' => $user->id(),
+                'name' => $user->name()->value(),
+                'email' => $user->email()
+            ];
+            $modified = $record['time'];
+        } else {
+            $editor = [
+                'id' => 'unknown',
+                'name' => 'Unknown',
+                'email' => 'unknown'
+            ];
         }
 
         // Try to determine panel URL
@@ -309,9 +307,9 @@ class ContentWatchController
             'path' => dirname($relativePath),
             'title' => $title,
             'parent' => end($pathParts) ?: 'root',
-            'modified' => $record['time'] ?? $modified,
-            'modified_formatted' => date('Y-m-d H:i:s', $record['time'] ?? $modified),
-            'editor' => $record['editor'],
+            'modified' => $modified,
+            'modified_formatted' => date('Y-m-d H:i:s', $modified),
+            'editor' => $editor,
             'panel_url' => $panelUrl,
             'history' => [],
             'dir_path' => $dirPath,
@@ -325,7 +323,7 @@ class ContentWatchController
             }
 
             $historyEntry = [
-                'editor' => $record['editor'],
+                'editor' => $editor,
                 'time' => $entry['time'] ?? 0,
                 'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0),
                 'has_snapshot' => !empty($entry['content']),
