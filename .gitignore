@@ -1,6 +1,12 @@
-node_modules/
+# OS files
 .DS_Store
-.idea/
-yarn.lock
-kirby
+
+# npm modules
+/node_modules
+
+# Composer files
 /vendor
+/kirby
+
+/.phpunit.result.cache
+/site/

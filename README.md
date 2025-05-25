@@ -1,4 +1,4 @@
-# Content History Plugin for Kirby
+# Content Watch Plugin for Kirby
 
 This plugin adds a panel view that displays all content files in your Kirby site, sorted by modification date and showing the editor information.
 
@@ -15,17 +15,17 @@ This plugin adds a panel view that displays all content files in your Kirby site
 ### Manual
 
 1. Download or clone this repository
-2. Place the folder `content-watch` in `/site/plugins/`
+2. Place the folder `kirby-content-watch` in `/site/plugins/`
 
 ### Composer
 
 ```bash
-composer require my/content-watch
+composer require tearoom1/kirby-content-watch
 ```
 
 ## Usage
 
-After installation, you'll see a new "Content History" item in the Panel menu. Click on it to view the list of content files sorted by modification date.
+After installation, you'll see a new "Content Watch" item in the Panel menu. Click on it to view the list of content files sorted by modification date.
 
 ## Configuration
 
@@ -33,6 +33,10 @@ You can configure the plugin in your `config.php`:
 
 ```php
 return [
-    'my.content-watch.pagination' => 20, // Number of items per page
+    'tearoom1.content-watch' => [
+        'retentionDays' => 30,
+        'retentionCount' => 10,
+        'enableLockedPages' => true
+    ]
 ];
 ```
