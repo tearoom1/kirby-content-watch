@@ -57,6 +57,9 @@
                 <div class="k-timeline-item-version">
                   v{{ entry.version }}
                 </div>
+                <div class="k-timeline-item-language">
+                  {{ entry.language }}
+                </div>
                 <div class="k-timeline-item-time">
                   {{ entry.time_formatted }}
                 </div>
@@ -366,9 +369,10 @@ export default {
 }
 
 .k-timeline-list {
+  --colums: 20;
   display: grid;
   align-items: center;
-  grid-template-columns: repeat(15, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--colums), minmax(0, 1fr));
   margin: 0;
   padding: 0.75rem 0.5rem;
   font-size: .875rem;
@@ -392,14 +396,19 @@ export default {
   grid-column: span 1;
 }
 
+.k-timeline-item-language {
+  font-size: 0.8rem;
+  grid-column: span 1;
+}
+
 .k-timeline-item-time {
   font-size: 0.8rem;
-  grid-column: span 3;
+  grid-column: span 4;
 }
 
 .k-timeline-item-time-rel {
   font-size: 0.7rem;
-  grid-column: span 2;
+  grid-column: span 5;
 }
 
 .k-timeline-item-editor-label {
@@ -420,7 +429,7 @@ export default {
   grid-column: span 1;
 }
 .k-timeline-item-line {
-  grid-column: span 15;
+  grid-column: span var(--colums);
   border-bottom: 1px solid var(--color-border);
 }
 

@@ -20,6 +20,8 @@ Additionally it provides a view to see which pages are currently locked and by w
 
 ## Known Limitations
 
+- only works with multilanguage sites atm
+
 The restoration feature  has some limitations
 - binary files are not supported
 - when restoring a page, its files are not restored

@@ -212,6 +212,8 @@ class ContentWatchController
             }
         }
 
+        $files = array_values($files);
+
         // Sort by modification date (newest first)
         usort($files, fn($a, $b) => $b['modified'] <=> $a['modified']);
 
@@ -313,7 +315,7 @@ class ContentWatchController
             'panel_url' => $panelUrl,
             'history' => [],
             'dir_path' => $dirPath,
-            'is_media_file' => $isMediaFile
+            'is_media_file' => $isMediaFile,
         ];
 
         // Add history entries
@@ -328,13 +330,14 @@ class ContentWatchController
                 'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0),
                 'has_snapshot' => !empty($entry['content']),
                 'restored_from' => $entry['restored_from'] ?? null,
-                'version' => $entry['version'] ?? 1
+                'version' => $entry['version'] ?? 1,
+                'language' => $entry['language'] ?? '',
             ];
 
             $fileData['history'][] = $historyEntry;
         }
 
-        $files[] = $fileData;
+        $files[$dirPath . '/' . $fileKey] = $fileData;
     }
 
     public function getLockedPages(): array
