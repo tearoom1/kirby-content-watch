@@ -1,8 +1,8 @@
 <template>
-  <k-panel-inside class="k-content-history-view">
+  <k-panel-inside class="k-content-watch-view">
     <section v-if="files.length" class="k-section">
       <k-header class="k-section-header">
-        <k-headline>Content History</k-headline>
+        <k-headline>Content Watch</k-headline>
         <k-button-group slot="right">
           <k-button icon="refresh" @click="refresh"/>
         </k-button-group>
@@ -20,31 +20,31 @@
         </k-column>
       </k-grid>
 
-      <div v-if="filteredFiles.length" class="k-content-history-files">
+      <div v-if="filteredFiles.length" class="k-content-watch-files">
         <div 
           v-for="(file, index) in filteredFiles" 
           :key="file.id" 
-          class="k-content-history-file"
-          :class="{'k-content-history-file-open': expandedFiles.includes(file.id)}"
+          class="k-content-watch-file"
+          :class="{'k-content-watch-file-open': expandedFiles.includes(file.id)}"
         >
-          <div class="k-content-history-file-header" @click="toggleFileExpand(file.id)">
-            <div class="k-content-history-file-info">
-              <span class="k-content-history-file-path">
+          <div class="k-content-watch-file-header" @click="toggleFileExpand(file.id)">
+            <div class="k-content-watch-file-info">
+              <span class="k-content-watch-file-path">
                 <strong>{{ file.title }}</strong>
-                <br>{{ file.id }}
+                <br>{{ file.path_short }}
               </span>
-              <span class="k-content-history-file-editor">
+              <span class="k-content-watch-file-editor">
                 {{ file.editor.name || file.editor.email || 'Unknown' }}<br>
                   {{ formatRelative(file.modified) }}
               </span>
             </div>
-            <div class="k-content-history-file-actions">
+            <div class="k-content-watch-file-actions">
               <k-button icon="angle-down" :class="{'k-button-rotated': expandedFiles.includes(file.id)}" />
               <k-button @click.stop="openFile(file)" icon="edit" />
             </div>
           </div>
           
-          <div v-if="expandedFiles.includes(file.id)" class="k-content-history-file-timeline">
+          <div v-if="expandedFiles.includes(file.id)" class="k-content-watch-file-timeline">
             <div v-if="file.history && file.history.length > 0" class="k-timeline-list">
               <div v-for="(entry, entryIndex) in file.history" :key="entryIndex" class="k-timeline-item">
                 <div class="k-timeline-item-time">
@@ -60,7 +60,7 @@
             </div>
             <k-empty v-else icon="history" text="No history entries found" />
             <div class="k-timeline-footer">
-              <span>Showing changes for the last {{ retentionDays }} days</span>
+              <span>Showing changes for the last {{ retentionDays }} days (max {{ retentionCount }})</span>
             </div>
           </div>
         </div>
@@ -75,7 +75,7 @@
       <k-header class="k-section-header">
         <k-headline>Locked pages</k-headline>
       </k-header>
-      <k-collection :items="lockItems" class="k-content-history-locked"/>
+      <k-collection :items="lockItems" class="k-content-watch-locked"/>
     </section>
   </k-panel-inside>
 </template>
@@ -90,6 +90,10 @@ export default {
     retentionDays: {
       type: Number,
       default: 30
+    },
+    retentionCount: {
+      type: Number,
+      default: 10
     },
     lockedPages: {
       type: Array,
@@ -135,7 +139,7 @@ export default {
 
       this.lockedPages.forEach(lock => {
         items.push({
-          text: '<span class="k-content-history-file-path"><strong>'+lock.title + '</strong><br>' + lock.id + '</span>',
+          text: '<span class="k-content-watch-file-path"><strong>'+lock.title + '</strong><br>' + lock.id + '</span>',
           info: lock.user + ' <br> ' + lock.date + ' (' + this.formatRelative(lock.date) + ')',
           options: [{
             icon: 'edit',
@@ -206,11 +210,11 @@ export default {
 </script>
 
 <style>
-.k-content-history-files {
+.k-content-watch-files {
   margin-top: 1rem;
 }
 
-.k-content-history-file {
+.k-content-watch-file {
   border: 1px solid var(--color-border);
   border-radius: 4px;
   margin-bottom: 0.5rem;
@@ -218,11 +222,11 @@ export default {
   transition: all 0.3s ease;
 }
 
-.k-content-history-file-open {
+.k-content-watch-file-open {
   box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
-.k-content-history-file-header {
+.k-content-watch-file-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -231,27 +235,27 @@ export default {
   background-color: var(--color-white);
 }
 
-.k-content-history-file-info {
+.k-content-watch-file-info {
   display: flex;
   justify-content: space-between;
   width: 100%;
   line-height: 1.2rem;
 }
 
-.k-content-history-file-path {
+.k-content-watch-file-path {
   font-size: .875rem;
   opacity: 0.7;
   margin-top: 0.25rem;
 }
 
-.k-content-history-file-editor {
+.k-content-watch-file-editor {
   font-size: .875rem;
   margin-top: 0.25rem;
   text-align: right;
   opacity: 0.7;
 }
 
-.k-content-history-file-actions {
+.k-content-watch-file-actions {
   display: flex;
   gap: 0.5rem;
 }
@@ -260,7 +264,7 @@ export default {
   transform: rotate(180deg);
 }
 
-.k-content-history-file-timeline {
+.k-content-watch-file-timeline {
   padding: 0.5rem 1rem;
   background-color: var(--color-light);
   border-top: 1px solid var(--color-border);
@@ -312,27 +316,27 @@ export default {
   text-align: right;
 }
 
-.k-content-history-locked .k-item {
+.k-content-watch-locked .k-item {
   padding: 0rem 0.5rem;
   height: unset;
 }
-.k-content-history-locked .k-item-content {
+.k-content-watch-locked .k-item-content {
   line-height: 1.2rem;
 }
-.k-content-history-locked .k-item-content .k-item-info {
+.k-content-watch-locked .k-item-content .k-item-info {
   text-align: right;
 }
 
 @media (prefers-color-scheme: dark) {
-  .k-content-history-file {
+  .k-content-watch-file {
     border-color: var(--color-gray-300);
   }
   
-  .k-content-history-file-header {
+  .k-content-watch-file-header {
     background-color: var(--color-gray-100);
   }
   
-  .k-content-history-file-timeline {
+  .k-content-watch-file-timeline {
     background-color: var(--color-gray-100);
     border-color: var(--color-gray-300);
   }

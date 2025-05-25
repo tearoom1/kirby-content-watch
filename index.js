@@ -686,6 +686,10 @@
         type: Number,
         default: 30
       },
+      retentionCount: {
+        type: Number,
+        default: 10
+      },
       lockedPages: {
         type: Array,
         default: () => []
@@ -726,7 +730,7 @@
         const items = [];
         this.lockedPages.forEach((lock) => {
           items.push({
-            text: '<span class="k-content-history-file-path"><strong>' + lock.title + "</strong><br>" + lock.id + "</span>",
+            text: '<span class="k-content-watch-file-path"><strong>' + lock.title + "</strong><br>" + lock.id + "</span>",
             info: lock.user + " <br> " + lock.date + " (" + this.formatRelative(lock.date) + ")",
             options: [{
               icon: "edit",
@@ -786,18 +790,18 @@
   };
   var _sfc_render = function render() {
     var _vm = this, _c = _vm._self._c;
-    return _c("k-panel-inside", { staticClass: "k-content-history-view" }, [_vm.files.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("k-headline", [_vm._v("Content History")]), _c("k-button-group", { attrs: { "slot": "right" }, slot: "right" }, [_c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1), _c("k-grid", { attrs: { "gutter": "large" } }, [_c("k-column", { attrs: { "width": "1/1" } }, [_c("k-input", { attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.updateSearch }, model: { value: _vm.search, callback: function($$v) {
+    return _c("k-panel-inside", { staticClass: "k-content-watch-view" }, [_vm.files.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("k-headline", [_vm._v("Content Watch")]), _c("k-button-group", { attrs: { "slot": "right" }, slot: "right" }, [_c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1), _c("k-grid", { attrs: { "gutter": "large" } }, [_c("k-column", { attrs: { "width": "1/1" } }, [_c("k-input", { attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.updateSearch }, model: { value: _vm.search, callback: function($$v) {
       _vm.search = $$v;
-    }, expression: "search" } })], 1)], 1), _vm.filteredFiles.length ? _c("div", { staticClass: "k-content-history-files" }, _vm._l(_vm.filteredFiles, function(file, index) {
-      return _c("div", { key: file.id, staticClass: "k-content-history-file", class: { "k-content-history-file-open": _vm.expandedFiles.includes(file.id) } }, [_c("div", { staticClass: "k-content-history-file-header", on: { "click": function($event) {
+    }, expression: "search" } })], 1)], 1), _vm.filteredFiles.length ? _c("div", { staticClass: "k-content-watch-files" }, _vm._l(_vm.filteredFiles, function(file, index) {
+      return _c("div", { key: file.id, staticClass: "k-content-watch-file", class: { "k-content-watch-file-open": _vm.expandedFiles.includes(file.id) } }, [_c("div", { staticClass: "k-content-watch-file-header", on: { "click": function($event) {
         return _vm.toggleFileExpand(file.id);
-      } } }, [_c("div", { staticClass: "k-content-history-file-info" }, [_c("span", { staticClass: "k-content-history-file-path" }, [_c("strong", [_vm._v(_vm._s(file.title))]), _c("br"), _vm._v(_vm._s(file.id) + " ")]), _c("span", { staticClass: "k-content-history-file-editor" }, [_vm._v(" " + _vm._s(file.editor.name || file.editor.email || "Unknown")), _c("br"), _vm._v(" " + _vm._s(_vm.formatRelative(file.modified)) + " ")])]), _c("div", { staticClass: "k-content-history-file-actions" }, [_c("k-button", { class: { "k-button-rotated": _vm.expandedFiles.includes(file.id) }, attrs: { "icon": "angle-down" } }), _c("k-button", { attrs: { "icon": "edit" }, on: { "click": function($event) {
+      } } }, [_c("div", { staticClass: "k-content-watch-file-info" }, [_c("span", { staticClass: "k-content-watch-file-path" }, [_c("strong", [_vm._v(_vm._s(file.title))]), _c("br"), _vm._v(_vm._s(file.path_short) + " ")]), _c("span", { staticClass: "k-content-watch-file-editor" }, [_vm._v(" " + _vm._s(file.editor.name || file.editor.email || "Unknown")), _c("br"), _vm._v(" " + _vm._s(_vm.formatRelative(file.modified)) + " ")])]), _c("div", { staticClass: "k-content-watch-file-actions" }, [_c("k-button", { class: { "k-button-rotated": _vm.expandedFiles.includes(file.id) }, attrs: { "icon": "angle-down" } }), _c("k-button", { attrs: { "icon": "edit" }, on: { "click": function($event) {
         $event.stopPropagation();
         return _vm.openFile(file);
-      } } })], 1)]), _vm.expandedFiles.includes(file.id) ? _c("div", { staticClass: "k-content-history-file-timeline" }, [file.history && file.history.length > 0 ? _c("div", { staticClass: "k-timeline-list" }, _vm._l(file.history, function(entry, entryIndex) {
+      } } })], 1)]), _vm.expandedFiles.includes(file.id) ? _c("div", { staticClass: "k-content-watch-file-timeline" }, [file.history && file.history.length > 0 ? _c("div", { staticClass: "k-timeline-list" }, _vm._l(file.history, function(entry, entryIndex) {
         return _c("div", { key: entryIndex, staticClass: "k-timeline-item" }, [_c("div", { staticClass: "k-timeline-item-time" }, [_vm._v(" " + _vm._s(entry.time_formatted) + " ")]), _c("div", { staticClass: "k-timeline-item-time-rel" }, [_vm._v(" " + _vm._s(_vm.formatRelative(entry.time)) + " ")]), _c("div", { staticClass: "k-timeline-item-content" }, [_c("span", { staticClass: "k-timeline-item-editor" }, [_vm._v("edited by " + _vm._s(entry.editor.name || entry.editor.email || "Unknown"))])])]);
-      }), 0) : _c("k-empty", { attrs: { "icon": "history", "text": "No history entries found" } }), _c("div", { staticClass: "k-timeline-footer" }, [_c("span", [_vm._v("Showing changes for the last " + _vm._s(_vm.retentionDays) + " days")])])], 1) : _vm._e()]);
-    }), 0) : _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }), _vm.isLoading ? _c("k-loader") : _vm._e()], 1) : _vm._e(), _vm.lockedPages.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("k-headline", [_vm._v("Locked pages")])], 1), _c("k-collection", { staticClass: "k-content-history-locked", attrs: { "items": _vm.lockItems } })], 1) : _vm._e()]);
+      }), 0) : _c("k-empty", { attrs: { "icon": "history", "text": "No history entries found" } }), _c("div", { staticClass: "k-timeline-footer" }, [_c("span", [_vm._v("Showing changes for the last " + _vm._s(_vm.retentionDays) + " days (max " + _vm._s(_vm.retentionCount) + ")")])])], 1) : _vm._e()]);
+    }), 0) : _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }), _vm.isLoading ? _c("k-loader") : _vm._e()], 1) : _vm._e(), _vm.lockedPages.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("k-headline", [_vm._v("Locked pages")])], 1), _c("k-collection", { staticClass: "k-content-watch-locked", attrs: { "items": _vm.lockItems } })], 1) : _vm._e()]);
   };
   var _sfc_staticRenderFns = [];
   _sfc_render._withStripped = true;
@@ -806,11 +810,11 @@
     _sfc_render,
     _sfc_staticRenderFns
   );
-  __component__.options.__file = "/Users/mathis/Work/Clients/Rasmus Bielefeld/erasmus-bielefeld.de/site/plugins/content-history/js/components/ContentHistory.vue";
-  const ContentHistory = __component__.exports;
-  panel.plugin("tearoom1/content-history", {
+  __component__.options.__file = "/Users/mathis/Work/Clients/Rasmus Bielefeld/erasmus-bielefeld.de/site/plugins/content-watch/js/components/ContentWatch.vue";
+  const ContentWatch = __component__.exports;
+  panel.plugin("tearoom1/content-watch", {
     components: {
-      "content-history": ContentHistory
+      "content-watch": ContentWatch
     }
   });
 })();

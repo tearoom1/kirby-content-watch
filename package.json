@@ -1,5 +1,5 @@
 {
-  "name": "kirby-content-history",
+  "name": "kirby-content-watch",
   "scripts": {
     "dev": "npx -y kirbyup js/index.js --watch",
     "build": "npx -y kirbyup js/index.js",

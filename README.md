@@ -15,12 +15,12 @@ This plugin adds a panel view that displays all content files in your Kirby site
 ### Manual
 
 1. Download or clone this repository
-2. Place the folder `content-history` in `/site/plugins/`
+2. Place the folder `content-watch` in `/site/plugins/`
 
 ### Composer
 
 ```bash
-composer require my/content-history
+composer require my/content-watch
 ```
 
 ## Usage
@@ -33,6 +33,6 @@ You can configure the plugin in your `config.php`:
 
 ```php
 return [
-    'my.content-history.pagination' => 20, // Number of items per page
+    'my.content-watch.pagination' => 20, // Number of items per page
 ];
 ```

@@ -1,5 +1,5 @@
 {
-  "name": "my/content-history",
+  "name": "tearoom1/kirby-content-watch",
   "description": "A Kirby plugin that shows a list of all content files sorted by modification date with editor information",
   "type": "kirby-plugin",
   "license": "MIT",
@@ -18,11 +18,11 @@
   },
   "autoload": {
     "psr-4": {
-      "ContentHistory\\": "src/"
+      "ContentWatch\\": "src/"
     }
   },
   "extra": {
-    "installer-name": "content-history",
+    "installer-name": "kirby-content-watch",
     "kirby-cms-path": false
   },
   "config": {

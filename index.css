@@ -1,18 +1,18 @@
 
-.k-content-history-files {
+.k-content-watch-files {
   margin-top: 1rem;
 }
-.k-content-history-file {
+.k-content-watch-file {
   border: 1px solid var(--color-border);
   border-radius: 4px;
   margin-bottom: 0.5rem;
   overflow: hidden;
   transition: all 0.3s ease;
 }
-.k-content-history-file-open {
+.k-content-watch-file-open {
   box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
-.k-content-history-file-header {
+.k-content-watch-file-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -20,31 +20,31 @@
   cursor: pointer;
   background-color: var(--color-white);
 }
-.k-content-history-file-info {
+.k-content-watch-file-info {
   display: flex;
   justify-content: space-between;
   width: 100%;
   line-height: 1.2rem;
 }
-.k-content-history-file-path {
+.k-content-watch-file-path {
   font-size: .875rem;
   opacity: 0.7;
   margin-top: 0.25rem;
 }
-.k-content-history-file-editor {
+.k-content-watch-file-editor {
   font-size: .875rem;
   margin-top: 0.25rem;
   text-align: right;
   opacity: 0.7;
 }
-.k-content-history-file-actions {
+.k-content-watch-file-actions {
   display: flex;
   gap: 0.5rem;
 }
 .k-button-rotated {
   transform: rotate(180deg);
 }
-.k-content-history-file-timeline {
+.k-content-watch-file-timeline {
   padding: 0.5rem 1rem;
   background-color: var(--color-light);
   border-top: 1px solid var(--color-border);
@@ -87,24 +87,24 @@
   color: var(--color-gray-800);
   text-align: right;
 }
-.k-content-history-locked .k-item {
+.k-content-watch-locked .k-item {
   padding: 0rem 0.5rem;
   height: unset;
 }
-.k-content-history-locked .k-item-content {
+.k-content-watch-locked .k-item-content {
   line-height: 1.2rem;
 }
-.k-content-history-locked .k-item-content .k-item-info {
+.k-content-watch-locked .k-item-content .k-item-info {
   text-align: right;
 }
 @media (prefers-color-scheme: dark) {
-.k-content-history-file {
+.k-content-watch-file {
     border-color: var(--color-gray-300);
 }
-.k-content-history-file-header {
+.k-content-watch-file-header {
     background-color: var(--color-gray-100);
 }
-.k-content-history-file-timeline {
+.k-content-watch-file-timeline {
     background-color: var(--color-gray-100);
     border-color: var(--color-gray-300);
 }

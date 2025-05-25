@@ -1,9 +1,9 @@
 /* global panel */
 
-import ContentHistory from './components/ContentHistory.vue'
+import ContentWatch from './components/ContentWatch.vue'
 
-panel.plugin('tearoom1/content-history', {
+panel.plugin('tearoom1/content-watch', {
   components: {
-    'content-history': ContentHistory
+    'content-watch': ContentWatch
   }
 })
