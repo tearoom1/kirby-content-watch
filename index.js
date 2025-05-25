@@ -700,7 +700,8 @@
         isLoading: false,
         search: "",
         filteredFiles: [],
-        expandedFiles: []
+        expandedFiles: [],
+        restoreTarget: null
       };
     },
     created() {
@@ -785,10 +786,38 @@
         return formatDistance(new Date(date * 1e3), /* @__PURE__ */ new Date(), {
           addSuffix: true
         });
+      },
+      confirmRestore(file, entry) {
+        this.restoreTarget = { file, entry };
+        this.$refs.restoreDialog.open();
+      },
+      async restoreContent() {
+        if (!this.restoreTarget) return;
+        const { file, entry } = this.restoreTarget;
+        this.isLoading = true;
+        try {
+          const response = await this.$api.post("/content-watch/restore", {
+            dirPath: file.dir_path,
+            fileKey: file.id,
+            timestamp: entry.time
+          });
+          if (response.status === "success") {
+            this.$store.dispatch("notification/success", "Content restored successfully");
+            this.refresh();
+          } else {
+            this.$store.dispatch("notification/error", response.message || "Failed to restore content");
+          }
+        } catch (error) {
+          this.$store.dispatch("notification/error", "Error restoring content: " + (error.message || "Unknown error"));
+        } finally {
+          this.isLoading = false;
+          this.restoreTarget = null;
+        }
       }
     }
   };
   var _sfc_render = function render() {
+    var _a, _b, _c2;
     var _vm = this, _c = _vm._self._c;
     return _c("k-panel-inside", { staticClass: "k-content-watch-view" }, [_vm.files.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("k-headline", [_vm._v("Content Watch")]), _c("k-button-group", { attrs: { "slot": "right" }, slot: "right" }, [_c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1), _c("k-grid", { attrs: { "gutter": "large" } }, [_c("k-column", { attrs: { "width": "1/1" } }, [_c("k-input", { attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.updateSearch }, model: { value: _vm.search, callback: function($$v) {
       _vm.search = $$v;
@@ -799,9 +828,12 @@
         $event.stopPropagation();
         return _vm.openFile(file);
       } } })], 1)]), _vm.expandedFiles.includes(file.id) ? _c("div", { staticClass: "k-content-watch-file-timeline" }, [file.history && file.history.length > 0 ? _c("div", { staticClass: "k-timeline-list" }, _vm._l(file.history, function(entry, entryIndex) {
-        return _c("div", { key: entryIndex, staticClass: "k-timeline-item" }, [_c("div", { staticClass: "k-timeline-item-time" }, [_vm._v(" " + _vm._s(entry.time_formatted) + " ")]), _c("div", { staticClass: "k-timeline-item-time-rel" }, [_vm._v(" " + _vm._s(_vm.formatRelative(entry.time)) + " ")]), _c("div", { staticClass: "k-timeline-item-content" }, [_c("span", { staticClass: "k-timeline-item-editor" }, [_vm._v("edited by " + _vm._s(entry.editor.name || entry.editor.email || "Unknown"))])])]);
+        return _c("div", { key: entryIndex, staticClass: "k-timeline-item" }, [_c("div", { staticClass: "k-timeline-item-time" }, [_vm._v(" " + _vm._s(entry.time_formatted) + " ")]), _c("div", { staticClass: "k-timeline-item-time-rel" }, [_vm._v(" " + _vm._s(_vm.formatRelative(entry.time)) + " ")]), _c("div", { staticClass: "k-timeline-item-content" }, [_c("span", { staticClass: "k-timeline-item-editor" }, [_vm._v(" " + _vm._s(entry.restored_from ? "restored by" : "edited by") + " " + _vm._s(entry.editor.name || entry.editor.email || "Unknown") + " "), entry.has_snapshot && entryIndex > 0 ? _c("k-button", { staticClass: "k-restore-button", attrs: { "icon": "refresh", "title": "Restore this version" }, on: { "click": function($event) {
+          $event.stopPropagation();
+          return _vm.confirmRestore(file, entry);
+        } } }) : _vm._e()], 1)])]);
       }), 0) : _c("k-empty", { attrs: { "icon": "history", "text": "No history entries found" } }), _c("div", { staticClass: "k-timeline-footer" }, [_c("span", [_vm._v("Showing changes for the last " + _vm._s(_vm.retentionDays) + " days (max " + _vm._s(_vm.retentionCount) + ")")])])], 1) : _vm._e()]);
-    }), 0) : _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }), _vm.isLoading ? _c("k-loader") : _vm._e()], 1) : _vm._e(), _vm.lockedPages.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("k-headline", [_vm._v("Locked pages")])], 1), _c("k-collection", { staticClass: "k-content-watch-locked", attrs: { "items": _vm.lockItems } })], 1) : _vm._e()]);
+    }), 0) : _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }), _vm.isLoading ? _c("k-loader") : _vm._e()], 1) : _vm._e(), _vm.lockedPages.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("k-headline", [_vm._v("Locked pages")])], 1), _c("k-collection", { staticClass: "k-content-watch-locked", attrs: { "items": _vm.lockItems } })], 1) : _vm._e(), _c("k-dialog", { ref: "restoreDialog", attrs: { "button": _vm.$t("restore"), "theme": "positive", "icon": "refresh" }, on: { "submit": _vm.restoreContent } }, [_c("k-text", [_vm._v("Are you sure you want to restore this version?")]), _vm.restoreTarget ? _c("k-text", [_c("strong", [_vm._v("File:")]), _vm._v(" " + _vm._s((_a = _vm.restoreTarget.file) == null ? void 0 : _a.title)), _c("br"), _c("strong", [_vm._v("Version:")]), _vm._v(" " + _vm._s((_b = _vm.restoreTarget.entry) == null ? void 0 : _b.time_formatted) + " (" + _vm._s(_vm.formatRelative((_c2 = _vm.restoreTarget.entry) == null ? void 0 : _c2.time)) + ") ")]) : _vm._e(), _c("k-text", [_vm._v("This will overwrite the current content with this previous version.")])], 1)], 1);
   };
   var _sfc_staticRenderFns = [];
   _sfc_render._withStripped = true;

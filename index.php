@@ -1,7 +1,8 @@
 <?php
 
 // support manual installation in plugins folder
-use Kirby\Cms\ModelWithContent;
+use Kirby\Http\Response;
+use TearoomOne\ContentWatch\ContentWatchController;
 
 load([
     'TearoomOne\\ContentWatch\\ContentWatchController' => 'src/ContentWatchController.php',
@@ -11,8 +12,6 @@ load([
 if (option('tearoom1.content-watch.disable', false)) {
     return;
 }
-
-use TearoomOne\ContentWatch\ContentWatchController;
 
 Kirby::plugin('tearoom1/kirby-content-watch', [
     'hooks' => [
@@ -40,4 +39,51 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         'retentionDays' => 30, // default to 30 days of history
         'enableLockedPages' => true,
     ],
+    'api' => [
+        'routes' => [
+            [
+                'pattern' => '/content-watch/restore',
+                'method' => 'POST',
+                'action' => function () {
+                    // Get the current user
+                    if (!$user = kirby()->user()) {
+                        return Response::json([
+                            'status' => 'error',
+                            'message' => 'Unauthorized'
+                        ], 401);
+                    }
+
+                    // Get data from request
+                    $request = kirby()->request();
+                    $dirPath = $request->get('dirPath');
+                    $fileKey = $request->get('fileKey');
+                    $timestamp = (int)$request->get('timestamp');
+
+                    // Validate data
+                    if (!$dirPath || !$fileKey || !$timestamp) {
+                        return Response::json([
+                            'status' => 'error',
+                            'message' => 'Missing required parameters'
+                        ], 400);
+                    }
+
+                    // Restore content
+                    $contentWatchController = new ContentWatchController();
+                    $success = $contentWatchController->restoreContent($dirPath, $fileKey, $timestamp);
+
+                    if ($success) {
+                        return Response::json([
+                            'status' => 'success',
+                            'message' => 'Content restored successfully'
+                        ]);
+                    } else {
+                        return Response::json([
+                            'status' => 'error',
+                            'message' => 'Failed to restore content'
+                        ], 500);
+                    }
+                }
+            ]
+        ]
+    ]
 ]);

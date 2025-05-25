@@ -54,7 +54,16 @@
                   {{ formatRelative(entry.time) }}
                 </div>
                 <div class="k-timeline-item-content">
-                  <span class="k-timeline-item-editor">edited by {{ entry.editor.name || entry.editor.email || 'Unknown' }}</span>
+                  <span class="k-timeline-item-editor">
+                    {{ entry.restored_from ? 'restored by' : 'edited by' }} {{ entry.editor.name || entry.editor.email || 'Unknown' }}
+                    <k-button 
+                      v-if="entry.has_snapshot && entryIndex > 0" 
+                      @click.stop="confirmRestore(file, entry)" 
+                      icon="refresh" 
+                      class="k-restore-button" 
+                      title="Restore this version"
+                    />
+                  </span>
                 </div>
               </div>
             </div>
@@ -77,6 +86,22 @@
       </k-header>
       <k-collection :items="lockItems" class="k-content-watch-locked"/>
     </section>
+    
+    <!-- Confirmation dialog for restore -->
+    <k-dialog
+      ref="restoreDialog"
+      :button="$t('restore')"
+      theme="positive"
+      icon="refresh"
+      @submit="restoreContent"
+    >
+      <k-text>Are you sure you want to restore this version?</k-text>
+      <k-text v-if="restoreTarget">
+        <strong>File:</strong> {{ restoreTarget.file?.title }}<br>
+        <strong>Version:</strong> {{ restoreTarget.entry?.time_formatted }} ({{ formatRelative(restoreTarget.entry?.time) }})
+      </k-text>
+      <k-text>This will overwrite the current content with this previous version.</k-text>
+    </k-dialog>
   </k-panel-inside>
 </template>
 
@@ -106,7 +131,8 @@ export default {
       isLoading: false,
       search: '',
       filteredFiles: [],
-      expandedFiles: []
+      expandedFiles: [],
+      restoreTarget: null
     };
   },
 
@@ -204,6 +230,39 @@ export default {
       return formatDistance(new Date(date * 1000), new Date(), {
         addSuffix: true
       });
+    },
+    
+    confirmRestore(file, entry) {
+      this.restoreTarget = { file, entry };
+      this.$refs.restoreDialog.open();
+    },
+    
+    async restoreContent() {
+      if (!this.restoreTarget) return;
+      
+      const { file, entry } = this.restoreTarget;
+      
+      this.isLoading = true;
+      
+      try {
+        const response = await this.$api.post('/content-watch/restore', {
+          dirPath: file.dir_path,
+          fileKey: file.id,
+          timestamp: entry.time
+        });
+        
+        if (response.status === 'success') {
+          this.$store.dispatch('notification/success', 'Content restored successfully');
+          this.refresh();
+        } else {
+          this.$store.dispatch('notification/error', response.message || 'Failed to restore content');
+        }
+      } catch (error) {
+        this.$store.dispatch('notification/error', 'Error restoring content: ' + (error.message || 'Unknown error'));
+      } finally {
+        this.isLoading = false;
+        this.restoreTarget = null;
+      }
     }
   }
 };
@@ -302,10 +361,23 @@ export default {
   margin-left: 1rem;
   text-align: right;
   opacity: 0.7;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .k-timeline-item-editor {
   font-size: .875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.k-restore-button {
+  padding: 0.2rem !important;
+  height: auto !important;
+  line-height: 1 !important;
+  color: var(--color-positive) !important;
 }
 
 .k-timeline-footer {

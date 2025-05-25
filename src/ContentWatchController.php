@@ -1,7 +1,9 @@
 <?php
+
 namespace TearoomOne\ContentWatch;
 
 use Kirby\Cms\ModelWithContent;
+use Kirby\Filesystem\F;
 
 class ContentWatchController
 {
@@ -19,13 +21,19 @@ class ContentWatchController
             'time' => time()
         ];
 
+        $language = kirby()->language();
+
         // Determine the history file path and filename key
         if ($content instanceof \Kirby\Cms\Page) {
             $dirPath = $content->root();
-            $fileKey = $content->slug();
-        }else {
+            $fileKey = $content->uid();
+            $contentFile = $dirPath . '/' . $fileKey . '.' . $language . '.txt';
+            $contentSnapshot = F::read($contentFile);
+        } else {
             $dirPath = dirname($content->root());
             $fileKey = $content->filename();
+            $contentFile = $content->root();
+            $contentSnapshot = F::read($contentFile);
         }
 
         if (!$fileKey) return;
@@ -65,11 +73,15 @@ class ContentWatchController
         $retentionCount = (int)option('tearoom1.content-watch.retentionCount', 10);
         $cutoffTime = time() - ($retentionDays * 86400); // 86400 seconds per day
 
+        // Add content snapshot to editor data
+        $editorData['content'] = $contentSnapshot;
+        $editorData['content_file'] = $contentFile;
+
         // Add new history entry to the beginning of the array
         array_unshift($history[$fileKey], $editorData);
 
         // Filter out entries older than the retention period
-        $history[$fileKey] = array_filter($history[$fileKey], function($entry) use ($retentionCount) {
+        $history[$fileKey] = array_filter($history[$fileKey], function ($entry) use ($retentionCount) {
             return isset($entry['time']) && $entry['time'];
         });
 
@@ -83,6 +95,68 @@ class ContentWatchController
             file_put_contents($editorFile, json_encode($history));
         } catch (\Exception $e) {
             // Silently fail if we can't write the file
+        }
+    }
+
+    /**
+     * Restore content from a history snapshot
+     *
+     * @param string $dirPath Directory path where .content-watch.json is located
+     * @param string $fileKey File key in the history
+     * @param int $timestamp Timestamp of the history entry to restore
+     * @return bool True if restored successfully, false otherwise
+     */
+    public function restoreContent(string $dirPath, string $fileKey, int $timestamp): bool
+    {
+        $editorFile = $dirPath . '/.content-watch.json';
+
+        if (!file_exists($editorFile)) {
+            return false;
+        }
+
+        try {
+            $history = json_decode(file_get_contents($editorFile), true) ?: [];
+
+            if (!isset($history[$fileKey]) || !is_array($history[$fileKey])) {
+                return false;
+            }
+
+            // Find the entry with the matching timestamp
+            $entryToRestore = null;
+            foreach ($history[$fileKey] as $entry) {
+                if (isset($entry['time']) && $entry['time'] == $timestamp) {
+                    $entryToRestore = $entry;
+                    break;
+                }
+            }
+
+            if (!$entryToRestore || !isset($entryToRestore['content']) || !isset($entryToRestore['content_file'])) {
+                return false;
+            }
+
+            // Restore the content
+            F::write($entryToRestore['content_file'], $entryToRestore['content']);
+
+            // Add restoration note to history
+            $user = kirby()->user();
+            if ($user) {
+                $editorData = [
+                    'id' => $user->id(),
+                    'name' => (string)$user->name(),
+                    'email' => (string)$user->email(),
+                    'time' => time(),
+                    'restored_from' => $timestamp,
+                    'content' => $entryToRestore['content'],
+                    'content_file' => $entryToRestore['content_file']
+                ];
+
+                array_unshift($history[$fileKey], $editorData);
+                file_put_contents($editorFile, json_encode($history));
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
         }
     }
 
@@ -136,11 +210,11 @@ class ContentWatchController
      * @param array $files
      * @param array $allHistoryEntries
      */
-    public function processFile(mixed $file,
-                                       ?string $contentDir,
-                                       array $historyFiles,
-                                       array &$files,
-                                       array &$allHistoryEntries): void
+    public function processFile(mixed   $file,
+                                ?string $contentDir,
+                                array   $historyFiles,
+                                array   &$files,
+                                array   &$allHistoryEntries): void
     {
         $filePath = $file->getPathname();
         $isMediaFile = file_exists(preg_replace('%(\.[a-z]{2})?\.txt$%', '', $filePath));
@@ -160,7 +234,7 @@ class ContentWatchController
             $fileName = preg_replace('%(\.[a-z]{2})?\.txt$%', '', $fileName);
             $title = 'File: ' . $fileName;
             $fileId = $fileName;
-        }else {
+        } else {
             $fileName = basename($fileId);
 
             $page = kirby()->page($fileId);
@@ -216,7 +290,8 @@ class ContentWatchController
                 'email' => $editor['email']
             ],
             'panel_url' => $panelUrl,
-            'history' => []
+            'history' => [],
+            'dir_path' => $dirPath
         ];
 
         // Add history entries
@@ -225,15 +300,19 @@ class ContentWatchController
                 continue; // Skip non-array entries
             }
 
-            $fileData['history'][] = [
+            $historyEntry = [
                 'editor' => [
                     'id' => $entry['id'] ?? 'unknown',
                     'name' => $entry['name'] ?? 'Unknown',
                     'email' => $entry['email'] ?? ''
                 ],
                 'time' => $entry['time'] ?? 0,
-                'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0)
+                'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0),
+                'has_snapshot' => isset($entry['content']),
+                'restored_from' => $entry['restored_from'] ?? null
             ];
+
+            $fileData['history'][] = $historyEntry;
         }
 
         $files[] = $fileData;
@@ -244,7 +323,7 @@ class ContentWatchController
                 continue; // Skip non-array entries
             }
 
-            $allHistoryEntries[] = [
+            $historyEntry = [
                 'file_id' => $fileId,
                 'file_path' => dirname($relativePath),
                 'file_title' => $title,
@@ -255,8 +334,13 @@ class ContentWatchController
                     'email' => $entry['email'] ?? ''
                 ],
                 'time' => $entry['time'] ?? 0,
-                'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0)
+                'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0),
+                'has_snapshot' => isset($entry['content']),
+                'restored_from' => $entry['restored_from'] ?? null,
+                'dir_path' => $dirPath
             ];
+
+            $allHistoryEntries[] = $historyEntry;
         }
     }
 
@@ -300,7 +384,7 @@ class ContentWatchController
         }
         return $lockFiles;
     }
-    
+
     public function getLockFiles($dir, &$results = array())
     {
         $files = scandir($dir);

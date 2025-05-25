@@ -16,6 +16,7 @@ Additionally it provides a view to see which pages are currently locked and by w
 - **Search Functionality**: Quickly find specific content files
 - **Direct Panel Links**: One-click access to edit content in the Panel
 - **Customizable Retention**: Configure how long history is kept
+- **Version Restore**: Restore previous versions of content with a single click
 
 ## Installation
 
@@ -36,6 +37,8 @@ After installation, you'll see a new "Content Watch" item in the Panel menu. Cli
 
 - **Files View**: All content files with their modification history
 - **Locked Pages**: Overview of currently locked pages and who is editing them
+
+Each file in the list can be expanded to show its modification history. For each history entry with a snapshot, a restore button is available to revert to that previous version.
 
 ## Configuration
 
@@ -58,7 +61,12 @@ return [
 
 ## How It Works
 
-The plugin creates a `.content-watch.json` file in each content directory that has been modified. This file stores the history of changes including editor information and timestamps.
+The plugin creates a `.content-watch.json` file in each content directory that has been modified. This file stores the history of changes including editor information, timestamps, and content snapshots for restoration.
+
+When you restore a previous version, the plugin will:
+1. Extract the content from the saved snapshot
+2. Overwrite the current content file
+3. Record this restoration in the history with a reference to the restored version
 
 History entries are automatically pruned based on your retention settings.
 
