@@ -6,7 +6,7 @@ use TearoomOne\ContentWatch\ContentWatchController;
 
 return [
     'label' => 'Content Watch',
-    'icon' => 'history',
+    'icon' => 'text-justify',
     'menu' => true,
     'link' => 'content-watch',
     'views' => [
