@@ -96,11 +96,7 @@ class ContentWatchController
         }
 
         // Save the updated history
-        try {
-            file_put_contents($editorFile, json_encode($history));
-        } catch (\Exception $e) {
-            // Silently fail if we can't write the file
-        }
+        $this->saveTheUpdatedHistory($editorFile, $history);
     }
 
     /**
@@ -169,7 +165,7 @@ class ContentWatchController
                 ];
 
                 array_unshift($history[$fileKey], $record);
-                file_put_contents($editorFile, json_encode($history));
+                $this->saveTheUpdatedHistory($editorFile, $history);
             }
 
             return true;
@@ -396,5 +392,19 @@ class ContentWatchController
         }
 
         return $results;
+    }
+
+    /**
+     * @param string $editorFile
+     * @param mixed $history
+     * @return void
+     */
+    public function saveTheUpdatedHistory(string $editorFile, mixed $history): void
+    {
+        try {
+            file_put_contents($editorFile, json_encode($history, JSON_PRETTY_PRINT));
+        } catch (\Exception $e) {
+            // Silently fail if we can't write the file
+        }
     }
 }
