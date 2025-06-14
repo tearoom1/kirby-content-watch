@@ -18,13 +18,13 @@ class ContentWatchController
             'time' => time()
         ];
 
-        $language = kirby()->language()->code();
-
         // Determine the history file path and filename key
         if ($content instanceof \Kirby\Cms\Page) {
             $dirPath = $content->root();
             $fileKey = $content->template()->name();
-            if (option('tearoom1.content-watch.enableRestore') === true) {
+            $kirbyLanguage = kirby()->language();
+            if ($kirbyLanguage && option('tearoom1.content-watch.enableRestore') === true) {
+                $language = $kirbyLanguage->code();
                 $contentFile = $dirPath . '/' . $fileKey . '.' . $language . '.txt';
                 $contentSnapshot = F::read($contentFile);
                 $record['content'] = $contentSnapshot;
