@@ -369,6 +369,7 @@ class ContentWatchController
                 'id' => $fileId,
                 'title' => $title,
                 'dir' => $fileDir,
+                'time' => (int) $time,
                 'date' => $date,
                 'user' => $userString
             ];

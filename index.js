@@ -738,7 +738,7 @@
         this.lockedPages.forEach((lock) => {
           items.push({
             text: '<span class="k-content-watch-file-path"><strong>' + lock.title + "</strong><br>" + lock.id + "</span>",
-            info: lock.user + " <br> " + lock.date + " (" + this.formatRelative(lock.date) + ")",
+            info: lock.user + " <br> " + lock.date + " (" + this.formatRelative(lock.time) + ")",
             options: [{
               icon: "edit",
               click: () => this.open(lock.id)
