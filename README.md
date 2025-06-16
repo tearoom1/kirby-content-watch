@@ -20,7 +20,11 @@ Additionally it provides a view to see which pages are currently locked and by w
 
 ## Known Limitations
 
-The restoration feature  has some limitations
+This plugin has been developed for rather smaller websites. It has not been tested on big sites or slow servers.
+It stores all history entries in a single file for each content directory, and goes through them each time you open the plugins page. 
+This may be a problem for sites with a large number of files.
+
+The restore feature also has some limitations
 - only works with multilanguage sites atm
 - binary files are not supported
 - when restoring a page, its files are not restored
