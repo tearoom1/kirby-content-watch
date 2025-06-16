@@ -73,7 +73,7 @@
   };
   var defaultRoundingMethod = "trunc";
   function getRoundingMethod(method) {
-    return method ? roundingMap[method] : roundingMap[defaultRoundingMethod];
+    return roundingMap[defaultRoundingMethod];
   }
   function endOfDay(dirtyDate) {
     requiredArgs(1, arguments);
@@ -119,7 +119,7 @@
   function differenceInSeconds(dateLeft, dateRight, options) {
     requiredArgs(2, arguments);
     var diff = differenceInMilliseconds(dateLeft, dateRight) / 1e3;
-    return getRoundingMethod(void 0)(diff);
+    return getRoundingMethod()(diff);
   }
   var formatDistanceLocale = {
     lessThanXSeconds: {
@@ -706,7 +706,14 @@
         filteredFiles: [],
         expandedFiles: [],
         restoreTarget: null,
-        showOnlyPages: true
+        showOnlyPages: true,
+        currentPage: 1,
+        pageSize: 10,
+        pageSizeOptions: [
+          { text: "10 per page", value: 10 },
+          { text: "20 per page", value: 20 },
+          { text: "50 per page", value: 50 }
+        ]
       };
     },
     created() {
@@ -714,6 +721,17 @@
       this.filterFiles();
     },
     computed: {
+      totalPages() {
+        return Math.max(1, Math.ceil(this.filteredFiles.length / (this.pageSize || 10)));
+      },
+      paginationStart() {
+        return (this.currentPage - 1) * (this.pageSize || 10);
+      },
+      paginatedFiles() {
+        const start = this.paginationStart;
+        const end = start + (this.pageSize || 10);
+        return this.filteredFiles.slice(start, end);
+      },
       items() {
         return this.filteredFiles.map((file) => {
           var _a, _b;
@@ -781,6 +799,7 @@
         this.filteredFiles = filtered.filter(
           (file) => file.title.toLowerCase().includes(searchLower) || file.path.toLowerCase().includes(searchLower)
         );
+        this.currentPage = 1;
       },
       toggleShowOnlyPages() {
         this.showOnlyPages = true;
@@ -789,6 +808,28 @@
       toggleShowAll() {
         this.showOnlyPages = false;
         this.filterFiles();
+      },
+      prevPage() {
+        if (this.currentPage > 1) {
+          this.currentPage--;
+        }
+        return false;
+      },
+      nextPage() {
+        if (this.currentPage < this.totalPages) {
+          this.currentPage++;
+        }
+        return false;
+      },
+      changePageSize(size) {
+        let newSize;
+        if (typeof size === "object" && size !== null) {
+          newSize = size.value || 10;
+        } else {
+          newSize = parseInt(size, 10) || 10;
+        }
+        this.pageSize = newSize;
+        this.currentPage = 1;
       },
       formatRelative(date) {
         if (typeof date === "string") {
@@ -835,7 +876,7 @@
     var _vm = this, _c = _vm._self._c;
     return _c("k-panel-inside", { staticClass: "k-content-watch-view" }, [_vm.files.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("k-headline", [_vm._v("Content Watch")]), _c("k-button-group", { attrs: { "slot": "right" }, slot: "right" }, [_c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1), _c("k-grid", { attrs: { "gutter": "small" } }, [_c("k-column", { attrs: { "width": "2/3" } }, [_c("k-input", { staticClass: "k-content-watch-search", attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.filterFiles }, model: { value: _vm.search, callback: function($$v) {
       _vm.search = $$v;
-    }, expression: "search" } })], 1), _c("k-column", { attrs: { "width": "1/3" } }, [_c("k-button-group", [_c("k-button", { class: { "k-button-active": _vm.showOnlyPages }, attrs: { "icon": "page" }, on: { "click": _vm.toggleShowOnlyPages } }, [_vm._v("Pages only")]), _c("k-button", { class: { "k-button-active": !_vm.showOnlyPages }, attrs: { "icon": "file-document" }, on: { "click": _vm.toggleShowAll } }, [_vm._v("All files")])], 1)], 1)], 1), _vm.filteredFiles.length ? _c("div", { staticClass: "k-content-watch-files" }, _vm._l(_vm.filteredFiles, function(file, index) {
+    }, expression: "search" } })], 1), _c("k-column", { attrs: { "width": "1/3" } }, [_c("k-button-group", [_c("k-button", { class: { "k-button-active": _vm.showOnlyPages }, attrs: { "icon": "page" }, on: { "click": _vm.toggleShowOnlyPages } }, [_vm._v("Pages only")]), _c("k-button", { class: { "k-button-active": !_vm.showOnlyPages }, attrs: { "icon": "file-document" }, on: { "click": _vm.toggleShowAll } }, [_vm._v("All files")])], 1)], 1)], 1), _vm.paginatedFiles.length ? _c("div", { staticClass: "k-content-watch-files" }, _vm._l(_vm.paginatedFiles, function(file, index) {
       return _c("div", { key: file.id, staticClass: "k-content-watch-file", class: { "k-content-watch-file-open": _vm.expandedFiles.includes(file.id) } }, [_c("div", { staticClass: "k-content-watch-file-header", on: { "click": function($event) {
         return _vm.toggleFileExpand(file.id);
       } } }, [_c("div", { staticClass: "k-content-watch-file-info" }, [_c("span", { staticClass: "k-content-watch-file-path" }, [_c("strong", [_vm._v(_vm._s(file.title))]), _c("br"), _vm._v(_vm._s(file.path_short) + " ")]), _c("span", { staticClass: "k-content-watch-file-editor" }, [_vm._v(" " + _vm._s(file.editor.name || file.editor.email || "Unknown")), _c("br"), _vm._v(" " + _vm._s(_vm.formatRelative(file.modified)) + " ")])]), _c("div", { staticClass: "k-content-watch-file-actions" }, [_c("k-button", { class: { "k-button-rotated": _vm.expandedFiles.includes(file.id) }, attrs: { "icon": "angle-down" } }), _c("k-button", { attrs: { "icon": "edit" }, on: { "click": function($event) {
@@ -847,7 +888,15 @@
           return _vm.confirmRestore(file, entry);
         } } }) : _vm._e()], 1), _c("div", { staticClass: "k-timeline-item-line" })]);
       }), 0) : _c("k-empty", { attrs: { "icon": "history", "text": "No history entries found" } }), _c("div", { staticClass: "k-timeline-footer" }, [_c("span", [_vm._v("Showing changes for the last " + _vm._s(_vm.retentionDays) + " days (max " + _vm._s(_vm.retentionCount) + ")")])])], 1) : _vm._e()]);
-    }), 0) : _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }), _vm.isLoading ? _c("k-loader") : _vm._e()], 1) : _vm._e(), _vm.lockedPages.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("k-headline", [_vm._v("Locked pages")])], 1), _c("k-collection", { staticClass: "k-content-watch-locked", attrs: { "items": _vm.lockItems } })], 1) : _vm._e(), _vm.enableRestore ? _c("k-dialog", { ref: "restoreDialog", attrs: { "button": _vm.$t("restore"), "theme": "positive", "icon": "refresh" }, on: { "submit": _vm.restoreContent } }, [_c("k-text", [_vm._v("Are you sure you want to restore this version?")]), _vm.restoreTarget ? _c("k-text", [_c("strong", [_vm._v("File:")]), _vm._v(" " + _vm._s((_a = _vm.restoreTarget.file) == null ? void 0 : _a.title)), _c("br"), _c("strong", [_vm._v("Version:")]), _vm._v(" " + _vm._s((_b = _vm.restoreTarget.entry) == null ? void 0 : _b.time_formatted) + " (" + _vm._s(_vm.formatRelative((_c2 = _vm.restoreTarget.entry) == null ? void 0 : _c2.time)) + ") ")]) : _vm._e(), _c("k-text", [_vm._v("This will overwrite the current content with this previous version.")])], 1) : _vm._e()], 1);
+    }), 0) : _vm._e(), _vm.filteredFiles.length ? _c("div", { staticClass: "k-content-watch-pagination" }, [_c("div", { staticClass: "k-content-watch-pagination-info" }, [_vm._v(" Showing " + _vm._s(_vm.paginationStart + 1) + " - " + _vm._s(Math.min(_vm.paginationStart + _vm.pageSize, _vm.filteredFiles.length)) + " of " + _vm._s(_vm.filteredFiles.length) + " items ")]), _c("div", { staticClass: "k-content-watch-pagination-controls" }, [_c("k-button-group", [_c("k-button", { attrs: { "disabled": _vm.currentPage <= 1, "icon": "angle-left" }, on: { "click": function($event) {
+      $event.stopPropagation();
+      $event.preventDefault();
+      return _vm.prevPage.apply(null, arguments);
+    } } }, [_vm._v("Previous")]), _c("span", { staticClass: "k-content-watch-pagination-page-info" }, [_vm._v(_vm._s(_vm.currentPage) + " / " + _vm._s(_vm.totalPages))]), _c("k-button", { attrs: { "disabled": _vm.currentPage >= _vm.totalPages, "icon": "angle-right", "icon-after": "" }, on: { "click": function($event) {
+      $event.stopPropagation();
+      $event.preventDefault();
+      return _vm.nextPage.apply(null, arguments);
+    } } }, [_vm._v("Next")])], 1)], 1), _c("div", { staticClass: "k-content-watch-pagination-pagesize" }, [_c("k-select-field", { attrs: { "value": _vm.pageSize, "options": _vm.pageSizeOptions, "label": "Items per page" }, on: { "input": _vm.changePageSize } })], 1)]) : _vm._e(), !_vm.filteredFiles.length ? _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }) : _vm._e(), _vm.isLoading ? _c("k-loader") : _vm._e()], 1) : _vm._e(), _vm.lockedPages.length ? _c("section", { staticClass: "k-section" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("k-headline", [_vm._v("Locked pages")])], 1), _c("k-collection", { staticClass: "k-content-watch-locked", attrs: { "items": _vm.lockItems } })], 1) : _vm._e(), _vm.enableRestore ? _c("k-dialog", { ref: "restoreDialog", attrs: { "button": _vm.$t("restore"), "theme": "positive", "icon": "refresh" }, on: { "submit": _vm.restoreContent } }, [_c("k-text", [_vm._v("Are you sure you want to restore this version?")]), _vm.restoreTarget ? _c("k-text", [_c("strong", [_vm._v("File:")]), _vm._v(" " + _vm._s((_a = _vm.restoreTarget.file) == null ? void 0 : _a.title)), _c("br"), _c("strong", [_vm._v("Version:")]), _vm._v(" " + _vm._s((_b = _vm.restoreTarget.entry) == null ? void 0 : _b.time_formatted) + " (" + _vm._s(_vm.formatRelative((_c2 = _vm.restoreTarget.entry) == null ? void 0 : _c2.time)) + ") ")]) : _vm._e(), _c("k-text", [_vm._v("This will overwrite the current content with this previous version.")])], 1) : _vm._e()], 1);
   };
   var _sfc_staticRenderFns = [];
   _sfc_render._withStripped = true;
@@ -856,7 +905,7 @@
     _sfc_render,
     _sfc_staticRenderFns
   );
-  __component__.options.__file = "/Users/mathis/Work/Clients/Rasmus Bielefeld/erasmus-bielefeld.de/site/plugins/content-watch/js/components/ContentWatch.vue";
+  __component__.options.__file = "/var/www/html/site/plugins/content-watch/js/components/ContentWatch.vue";
   const ContentWatch = __component__.exports;
   panel.plugin("tearoom1/content-watch", {
     components: {

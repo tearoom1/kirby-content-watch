@@ -27,9 +27,9 @@
         </k-column>
       </k-grid>
 
-      <div v-if="filteredFiles.length" class="k-content-watch-files">
+      <div v-if="paginatedFiles.length" class="k-content-watch-files">
         <div
-            v-for="(file, index) in filteredFiles"
+            v-for="(file, index) in paginatedFiles"
             :key="file.id"
             class="k-content-watch-file"
             :class="{'k-content-watch-file-open': expandedFiles.includes(file.id)}"
@@ -93,7 +93,28 @@
         </div>
       </div>
 
-      <k-empty v-else icon="page" :text="$t('no.files.found')"/>
+      <!-- Pagination Controls -->
+      <div v-if="filteredFiles.length" class="k-content-watch-pagination">
+        <div class="k-content-watch-pagination-info">
+          Showing {{ paginationStart + 1 }} - {{ Math.min(paginationStart + pageSize, filteredFiles.length) }} of {{ filteredFiles.length }} items
+        </div>
+        <div class="k-content-watch-pagination-controls">
+          <k-button-group>
+            <k-button @click.stop.prevent="prevPage" :disabled="currentPage <= 1" icon="angle-left">Previous</k-button>
+            <span class="k-content-watch-pagination-page-info">{{ currentPage }} / {{ totalPages }}</span>
+            <k-button @click.stop.prevent="nextPage" :disabled="currentPage >= totalPages" icon="angle-right" icon-after>Next</k-button>
+          </k-button-group>
+        </div>
+        <div class="k-content-watch-pagination-pagesize">
+          <k-select-field 
+            :value="pageSize" 
+            :options="pageSizeOptions" 
+            label="Items per page"
+            @input="changePageSize" />
+        </div>
+      </div>
+
+      <k-empty v-if="!filteredFiles.length" icon="page" :text="$t('no.files.found')"/>
 
       <k-loader v-if="isLoading"/>
     </section>
@@ -157,7 +178,14 @@ export default {
       filteredFiles: [],
       expandedFiles: [],
       restoreTarget: null,
-      showOnlyPages: true
+      showOnlyPages: true,
+      currentPage: 1,
+      pageSize: 10,
+      pageSizeOptions: [
+        { text: '10 per page', value: 10 },
+        { text: '20 per page', value: 20 },
+        { text: '50 per page', value: 50 }
+      ]
     };
   },
 
@@ -167,6 +195,21 @@ export default {
   },
 
   computed: {
+    totalPages() {
+      return Math.max(1, Math.ceil(this.filteredFiles.length / (this.pageSize || 10)));
+    },
+    
+    paginationStart() {
+      return (this.currentPage - 1) * (this.pageSize || 10);
+    },
+    
+    paginatedFiles() {
+      const start = this.paginationStart;
+      const end = start + (this.pageSize || 10);
+      // Ensure we're only returning the current page's files
+      return this.filteredFiles.slice(start, end);
+    },
+
     items() {
       return this.filteredFiles.map(file => {
         const modifiedDate = new Date(file.modified * 1000);
@@ -247,6 +290,9 @@ export default {
           file.title.toLowerCase().includes(searchLower) ||
           file.path.toLowerCase().includes(searchLower)
       );
+      
+      // Reset to first page when filtering changes
+      this.currentPage = 1;
     },
 
     toggleShowOnlyPages() {
@@ -257,6 +303,41 @@ export default {
     toggleShowAll() {
       this.showOnlyPages = false;
       this.filterFiles();
+    },
+    
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+        // window.scrollTo(0, 0);
+      }
+      return false;
+    },
+    
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+        // window.scrollTo(0, 0);
+      }
+      return false;
+    },
+    
+    changePageSize(size) {
+      // Normalize the value - it could be coming as a string or as an object
+      let newSize;
+      
+      if (typeof size === 'object' && size !== null) {
+        // It might be the option object itself
+        newSize = size.value || 10;
+      } else {
+        // Otherwise parse it as a number
+        newSize = parseInt(size, 10) || 10;
+      }
+      
+      // Update page size
+      this.pageSize = newSize;
+      
+      // Always reset to first page when changing page size
+      this.currentPage = 1;
     },
 
     formatRelative(date) {
@@ -488,5 +569,46 @@ export default {
   background-color: var(--color-gray-200);
   color: var(--color-black);
   font-weight: 500;
+}
+
+/* Pagination styles */
+.k-content-watch-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.k-content-watch-pagination-info {
+  font-size: 0.875rem;
+  color: var(--color-gray-600);
+}
+
+.k-content-watch-pagination-controls {
+  display: flex;
+  align-items: center;
+}
+
+.k-content-watch-pagination-page-info {
+  display: inline-block;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.k-content-watch-pagination-pagesize {
+  width: 150px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .k-content-watch-pagination {
+    border-color: var(--color-gray-300);
+  }
+  
+  .k-content-watch-pagination-info {
+    color: var(--color-gray-400);
+  }
 }
 </style>
