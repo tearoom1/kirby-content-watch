@@ -2,10 +2,14 @@
 
 // support manual installation in plugins folder
 use Kirby\Http\Response;
-use TearoomOne\ContentWatch\ContentWatchController;
+use TearoomOne\ContentWatch\ChangeTracker;
+use TearoomOne\ContentWatch\ContentRestore;
 
 load([
     'TearoomOne\\ContentWatch\\ContentWatchController' => 'src/ContentWatchController.php',
+    'TearoomOne\\ContentWatch\\ChangeTracker' => 'src/ChangeTracker.php',
+    'TearoomOne\\ContentWatch\\ContentRestore' => 'src/ContentRestore.php',
+    'TearoomOne\\ContentWatch\\LockedPages' => 'src/LockedPages.php',
 ], __DIR__);
 
 // don't load plugin if it's disabled in the config.
@@ -16,19 +20,19 @@ if (option('tearoom1.content-watch.disable', false)) {
 Kirby::plugin('tearoom1/kirby-content-watch', [
     'hooks' => [
         'page.create:after' => function ($page) {
-            (new ContentWatchController())->trackContentChange($page);
+            (new ChangeTracker())->trackContentChange($page);
         },
         'page.update:after' => function ($newPage, $oldPage) {
-            (new ContentWatchController())->trackContentChange($newPage);
+            (new ChangeTracker())->trackContentChange($newPage);
         },
         'site.update:after' => function ($newSite, $oldSite) {
-            (new ContentWatchController())->trackContentChange($newSite);
+            (new ChangeTracker())->trackContentChange($newSite);
         },
         'file.create:after' => function ($file) {
-            (new ContentWatchController())->trackContentChange($file);
+            (new ChangeTracker())->trackContentChange($file);
         },
         'file.update:after' => function ($newFile, $oldFile) {
-            (new ContentWatchController())->trackContentChange($newFile);
+            (new ChangeTracker())->trackContentChange($newFile);
         }
     ],
     'areas' => [
@@ -77,8 +81,8 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                     }
 
                     // Restore content
-                    $contentWatchController = new ContentWatchController();
-                    $success = $contentWatchController->restoreContent($dirPath, $fileKey, $timestamp);
+                    $contentRestore = new ContentRestore();
+                    $success = $contentRestore->restoreContent($dirPath, $fileKey, $timestamp);
 
                     if ($success) {
                         return Response::json([

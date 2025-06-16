@@ -2,8 +2,6 @@
 
 namespace TearoomOne\ContentWatch;
 
-use TearoomOne\ContentWatch\ContentWatchController;
-
 return [
     'label' => 'Content Watch',
     'icon' => 'text-justify',
@@ -17,7 +15,8 @@ return [
                 $contentWatchController = new ContentWatchController();
                 $files = $contentWatchController->getContentFiles();
 
-                $lockedPages = (bool)option('tearoom1.content-watch.enableLockedPages', true) ? $contentWatchController->getLockedPages() : [];
+                $lockedPages = (bool)option('tearoom1.content-watch.enableLockedPages', true) ?
+                    (new LockedPages())->getLockedPages() : [];
                 $retentionDays = (int)option('tearoom1.content-watch.retentionDays', 30);
                 $retentionCount = (int)option('tearoom1.content-watch.retentionCount', 10);
 
