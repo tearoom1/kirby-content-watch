@@ -1,14 +1,31 @@
 <template>
   <k-panel-inside class="k-content-watch-view">
-    <section v-if="files.length" class="k-section">
-      <k-header class="k-section-header">
-        <k-headline>Content Watch</k-headline>
-        <k-button-group slot="right">
-          <k-button icon="refresh" @click="refresh"/>
-        </k-button-group>
-      </k-header>
+    <k-header class="k-section-header">
+    <!-- Tab navigation -->
+    <div class="k-content-watch-tabs">
+      <k-button-group>
+        <k-button
+            :class="{'k-button-active': tab === 'content'}"
+            @click="tab = 'content'"
+            icon="edit-line">
+          Content Changes
+        </k-button>
+        <k-button
+            :class="{'k-button-active': tab === 'locked'}"
+            @click="tab = 'locked'"
+            icon="lock">
+          Locked Pages
+        </k-button>
+      </k-button-group>
+    </div>
+      <k-button-group slot="right">
+        <k-button icon="refresh" @click="refresh"/>
+      </k-button-group>
+    </k-header>
 
-      <k-grid gutter="small">
+    <!-- Content Watch Tab -->
+    <section v-if="tab === 'content'" class="k-content-watch-section">
+      <k-grid gutter="small" v-if="files.length">
         <k-column width="2/3">
           <k-input
             class="k-content-watch-search"
@@ -27,7 +44,7 @@
         </k-column>
       </k-grid>
 
-      <div v-if="paginatedFiles.length" class="k-content-watch-files">
+      <div v-if="files.length && paginatedFiles.length" class="k-content-watch-files">
         <div
             v-for="(file, index) in paginatedFiles"
             :key="file.id"
@@ -42,7 +59,6 @@
               </span>
               <span class="k-content-watch-file-editor">
                 {{ file.editor.name || file.editor.email || 'Unknown' }}<br>
-<!--                  {{file.modified_formatted}}-->
                 {{ formatRelative(file.modified) }}
               </span>
             </div>
@@ -94,7 +110,7 @@
       </div>
 
       <!-- Pagination Controls -->
-      <div v-if="filteredFiles.length" class="k-content-watch-pagination">
+      <div v-if="files.length && filteredFiles.length" class="k-content-watch-pagination">
         <div class="k-content-watch-pagination-info">
           Showing {{ paginationStart + 1 }} - {{ Math.min(paginationStart + pageSize, filteredFiles.length) }} of {{ filteredFiles.length }} items
         </div>
@@ -114,16 +130,16 @@
         </div>
       </div>
 
-      <k-empty v-if="!filteredFiles.length" icon="page" :text="$t('no.files.found')"/>
+      <k-empty v-if="files.length && !filteredFiles.length" icon="page" :text="$t('no.files.found')"/>
+      <k-empty v-if="!files.length" icon="page" text="No content change data available"/>
 
       <k-loader v-if="isLoading"/>
     </section>
 
-    <section v-if="lockedPages.length" class="k-section">
-      <k-header class="k-section-header">
-        <k-headline>Locked pages</k-headline>
-      </k-header>
-      <k-collection :items="lockItems" class="k-content-watch-locked"/>
+    <!-- Locked Pages Tab -->
+    <section v-if="tab === 'locked'" class="k-content-watch-section">
+      <k-collection v-if="lockedPages.length" :items="lockItems" class="k-content-watch-locked"/>
+      <k-empty v-else icon="lock" text="No locked pages found"/>
     </section>
 
     <!-- Confirmation dialog for restore -->
@@ -185,7 +201,8 @@ export default {
         { text: '10 per page', value: 10 },
         { text: '20 per page', value: 20 },
         { text: '50 per page', value: 50 }
-      ]
+      ],
+      tab: 'content' // Default tab is content
     };
   },
 
@@ -229,6 +246,7 @@ export default {
         };
       });
     },
+    
     lockItems() {
       const items = [];
 
@@ -390,10 +408,9 @@ export default {
 </script>
 
 <style>
-.k-content-watch-files {
+.k-content-watch-section {
   margin-top: 1rem;
 }
-
 .k-content-watch-file {
   border: 1px solid var(--color-border);
   border-radius: 4px;
@@ -510,6 +527,7 @@ export default {
   font-size: 0.8rem;
   grid-column: span 1;
 }
+
 .k-timeline-item-line {
   grid-column: span var(--colums);
   border-bottom: 1px solid var(--color-border);
@@ -541,34 +559,20 @@ export default {
   text-align: right;
 }
 
-@media (prefers-color-scheme: dark) {
-  .k-content-watch-file {
-    border-color: var(--color-gray-300);
-  }
-
-  .k-content-watch-file-header {
-    background-color: var(--color-gray-100);
-  }
-
-  .k-content-watch-file-timeline {
-    background-color: var(--color-gray-100);
-    border-color: var(--color-gray-300);
-  }
-
-  .k-timeline-item {
-    border-color: var(--color-gray-300);
-  }
-
-  .k-timeline-footer {
-    border-color: var(--color-gray-300);
-    color: var(--color-gray-300);
-  }
-}
-
 .k-button-active {
   background-color: var(--color-gray-200);
   color: var(--color-black);
   font-weight: 500;
+}
+
+/* Custom tab styles */
+
+.k-content-watch-view .k-button-active {
+  border-bottom: 2px solid var(--color-gray-500);
+}
+
+.k-content-watch-files {
+  margin-top: 1rem;
 }
 
 /* Pagination styles */
@@ -609,6 +613,30 @@ export default {
   
   .k-content-watch-pagination-info {
     color: var(--color-gray-400);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .k-content-watch-file {
+    border-color: var(--color-gray-300);
+  }
+
+  .k-content-watch-file-header {
+    background-color: var(--color-gray-100);
+  }
+
+  .k-content-watch-file-timeline {
+    background-color: var(--color-gray-100);
+    border-color: var(--color-gray-300);
+  }
+
+  .k-timeline-item {
+    border-color: var(--color-gray-300);
+  }
+
+  .k-timeline-footer {
+    border-color: var(--color-gray-300);
+    color: var(--color-gray-300);
   }
 }
 </style>
