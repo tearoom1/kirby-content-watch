@@ -103,7 +103,7 @@ When restore functionality is disabled:
 
 ## Requirements
 
-- Kirby 4.x or 5.x (not tested yet)
+- Kirby 4 or 5
 - PHP 8.0+
 
 ## Todo
@@ -119,3 +119,5 @@ MIT
 
 - Developed by TearoomOne
 - Assisted by AI Claude 3.7 Sonnet
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://coff.ee/tearoom1)
