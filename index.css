@@ -9,6 +9,9 @@
   overflow: hidden;
   transition: all 0.3s ease;
 }
+.k-content-watch-buttons .k-button-group {
+  justify-content: flex-end;
+}
 .k-content-watch-file-open {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }

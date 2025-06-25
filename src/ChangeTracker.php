@@ -25,9 +25,10 @@ class ChangeTracker
             $kirbyLanguage = kirby()->language();
             $record['type'] = 'page';
 
-            if ($kirbyLanguage && option('tearoom1.content-watch.enableRestore') === true) {
-                $language = $kirbyLanguage->code();
-                $contentFile = $dirPath . '/' . $fileKey . '.' . $language . '.txt';
+            if (option('tearoom1.content-watch.enableRestore') === true) {
+                $language = $kirbyLanguage ? $kirbyLanguage->code() : '';
+                $languagePart = $language !== '' ?  '.' . $language : '';
+                $contentFile = $dirPath . '/' . $fileKey . $languagePart . '.txt';
                 $contentSnapshot = F::read($contentFile);
                 $record['content'] = $contentSnapshot;
                 $record['language'] = $language;

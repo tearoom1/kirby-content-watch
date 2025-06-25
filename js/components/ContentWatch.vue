@@ -18,15 +18,12 @@
         </k-button>
       </k-button-group>
     </div>
-      <k-button-group slot="right">
-        <k-button icon="refresh" @click="refresh"/>
-      </k-button-group>
     </k-header>
 
     <!-- Content Watch Tab -->
     <section v-if="tab === 'content'" class="k-content-watch-section">
-      <k-grid gutter="small" v-if="files.length">
-        <k-column width="2/3">
+      <k-grid v-if="files.length">
+        <k-column width="1/2">
           <k-input
             class="k-content-watch-search"
             type="text"
@@ -36,10 +33,11 @@
             icon="search"
           />
         </k-column>
-        <k-column width="1/3">
+        <k-column width="1/2" class="k-content-watch-buttons">
           <k-button-group>
             <k-button :class="{'k-button-active': showOnlyPages}" @click="toggleShowOnlyPages" icon="page">Pages only</k-button>
             <k-button :class="{'k-button-active': !showOnlyPages}" @click="toggleShowAll" icon="file-document">All files</k-button>
+            <k-button icon="refresh" @click="refresh"/>
           </k-button-group>
         </k-column>
       </k-grid>
@@ -389,7 +387,7 @@ export default {
         });
 
         if (response.status === 'success') {
-          this.$store.dispatch('notification/success', 'Content restored successfully');
+          // this.$store.dispatch('notification/success', 'Content restored successfully');
           this.refresh();
         } else {
           this.$store.dispatch('notification/error', response.message || 'Failed to restore content');
@@ -416,7 +414,9 @@ export default {
   overflow: hidden;
   transition: all 0.3s ease;
 }
-
+.k-content-watch-buttons .k-button-group {
+  justify-content: flex-end;
+}
 .k-content-watch-file-open {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }

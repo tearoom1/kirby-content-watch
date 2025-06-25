@@ -44,7 +44,8 @@ class ContentRestore
                 }
             }
 
-            $content_file = $dirPath . '/' . $fileKey . '.' . $entryToRestore['language'] . '.txt';
+            $languagePart = empty($entryToRestore['language']) ? '' : '.' . $entryToRestore['language'];
+            $content_file = $dirPath . '/' . $fileKey .  $languagePart . '.txt';
             if (!$entryToRestore || empty($entryToRestore['content']) || empty($content_file)) {
                 return false;
             }
