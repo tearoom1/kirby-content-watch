@@ -274,13 +274,13 @@ export default {
     open(id) {
       const file = this.filteredFiles.find(f => f.id === id);
       if (file?.panel_url) {
-        window.location.href = '/panel' + file.panel_url;
+        window.location.href = file.panel_url;
       }
     },
 
     openFile(file) {
       if (file?.panel_url) {
-        window.location.href = '/panel' + file.panel_url;
+        window.location.href = file.panel_url;
       }
     },
 
@@ -299,7 +299,7 @@ export default {
 
       // First apply page/file filter
       if (this.showOnlyPages) {
-        filtered = filtered.filter(file => file.panel_url && file.panel_url.startsWith('/pages/') && !file.is_media_file);
+        filtered = filtered.filter(file => file.panel_url && file.panel_url.indexOf('/files/') === -1 && !file.is_media_file);
       }
       
       // Then apply search filter

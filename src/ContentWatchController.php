@@ -2,9 +2,6 @@
 
 namespace TearoomOne\ContentWatch;
 
-use Kirby\Cms\ModelWithContent;
-use Kirby\Filesystem\F;
-
 class ContentWatchController
 {
 
@@ -127,8 +124,10 @@ class ContentWatchController
             $pathShort = 'site';
             $panelUrl = '/site';
             $title = 'Site';
+        } else if ($isMediaFile) {
+            $panelUrl = kirby()->url('panel') . '/pages/' . $pathId . '/files/' . $fileId;
         } else {
-            $panelUrl = '/pages/' . $pathId;
+            $panelUrl = kirby()->url('panel') . '/pages/' . $pathId;
         }
 
         // Build file data

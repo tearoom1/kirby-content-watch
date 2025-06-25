@@ -776,12 +776,12 @@
       open(id) {
         const file = this.filteredFiles.find((f) => f.id === id);
         if (file == null ? void 0 : file.panel_url) {
-          window.location.href = "/panel" + file.panel_url;
+          window.location.href = file.panel_url;
         }
       },
       openFile(file) {
         if (file == null ? void 0 : file.panel_url) {
-          window.location.href = "/panel" + file.panel_url;
+          window.location.href = file.panel_url;
         }
       },
       toggleFileExpand(id) {
@@ -796,7 +796,7 @@
         const searchLower = this.search.toLowerCase();
         let filtered = this.files;
         if (this.showOnlyPages) {
-          filtered = filtered.filter((file) => file.panel_url && file.panel_url.startsWith("/pages/") && !file.is_media_file);
+          filtered = filtered.filter((file) => file.panel_url && file.panel_url.indexOf("/files/") === -1 && !file.is_media_file);
         }
         this.filteredFiles = filtered.filter(
           (file) => file.title.toLowerCase().includes(searchLower) || file.path.toLowerCase().includes(searchLower)
