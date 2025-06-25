@@ -3,6 +3,8 @@
   "description": "Kirby plugin that allows you to keep track of what has been changed and by whom.",
   "type": "kirby-plugin",
   "license": "MIT",
+  "homepage": "https://github.com/tearoom1/kirby-content-watch",
+  "version": "1.3.0",
   "authors": [
     {
       "name": "Mathis Koblin",
@@ -10,7 +12,7 @@
     }
   ],
   "require": {
-    "php": ">=8.0",
+    "php": ">=8.1",
     "getkirby/composer-installer": "^1.2"
   },
   "require-dev": {
