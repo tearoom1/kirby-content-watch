@@ -125,7 +125,6 @@
           <k-select-field 
             :value="pageSize" 
             :options="pageSizeOptions" 
-            label="Items per page"
             @input="changePageSize" />
         </div>
       </div>
@@ -273,13 +272,12 @@ export default {
 
     open(id) {
       const file = this.filteredFiles.find(f => f.id === id);
-      if (file?.panel_url) {
-        window.location.href = file.panel_url;
-      }
+      this.openFile(file);
     },
 
     openFile(file) {
       if (file?.panel_url) {
+        // window.open(file.panel_url, '_blank').focus();
         window.location.href = file.panel_url;
       }
     },
@@ -460,7 +458,9 @@ export default {
 .k-button-rotated {
   transform: rotate(180deg);
 }
-
+.k-button-group .k-button {
+  margin-inline: 0.5rem;
+}
 .k-content-watch-file-timeline {
   padding: 0.5rem 1rem;
   background-color: var(--color-light);

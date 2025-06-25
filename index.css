@@ -44,6 +44,9 @@
 .k-button-rotated {
   transform: rotate(180deg);
 }
+.k-button-group .k-button {
+  margin-inline: 0.5rem;
+}
 .k-content-watch-file-timeline {
   padding: 0.5rem 1rem;
   background-color: var(--color-light);

@@ -775,9 +775,7 @@
       },
       open(id) {
         const file = this.filteredFiles.find((f) => f.id === id);
-        if (file == null ? void 0 : file.panel_url) {
-          window.location.href = file.panel_url;
-        }
+        this.openFile(file);
       },
       openFile(file) {
         if (file == null ? void 0 : file.panel_url) {
@@ -902,7 +900,7 @@
       $event.stopPropagation();
       $event.preventDefault();
       return _vm.nextPage.apply(null, arguments);
-    } } }, [_vm._v("Next")])], 1)], 1), _c("div", { staticClass: "k-content-watch-pagination-pagesize" }, [_c("k-select-field", { attrs: { "value": _vm.pageSize, "options": _vm.pageSizeOptions, "label": "Items per page" }, on: { "input": _vm.changePageSize } })], 1)]) : _vm._e(), _vm.files.length && !_vm.filteredFiles.length ? _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }) : _vm._e(), !_vm.files.length ? _c("k-empty", { attrs: { "icon": "page", "text": "No content change data available" } }) : _vm._e(), _vm.isLoading ? _c("k-loader") : _vm._e()], 1) : _vm._e(), _vm.tab === "locked" ? _c("section", { staticClass: "k-content-watch-section" }, [_vm.lockedPages.length ? _c("k-collection", { staticClass: "k-content-watch-locked", attrs: { "items": _vm.lockItems } }) : _c("k-empty", { attrs: { "icon": "lock", "text": "No locked pages found" } })], 1) : _vm._e(), _vm.enableRestore ? _c("k-dialog", { ref: "restoreDialog", attrs: { "button": _vm.$t("restore"), "theme": "positive", "icon": "refresh" }, on: { "submit": _vm.restoreContent } }, [_c("k-text", [_vm._v("Are you sure you want to restore this version?")]), _vm.restoreTarget ? _c("k-text", [_c("strong", [_vm._v("File:")]), _vm._v(" " + _vm._s((_a = _vm.restoreTarget.file) == null ? void 0 : _a.title)), _c("br"), _c("strong", [_vm._v("Version:")]), _vm._v(" " + _vm._s((_b = _vm.restoreTarget.entry) == null ? void 0 : _b.time_formatted) + " (" + _vm._s(_vm.formatRelative((_c2 = _vm.restoreTarget.entry) == null ? void 0 : _c2.time)) + ") ")]) : _vm._e(), _c("k-text", [_vm._v("This will overwrite the current content with this previous version.")])], 1) : _vm._e()], 1);
+    } } }, [_vm._v("Next")])], 1)], 1), _c("div", { staticClass: "k-content-watch-pagination-pagesize" }, [_c("k-select-field", { attrs: { "value": _vm.pageSize, "options": _vm.pageSizeOptions }, on: { "input": _vm.changePageSize } })], 1)]) : _vm._e(), _vm.files.length && !_vm.filteredFiles.length ? _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }) : _vm._e(), !_vm.files.length ? _c("k-empty", { attrs: { "icon": "page", "text": "No content change data available" } }) : _vm._e(), _vm.isLoading ? _c("k-loader") : _vm._e()], 1) : _vm._e(), _vm.tab === "locked" ? _c("section", { staticClass: "k-content-watch-section" }, [_vm.lockedPages.length ? _c("k-collection", { staticClass: "k-content-watch-locked", attrs: { "items": _vm.lockItems } }) : _c("k-empty", { attrs: { "icon": "lock", "text": "No locked pages found" } })], 1) : _vm._e(), _vm.enableRestore ? _c("k-dialog", { ref: "restoreDialog", attrs: { "button": _vm.$t("restore"), "theme": "positive", "icon": "refresh" }, on: { "submit": _vm.restoreContent } }, [_c("k-text", [_vm._v("Are you sure you want to restore this version?")]), _vm.restoreTarget ? _c("k-text", [_c("strong", [_vm._v("File:")]), _vm._v(" " + _vm._s((_a = _vm.restoreTarget.file) == null ? void 0 : _a.title)), _c("br"), _c("strong", [_vm._v("Version:")]), _vm._v(" " + _vm._s((_b = _vm.restoreTarget.entry) == null ? void 0 : _b.time_formatted) + " (" + _vm._s(_vm.formatRelative((_c2 = _vm.restoreTarget.entry) == null ? void 0 : _c2.time)) + ") ")]) : _vm._e(), _c("k-text", [_vm._v("This will overwrite the current content with this previous version.")])], 1) : _vm._e()], 1);
   };
   var _sfc_staticRenderFns = [];
   _sfc_render._withStripped = true;
