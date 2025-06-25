@@ -91,9 +91,16 @@
                   <k-button
                       v-if="enableRestore && entry.has_snapshot && entryIndex > 0"
                       @click.stop="confirmRestore(file, entry)"
-                      icon="refresh"
+                      icon="undo"
                       class="k-restore-button"
                       title="Restore this version"
+                  />
+                  <k-button
+                      v-if="enableRestore && entryIndex === 0"
+                      icon="check"
+                      style="cursor: default"
+                      class="k-restore-button"
+                      title="Current version"
                   />
                 </div>
                 <div class="k-timeline-item-line"></div>

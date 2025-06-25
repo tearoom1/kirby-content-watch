@@ -60,18 +60,17 @@ class ContentWatchController
                                 array   &$files): void
     {
         $filePath = $file->getPathname();
-        $isMediaFile = file_exists(preg_replace('%(\.[a-z]{2})?\.txt$%', '', $filePath));
-        $relativePath = str_replace($contentDir . '/', '', $filePath);
-        $modified = $file->getMTime();
-
-        // Get directory and basename
         $dirPath = dirname($filePath);
+        $relativePath = str_replace($contentDir . '/', '', $filePath);
 
         $fileId = preg_replace('%_?drafts/%', '', dirname($relativePath));
         $fileId = preg_replace('%\\d+_%', '', $fileId);
         $pathShort = $fileId;
         $pathId = preg_replace('%/%', '+', $pathShort);
 
+        // a file that has another file without extension is a media file
+        // todo is this sufficient? we could possibly determine this based on info from the page
+        $isMediaFile = file_exists(preg_replace('%(\.[a-z]{2})?\.txt$%', '', $filePath));
         if ($isMediaFile) {
             $fileKey = basename($relativePath);
             $fileKey = preg_replace('%(\.[a-z]{2})?\.txt$%', '', $fileKey);
@@ -129,6 +128,9 @@ class ContentWatchController
         } else {
             $panelUrl = kirby()->url('panel') . '/pages/' . $pathId;
         }
+
+
+        $modified = $file->getMTime();
 
         // Build file data
         $fileData = [
