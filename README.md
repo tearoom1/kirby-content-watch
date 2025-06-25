@@ -6,7 +6,7 @@ This allows you to keep track of what has been changed and who made the changes.
 
 Additionally it provides a view to see which pages are currently locked and by whom.
 
-[![Screenshot](screenshot.png)](https://github.com/tearoom1/kirby-content-watch)
+[![Screenshot](screenshot.jpg)](https://github.com/tearoom1/kirby-content-watch)
 
 ## Features
 
