@@ -34,7 +34,11 @@ class ContentWatchController
 
         // Process all content files
         foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'txt') {
+            if ($file->isFile() &&
+                $file->getExtension() === 'txt' &&
+                !str_ends_with(dirname($file->getPathname()),'_changes') &&
+                $file->getBasename() !== '.content-watch.json'
+            ) {
                 $this->processFile($file, $contentDir, $historyFiles, $files);
             }
         }

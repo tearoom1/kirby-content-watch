@@ -697,18 +697,29 @@
       enableRestore: {
         type: Boolean,
         default: false
+      },
+      defaultPageSize: {
+        type: Number,
+        default: 10
+      },
+      layoutStyle: {
+        type: Text,
+        default: "default"
       }
     },
     data() {
       return {
         isLoading: false,
         search: "",
+        lockedSearch: "",
         filteredFiles: [],
+        filteredLockedPages: [],
         expandedFiles: [],
         restoreTarget: null,
         showOnlyPages: true,
         currentPage: 1,
-        pageSize: 10,
+        layoutStyle: this.layoutStyle,
+        pageSize: this.defaultPageSize,
         pageSizeOptions: [
           { text: "10 per page", value: 10 },
           { text: "20 per page", value: 20 },
@@ -720,7 +731,9 @@
     },
     created() {
       this.filteredFiles = this.files || [];
+      this.filteredLockedPages = this.lockedPages || [];
       this.filterFiles();
+      this.filterLockedPages();
     },
     computed: {
       totalPages() {
@@ -755,7 +768,7 @@
       },
       lockItems() {
         const items = [];
-        this.lockedPages.forEach((lock) => {
+        this.filteredLockedPages.forEach((lock) => {
           items.push({
             text: '<span class="k-content-watch-file-path"><strong>' + lock.title + "</strong><br>" + lock.id + "</span>",
             info: lock.user + " <br> " + lock.date + " (" + this.formatRelative(lock.time) + ")",
@@ -800,6 +813,12 @@
           (file) => file.title.toLowerCase().includes(searchLower) || file.path.toLowerCase().includes(searchLower)
         );
         this.currentPage = 1;
+      },
+      filterLockedPages() {
+        const searchLower = this.lockedSearch.toLowerCase();
+        this.filteredLockedPages = this.lockedPages.filter(
+          (page) => page.title.toLowerCase().includes(searchLower) || page.path.toLowerCase().includes(searchLower)
+        );
       },
       toggleShowOnlyPages() {
         this.showOnlyPages = true;
@@ -879,13 +898,18 @@
       _vm.tab = "locked";
     } } }, [_vm._v(" Locked Pages ")])], 1)], 1)]), _vm.tab === "content" ? _c("section", { staticClass: "k-content-watch-section" }, [_vm.files.length ? _c("k-grid", [_c("k-column", { attrs: { "width": "1/2" } }, [_c("k-input", { staticClass: "k-content-watch-search", attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.filterFiles }, model: { value: _vm.search, callback: function($$v) {
       _vm.search = $$v;
-    }, expression: "search" } })], 1), _c("k-column", { staticClass: "k-content-watch-buttons", attrs: { "width": "1/2" } }, [_c("k-button-group", [_c("k-button", { class: { "k-button-active": _vm.showOnlyPages }, attrs: { "icon": "page" }, on: { "click": _vm.toggleShowOnlyPages } }, [_vm._v("Pages only")]), _c("k-button", { class: { "k-button-active": !_vm.showOnlyPages }, attrs: { "icon": "file-document" }, on: { "click": _vm.toggleShowAll } }, [_vm._v("All files")]), _c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1)], 1) : _vm._e(), _vm.files.length && _vm.paginatedFiles.length ? _c("div", { staticClass: "k-content-watch-files" }, _vm._l(_vm.paginatedFiles, function(file, index) {
-      return _c("div", { key: file.id, staticClass: "k-content-watch-file", class: { "k-content-watch-file-open": _vm.expandedFiles.includes(file.id) } }, [_c("div", { staticClass: "k-content-watch-file-header", on: { "click": function($event) {
+    }, expression: "search" } })], 1), _c("k-column", { staticClass: "k-content-watch-buttons", attrs: { "width": "1/2" } }, [_c("k-button-group", [_c("k-button", { class: { "k-button-active": _vm.showOnlyPages }, attrs: { "icon": "page" }, on: { "click": _vm.toggleShowOnlyPages } }, [_vm._v("Pages only ")]), _c("k-button", { class: { "k-button-active": !_vm.showOnlyPages }, attrs: { "icon": "file-document" }, on: { "click": _vm.toggleShowAll } }, [_vm._v("All files ")]), _c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1)], 1) : _vm._e(), _vm.files.length && _vm.paginatedFiles.length ? _c("div", { staticClass: "k-content-watch-files" }, _vm._l(_vm.paginatedFiles, function(file, index) {
+      return _c("div", { key: file.id, staticClass: "k-content-watch-file", class: { "k-content-watch-file-open": _vm.expandedFiles.includes(file.id) } }, [_vm.layoutStyle === "default" ? _c("div", { staticClass: "k-content-watch-file-header", on: { "click": function($event) {
         return _vm.toggleFileExpand(file.id);
       } } }, [_c("div", { staticClass: "k-content-watch-file-info" }, [_c("span", { staticClass: "k-content-watch-file-path" }, [_c("strong", [_vm._v(_vm._s(file.title))]), _c("br"), _vm._v(_vm._s(file.path_short) + " ")]), _c("span", { staticClass: "k-content-watch-file-editor" }, [_vm._v(" " + _vm._s(file.editor.name || file.editor.email || "Unknown")), _c("br"), _vm._v(" " + _vm._s(_vm.formatRelative(file.modified)) + " ")])]), _c("div", { staticClass: "k-content-watch-file-actions" }, [_c("k-button", { class: { "k-button-rotated": _vm.expandedFiles.includes(file.id) }, attrs: { "icon": "angle-down" } }), _c("k-button", { attrs: { "icon": "edit" }, on: { "click": function($event) {
         $event.stopPropagation();
         return _vm.openFile(file);
-      } } })], 1)]), _vm.expandedFiles.includes(file.id) ? _c("div", { staticClass: "k-content-watch-file-timeline" }, [file.history && file.history.length > 0 ? _c("div", { staticClass: "k-timeline-list" }, _vm._l(file.history, function(entry, entryIndex) {
+      } } })], 1)]) : _vm._e(), _vm.layoutStyle === "compact" ? _c("div", { staticClass: "k-content-watch-file-header k-content-watch-file-header-compact", on: { "click": function($event) {
+        return _vm.toggleFileExpand(file.id);
+      } } }, [_c("div", { staticClass: "k-content-watch-file-info" }, [_c("span", { staticClass: "k-content-watch-file-path" }, [_c("strong", [_vm._v(_vm._s(file.title))]), _vm._v(" ~ " + _vm._s(file.path_short) + " ")]), _c("span", { staticClass: "k-content-watch-file-editor" }, [_vm._v(" " + _vm._s(_vm.formatRelative(file.modified)) + " by "), _c("strong", [_vm._v(_vm._s(file.editor.name || file.editor.email || "Unknown"))])])]), _c("div", { staticClass: "k-content-watch-file-actions" }, [_c("k-button", { class: { "k-button-rotated": _vm.expandedFiles.includes(file.id) }, attrs: { "icon": "angle-down" } }), _c("k-button", { attrs: { "icon": "edit" }, on: { "click": function($event) {
+        $event.stopPropagation();
+        return _vm.openFile(file);
+      } } })], 1)]) : _vm._e(), _vm.expandedFiles.includes(file.id) ? _c("div", { staticClass: "k-content-watch-file-timeline" }, [file.history && file.history.length > 0 ? _c("div", { staticClass: "k-timeline-list" }, _vm._l(file.history, function(entry, entryIndex) {
         return _c("div", { key: entryIndex, staticClass: "k-timeline-item" }, [_c("div", { staticClass: "k-timeline-item-version" }, [_vm._v(" v" + _vm._s(entry.version) + " ")]), _c("div", { staticClass: "k-timeline-item-language" }, [_vm._v(" " + _vm._s(entry.language) + " ")]), _c("div", { staticClass: "k-timeline-item-time" }, [_vm._v(" " + _vm._s(entry.time_formatted) + " ")]), _c("div", { staticClass: "k-timeline-item-time-rel" }, [_vm._v(" " + _vm._s(_vm.formatRelative(entry.time)) + " ")]), _c("span", { staticClass: "k-timeline-item-editor-label" }, [_vm._v(" " + _vm._s(entry.restored_from ? "restored by" : "edited by") + " ")]), _c("span", { staticClass: "k-timeline-item-editor" }, [_vm._v(" " + _vm._s(entry.editor.name || entry.editor.email || "Unknown") + " ")]), _c("div", { staticClass: "k-timeline-item-actions" }, [_vm.enableRestore && entry.has_snapshot && entryIndex > 0 ? _c("k-button", { staticClass: "k-restore-button", attrs: { "icon": "undo", "title": "Restore this version" }, on: { "click": function($event) {
           $event.stopPropagation();
           return _vm.confirmRestore(file, entry);
@@ -899,7 +923,9 @@
       $event.stopPropagation();
       $event.preventDefault();
       return _vm.nextPage.apply(null, arguments);
-    } } }, [_vm._v("Next")])], 1)], 1), _c("div", { staticClass: "k-content-watch-pagination-pagesize" }, [_c("k-select-field", { attrs: { "value": _vm.pageSize, "options": _vm.pageSizeOptions }, on: { "input": _vm.changePageSize } })], 1)]) : _vm._e(), _vm.files.length && !_vm.filteredFiles.length ? _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }) : _vm._e(), !_vm.files.length ? _c("k-empty", { attrs: { "icon": "page", "text": "No content change data available" } }) : _vm._e(), _vm.isLoading ? _c("k-loader") : _vm._e()], 1) : _vm._e(), _vm.tab === "locked" ? _c("section", { staticClass: "k-content-watch-section" }, [_vm.lockedPages.length ? _c("k-collection", { staticClass: "k-content-watch-locked", attrs: { "items": _vm.lockItems } }) : _c("k-empty", { attrs: { "icon": "lock", "text": "No locked pages found" } })], 1) : _vm._e(), _vm.enableRestore ? _c("k-dialog", { ref: "restoreDialog", attrs: { "button": _vm.$t("restore"), "theme": "positive", "icon": "refresh" }, on: { "submit": _vm.restoreContent } }, [_c("k-text", [_vm._v("Are you sure you want to restore this version?")]), _vm.restoreTarget ? _c("k-text", [_c("strong", [_vm._v("File:")]), _vm._v(" " + _vm._s((_a = _vm.restoreTarget.file) == null ? void 0 : _a.title)), _c("br"), _c("strong", [_vm._v("Version:")]), _vm._v(" " + _vm._s((_b = _vm.restoreTarget.entry) == null ? void 0 : _b.time_formatted) + " (" + _vm._s(_vm.formatRelative((_c2 = _vm.restoreTarget.entry) == null ? void 0 : _c2.time)) + ") ")]) : _vm._e(), _c("k-text", [_vm._v("This will overwrite the current content with this previous version.")])], 1) : _vm._e()], 1);
+    } } }, [_vm._v("Next ")])], 1)], 1), _c("div", { staticClass: "k-content-watch-pagination-pagesize" }, [_c("k-select-field", { attrs: { "value": _vm.pageSize, "options": _vm.pageSizeOptions }, on: { "input": _vm.changePageSize } })], 1)]) : _vm._e(), _vm.files.length && !_vm.filteredFiles.length ? _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }) : _vm._e(), !_vm.files.length ? _c("k-empty", { attrs: { "icon": "page", "text": "No content change data available" } }) : _vm._e(), _vm.isLoading ? _c("k-loader") : _vm._e()], 1) : _vm._e(), _vm.tab === "locked" ? _c("section", { staticClass: "k-content-watch-section" }, [_vm.lockedPages.length ? _c("k-grid", [_c("k-column", { attrs: { "width": "1/2" } }, [_c("k-input", { staticClass: "k-content-watch-search", attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.filterLockedPages }, model: { value: _vm.lockedSearch, callback: function($$v) {
+      _vm.lockedSearch = $$v;
+    }, expression: "lockedSearch" } })], 1), _c("k-column", { staticClass: "k-content-watch-buttons", attrs: { "width": "1/2" } }, [_c("k-button-group", [_c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1)], 1) : _vm._e(), _vm.filteredLockedPages.length ? _c("k-collection", { staticClass: "k-content-watch-locked", attrs: { "items": _vm.lockItems } }) : _c("k-empty", { attrs: { "icon": "lock", "text": "No locked pages found" } })], 1) : _vm._e(), _vm.enableRestore ? _c("k-dialog", { ref: "restoreDialog", attrs: { "button": _vm.$t("restore"), "theme": "positive", "icon": "refresh" }, on: { "submit": _vm.restoreContent } }, [_c("k-text", [_vm._v("Are you sure you want to restore this version?")]), _vm.restoreTarget ? _c("k-text", [_c("strong", [_vm._v("File:")]), _vm._v(" " + _vm._s((_a = _vm.restoreTarget.file) == null ? void 0 : _a.title)), _c("br"), _c("strong", [_vm._v("Version:")]), _vm._v(" " + _vm._s((_b = _vm.restoreTarget.entry) == null ? void 0 : _b.time_formatted) + " (" + _vm._s(_vm.formatRelative((_c2 = _vm.restoreTarget.entry) == null ? void 0 : _c2.time)) + ") ")]) : _vm._e(), _c("k-text", [_vm._v("This will overwrite the current content with this previous version.")])], 1) : _vm._e()], 1);
   };
   var _sfc_staticRenderFns = [];
   _sfc_render._withStripped = true;

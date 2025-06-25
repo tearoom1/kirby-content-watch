@@ -27,7 +27,6 @@ It stores all history entries in a single file for each content directory, and g
 This may be a problem for sites with a large number of files.
 
 The restore feature also has some limitations
-- only works with multilanguage sites atm
 - binary files are not supported
 - when restoring a page, its files are not restored
 
@@ -64,16 +63,17 @@ return [
     'tearoom1.content-watch' => [
         // How many days to keep history entries (default: 30)
         'retentionDays' => 30,
-        
         // Maximum number of history entries to keep per file (default: 10)
         'retentionCount' => 10,
-        
         // Whether to show locked pages in the interface (default: true)
         'enableLockedPages' => true,
-        
         // Whether to enable content restore functionality (default: false)
         // When disabled, content snapshots are not stored to save disk space
-        'enableRestore' => true
+        'enableRestore' => true,
+        // Default page size for pagination, default is 10. Possible values: 10, 20, 50
+        'defaultPageSize' => 20,
+        // Render the list more compact, default is 'default'
+        'layoutStyle' => 'compact',
     ]
 ];
 ```
@@ -109,7 +109,6 @@ When restore functionality is disabled:
 ## Todo
 
 - Add support for restoring media/binary files ?
-- Cleanup code. The code is still a bit messy. If someone wants to clean up? :)
 - Language support is not perfect yet. Currently only 2 digit codes work and the display of the versions may also be improved.
 
 ## License

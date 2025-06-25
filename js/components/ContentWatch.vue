@@ -1,23 +1,23 @@
 <template>
   <k-panel-inside class="k-content-watch-view">
     <k-header class="k-section-header">
-    <!-- Tab navigation -->
-    <div class="k-content-watch-tabs">
-      <k-button-group>
-        <k-button
-            :class="{'k-button-active': tab === 'content'}"
-            @click="tab = 'content'"
-            icon="edit-line">
-          Content Changes
-        </k-button>
-        <k-button
-            :class="{'k-button-active': tab === 'locked'}"
-            @click="tab = 'locked'"
-            icon="lock">
-          Locked Pages
-        </k-button>
-      </k-button-group>
-    </div>
+      <!-- Tab navigation -->
+      <div class="k-content-watch-tabs">
+        <k-button-group>
+          <k-button
+              :class="{'k-button-active': tab === 'content'}"
+              @click="tab = 'content'"
+              icon="edit-line">
+            Content Changes
+          </k-button>
+          <k-button
+              :class="{'k-button-active': tab === 'locked'}"
+              @click="tab = 'locked'"
+              icon="lock">
+            Locked Pages
+          </k-button>
+        </k-button-group>
+      </div>
     </k-header>
 
     <!-- Content Watch Tab -->
@@ -25,18 +25,21 @@
       <k-grid v-if="files.length">
         <k-column width="1/2">
           <k-input
-            class="k-content-watch-search"
-            type="text"
-            :placeholder="$t('search') + '...'"
-            v-model="search"
-            @input="filterFiles"
-            icon="search"
+              class="k-content-watch-search"
+              type="text"
+              :placeholder="$t('search') + '...'"
+              v-model="search"
+              @input="filterFiles"
+              icon="search"
           />
         </k-column>
         <k-column width="1/2" class="k-content-watch-buttons">
           <k-button-group>
-            <k-button :class="{'k-button-active': showOnlyPages}" @click="toggleShowOnlyPages" icon="page">Pages only</k-button>
-            <k-button :class="{'k-button-active': !showOnlyPages}" @click="toggleShowAll" icon="file-document">All files</k-button>
+            <k-button :class="{'k-button-active': showOnlyPages}" @click="toggleShowOnlyPages" icon="page">Pages only
+            </k-button>
+            <k-button :class="{'k-button-active': !showOnlyPages}" @click="toggleShowAll" icon="file-document">All
+              files
+            </k-button>
             <k-button icon="refresh" @click="refresh"/>
           </k-button-group>
         </k-column>
@@ -49,7 +52,7 @@
             class="k-content-watch-file"
             :class="{'k-content-watch-file-open': expandedFiles.includes(file.id)}"
         >
-          <div class="k-content-watch-file-header" @click="toggleFileExpand(file.id)">
+          <div v-if="layoutStyle === 'default'" class="k-content-watch-file-header" @click="toggleFileExpand(file.id)">
             <div class="k-content-watch-file-info">
               <span class="k-content-watch-file-path">
                 <strong>{{ file.title }}</strong>
@@ -58,6 +61,24 @@
               <span class="k-content-watch-file-editor">
                 {{ file.editor.name || file.editor.email || 'Unknown' }}<br>
                 {{ formatRelative(file.modified) }}
+              </span>
+            </div>
+            <div class="k-content-watch-file-actions">
+              <k-button icon="angle-down" :class="{'k-button-rotated': expandedFiles.includes(file.id)}"/>
+              <k-button @click.stop="openFile(file)" icon="edit"/>
+            </div>
+          </div>
+
+          <div v-if="layoutStyle === 'compact'" class="k-content-watch-file-header k-content-watch-file-header-compact"
+               @click="toggleFileExpand(file.id)">
+            <div class="k-content-watch-file-info">
+              <span class="k-content-watch-file-path">
+                <strong>{{ file.title }}</strong> ~ {{ file.path_short }}
+              </span>
+              <span class="k-content-watch-file-editor">
+                 {{ formatRelative(file.modified) }} by <strong>{{
+                  file.editor.name || file.editor.email || 'Unknown'
+                }}</strong>
               </span>
             </div>
             <div class="k-content-watch-file-actions">
@@ -117,20 +138,23 @@
       <!-- Pagination Controls -->
       <div v-if="files.length && filteredFiles.length" class="k-content-watch-pagination">
         <div class="k-content-watch-pagination-info">
-          Showing {{ paginationStart + 1 }} - {{ Math.min(paginationStart + pageSize, filteredFiles.length) }} of {{ filteredFiles.length }} items
+          Showing {{ paginationStart + 1 }} - {{ Math.min(paginationStart + pageSize, filteredFiles.length) }} of
+          {{ filteredFiles.length }} items
         </div>
         <div class="k-content-watch-pagination-controls">
           <k-button-group>
             <k-button @click.stop.prevent="prevPage" :disabled="currentPage <= 1" icon="angle-left">Previous</k-button>
             <span class="k-content-watch-pagination-page-info">{{ currentPage }} / {{ totalPages }}</span>
-            <k-button @click.stop.prevent="nextPage" :disabled="currentPage >= totalPages" icon="angle-right" icon-after>Next</k-button>
+            <k-button @click.stop.prevent="nextPage" :disabled="currentPage >= totalPages" icon="angle-right"
+                      icon-after>Next
+            </k-button>
           </k-button-group>
         </div>
         <div class="k-content-watch-pagination-pagesize">
-          <k-select-field 
-            :value="pageSize" 
-            :options="pageSizeOptions" 
-            @input="changePageSize" />
+          <k-select-field
+              :value="pageSize"
+              :options="pageSizeOptions"
+              @input="changePageSize"/>
         </div>
       </div>
 
@@ -142,7 +166,24 @@
 
     <!-- Locked Pages Tab -->
     <section v-if="tab === 'locked'" class="k-content-watch-section">
-      <k-collection v-if="lockedPages.length" :items="lockItems" class="k-content-watch-locked"/>
+      <k-grid v-if="lockedPages.length">
+        <k-column width="1/2">
+          <k-input
+              class="k-content-watch-search"
+              type="text"
+              :placeholder="$t('search') + '...'"
+              v-model="lockedSearch"
+              @input="filterLockedPages"
+              icon="search"
+          />
+        </k-column>
+        <k-column width="1/2" class="k-content-watch-buttons">
+          <k-button-group>
+            <k-button icon="refresh" @click="refresh"/>
+          </k-button-group>
+        </k-column>
+      </k-grid>
+      <k-collection v-if="filteredLockedPages.length" :items="lockItems" class="k-content-watch-locked"/>
       <k-empty v-else icon="lock" text="No locked pages found"/>
     </section>
 
@@ -188,6 +229,14 @@ export default {
     enableRestore: {
       type: Boolean,
       default: false
+    },
+    defaultPageSize: {
+      type: Number,
+      default: 10
+    },
+    layoutStyle: {
+      type: Text,
+      default: 'default'
     }
   },
 
@@ -195,16 +244,19 @@ export default {
     return {
       isLoading: false,
       search: '',
+      lockedSearch: '',
       filteredFiles: [],
+      filteredLockedPages: [],
       expandedFiles: [],
       restoreTarget: null,
       showOnlyPages: true,
       currentPage: 1,
-      pageSize: 10,
+      layoutStyle: this.layoutStyle,
+      pageSize: this.defaultPageSize,
       pageSizeOptions: [
-        { text: '10 per page', value: 10 },
-        { text: '20 per page', value: 20 },
-        { text: '50 per page', value: 50 }
+        {text: '10 per page', value: 10},
+        {text: '20 per page', value: 20},
+        {text: '50 per page', value: 50}
       ],
       tab: 'content' // Default tab is content
     };
@@ -212,18 +264,20 @@ export default {
 
   created() {
     this.filteredFiles = this.files || [];
+    this.filteredLockedPages = this.lockedPages || [];
     this.filterFiles();
+    this.filterLockedPages();
   },
 
   computed: {
     totalPages() {
       return Math.max(1, Math.ceil(this.filteredFiles.length / (this.pageSize || 10)));
     },
-    
+
     paginationStart() {
       return (this.currentPage - 1) * (this.pageSize || 10);
     },
-    
+
     paginatedFiles() {
       const start = this.paginationStart;
       const end = start + (this.pageSize || 10);
@@ -250,11 +304,11 @@ export default {
         };
       });
     },
-    
+
     lockItems() {
       const items = [];
 
-      this.lockedPages.forEach(lock => {
+      this.filteredLockedPages.forEach(lock => {
         items.push({
           text: '<span class="k-content-watch-file-path"><strong>' + lock.title + '</strong><br>' + lock.id + '</span>',
           info: lock.user + ' <br> ' + lock.date + ' (' + this.formatRelative(lock.time) + ')',
@@ -304,16 +358,27 @@ export default {
       if (this.showOnlyPages) {
         filtered = filtered.filter(file => file.panel_url && file.panel_url.indexOf('/files/') === -1 && !file.is_media_file);
       }
-      
+
       // Then apply search filter
       this.filteredFiles = filtered.filter(
-        file =>
-          file.title.toLowerCase().includes(searchLower) ||
-          file.path.toLowerCase().includes(searchLower)
+          file =>
+              file.title.toLowerCase().includes(searchLower) ||
+              file.path.toLowerCase().includes(searchLower)
       );
-      
+
       // Reset to first page when filtering changes
       this.currentPage = 1;
+    },
+
+    filterLockedPages() {
+      const searchLower = this.lockedSearch.toLowerCase();
+
+      // Then apply search filter
+      this.filteredLockedPages = this.lockedPages.filter(
+          page =>
+              page.title.toLowerCase().includes(searchLower) ||
+              page.path.toLowerCase().includes(searchLower)
+      );
     },
 
     toggleShowOnlyPages() {
@@ -325,7 +390,7 @@ export default {
       this.showOnlyPages = false;
       this.filterFiles();
     },
-    
+
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
@@ -333,7 +398,7 @@ export default {
       }
       return false;
     },
-    
+
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
@@ -341,11 +406,11 @@ export default {
       }
       return false;
     },
-    
+
     changePageSize(size) {
       // Normalize the value - it could be coming as a string or as an object
       let newSize;
-      
+
       if (typeof size === 'object' && size !== null) {
         // It might be the option object itself
         newSize = size.value || 10;
@@ -353,10 +418,10 @@ export default {
         // Otherwise parse it as a number
         newSize = parseInt(size, 10) || 10;
       }
-      
+
       // Update page size
       this.pageSize = newSize;
-      
+
       // Always reset to first page when changing page size
       this.currentPage = 1;
     },
@@ -411,9 +476,10 @@ export default {
 </script>
 
 <style>
-.k-content-watch-section {
+.k-content-watch-section, .k-content-watch-locked {
   margin-top: 1rem;
 }
+
 .k-content-watch-file {
   border: 1px solid var(--color-border);
   border-radius: 4px;
@@ -421,9 +487,11 @@ export default {
   overflow: hidden;
   transition: all 0.3s ease;
 }
+
 .k-content-watch-buttons .k-button-group {
   justify-content: flex-end;
 }
+
 .k-content-watch-file-open {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
@@ -435,6 +503,10 @@ export default {
   padding: 0.5rem 1rem;
   cursor: pointer;
   background-color: var(--item-color-back);
+}
+
+.k-content-watch-file-header-compact {
+  padding: 0.2rem 0.6rem;
 }
 
 .k-content-watch-file-info {
@@ -465,6 +537,7 @@ export default {
 .k-button-rotated {
   transform: rotate(180deg);
 }
+
 .k-button-group .k-button {
   margin-inline: 0.5rem;
 }

@@ -1,5 +1,5 @@
 
-.k-content-watch-section {
+.k-content-watch-section, .k-content-watch-locked {
   margin-top: 1rem;
 }
 .k-content-watch-file {
@@ -22,6 +22,9 @@
   padding: 0.5rem 1rem;
   cursor: pointer;
   background-color: var(--item-color-back);
+}
+.k-content-watch-file-header-compact {
+  padding: 0.2rem 0.6rem;
 }
 .k-content-watch-file-info {
   display: flex;

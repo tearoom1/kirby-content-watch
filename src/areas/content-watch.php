@@ -29,6 +29,8 @@ return [
                         'retentionDays' => $retentionDays,
                         'retentionCount' => $retentionCount,
                         'enableRestore' => option('tearoom1.content-watch.enableRestore', false),
+                        'defaultPageSize' => option('tearoom1.content-watch.defaultPageSize', 10),
+                        'layoutStyle' => option('tearoom1.content-watch.layoutStyle', 'default'),
                     ],
                 ];
             }
