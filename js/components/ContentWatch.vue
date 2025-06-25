@@ -434,7 +434,7 @@ export default {
   align-items: center;
   padding: 0.5rem 1rem;
   cursor: pointer;
-  background-color: var(--color-white);
+  background-color: var(--item-color-back);
 }
 
 .k-content-watch-file-info {
@@ -468,9 +468,9 @@ export default {
 .k-button-group .k-button {
   margin-inline: 0.5rem;
 }
+
 .k-content-watch-file-timeline {
   padding: 0.5rem 1rem;
-  background-color: var(--color-light);
   border-top: 1px solid var(--color-border);
 }
 
@@ -611,39 +611,5 @@ export default {
 
 .k-content-watch-pagination-pagesize {
   width: 150px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .k-content-watch-pagination {
-    border-color: var(--color-gray-300);
-  }
-  
-  .k-content-watch-pagination-info {
-    color: var(--color-gray-400);
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .k-content-watch-file {
-    border-color: var(--color-gray-300);
-  }
-
-  .k-content-watch-file-header {
-    background-color: var(--color-gray-100);
-  }
-
-  .k-content-watch-file-timeline {
-    background-color: var(--color-gray-100);
-    border-color: var(--color-gray-300);
-  }
-
-  .k-timeline-item {
-    border-color: var(--color-gray-300);
-  }
-
-  .k-timeline-footer {
-    border-color: var(--color-gray-300);
-    color: var(--color-gray-300);
-  }
 }
 </style>
