@@ -13,12 +13,12 @@ Additionally it provides a view to see which pages are currently locked and by w
 - **Change Tracking**: Automatically tracks all content changes in pages and files
 - **Editor Attribution**: Records which editor made each change with timestamp
 - **History Timeline**: Lists all content files across your Kirby site, sorted by modification date
-- **File Tracking**: Tracks both page content and media file changes
 - **Locked Pages View**: Shows which pages are currently being edited and by whom
 - **Search Functionality**: Quickly find specific content files
 - **Direct Panel Links**: One-click access to edit content in the Panel
 - **Customizable Retention**: Configure how long history is kept
 - **Version Restore**: Restore previous versions of content with a single click (optional)
+- **Dark Mode and Compact Layout**: Supports Kirby 5 dark mode and a compact layout option
 
 ## Known Limitations
 
@@ -30,7 +30,7 @@ The restore feature also has some limitations
 - binary files are not supported
 - when restoring a page, its files are not restored
 
-> Beware the restoration feature is BETA and may have bugs. Use at your own risk!
+> Beware the restore feature is BETA and may have bugs. Use at your own risk!
 
 ## Installation
 
@@ -65,15 +65,15 @@ return [
         'retentionDays' => 30,
         // Maximum number of history entries to keep per file (default: 10)
         'retentionCount' => 10,
+        // Default page size for pagination, default is 10. Possible values: 10, 20, 50
+        'defaultPageSize' => 20,
+        // Render the list more compact, default is 'default'
+        'layoutStyle' => 'compact',
         // Whether to show locked pages in the interface (default: true)
         'enableLockedPages' => true,
         // Whether to enable content restore functionality (default: false)
         // When disabled, content snapshots are not stored to save disk space
         'enableRestore' => true,
-        // Default page size for pagination, default is 10. Possible values: 10, 20, 50
-        'defaultPageSize' => 20,
-        // Render the list more compact, default is 'default'
-        'layoutStyle' => 'compact',
     ]
 ];
 ```
@@ -117,7 +117,7 @@ MIT
 
 ## Credits
 
-- Developed by TearoomOne
+- Developed by Mathis Koblin
 - Assisted by AI Claude 3.7 Sonnet
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://coff.ee/tearoom1)
