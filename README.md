@@ -113,7 +113,8 @@ When restore functionality is disabled:
 
 ## License
 
-MIT
+This plugin is licensed under the [MIT License](LICENSE), but **using Kirby in production** requires you
+to [buy a license](https://getkirby.com/buy).
 
 ## Credits
 
