@@ -19,9 +19,11 @@ class ChangeTracker
         ];
 
         // Determine the history file path and filename key
-        if ($content instanceof \Kirby\Cms\Page) {
+        $isPage = $content instanceof \Kirby\Cms\Page;
+        $isSite = $content instanceof \Kirby\Cms\Site;
+        if ($isPage || $isSite) {
             $dirPath = $content->root();
-            $fileKey = $content->template()->name();
+            $fileKey = $isPage ? $content->template()->name() : 'site';
             $kirbyLanguage = kirby()->language();
             $record['type'] = 'page';
 
@@ -39,7 +41,7 @@ class ChangeTracker
             $record['type'] = 'file';
         }
 
-        if (!$fileKey) return;
+        if (empty($fileKey)) return;
 
         // Load existing history or create empty array
         $history = [];

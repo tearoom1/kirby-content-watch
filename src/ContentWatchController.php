@@ -80,17 +80,24 @@ class ContentWatchController
             $fileKey = preg_replace('%(\.[a-z]{2})?\.txt$%', '', $fileKey);
             $title = 'File: ' . $fileKey;
             $fileId = $fileKey;
+        } else if ($fileId === '.') { // site
+            $fileId = 'site';
+            $page = kirby()->site();
+
+            $title = 'Site';
+            $fileKey = 'site';
+            $pathShort = 'site';
         } else {
-            $page = kirby()->page($fileId);
+        $page = kirby()->page($fileId);
 
-            $title = 'Unknown';
-            $fileKey = basename($fileId);
+        $title = 'Unknown';
+        $fileKey = basename($fileId);
 
-            if ($page) {
-                $title = $page->title()->value();
-                $fileKey = $page->template()->name();
-            }
+        if ($page) {
+            $title = $page->title()->value();
+            $fileKey = $page->template()->name();
         }
+    }
 
         // Get editor history for this file
         $historyEntries = [];
@@ -122,11 +129,8 @@ class ContentWatchController
         // Try to determine panel URL
         $pathParts = explode('/', $relativePath);
 
-        if ($fileId === '.') {
-            $fileId = 'site';
-            $pathShort = 'site';
+        if ($fileId === 'site') {
             $panelUrl = '/site';
-            $title = 'Site';
         } else if ($isMediaFile) {
             $panelUrl = kirby()->url('panel') . '/pages/' . $pathId . '/files/' . $fileId;
         } else {
