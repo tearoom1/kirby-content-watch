@@ -36,7 +36,7 @@ class ContentWatchController
         foreach ($iterator as $file) {
             if ($file->isFile() &&
                 $file->getExtension() === 'txt' &&
-                !str_ends_with(dirname($file->getPathname()),'_changes') &&
+                !str_ends_with(dirname($file->getPathname()), '_changes') &&
                 $file->getBasename() !== '.content-watch.json'
             ) {
                 $this->processFile($file, $contentDir, $historyFiles, $files);
@@ -88,16 +88,16 @@ class ContentWatchController
             $fileKey = 'site';
             $pathShort = 'site';
         } else {
-        $page = kirby()->page($fileId);
+            $page = kirby()->page($fileId);
 
-        $title = 'Unknown';
-        $fileKey = basename($fileId);
+            $title = 'Unknown';
+            $fileKey = basename($fileId);
 
-        if ($page) {
-            $title = $page->title()->value();
-            $fileKey = $page->template()->name();
+            if ($page) {
+                $title = $page->title()->value();
+                $fileKey = $page->template()->name();
+            }
         }
-    }
 
         // Get editor history for this file
         $historyEntries = [];
@@ -110,21 +110,8 @@ class ContentWatchController
             $record = $historyEntries[0];
         }
 
-        if (isset($record) && !empty($record['editor_id']) && $record['editor_id'] !== 'unknown') {
-            $user = kirby()->user($record['editor_id']);
-            $editor = [
-                'id' => $user->id(),
-                'name' => $user->name()->value(),
-                'email' => $user->email()
-            ];
-            $modified = $record['time'];
-        } else {
-            $editor = [
-                'id' => 'unknown',
-                'name' => 'Unknown',
-                'email' => 'unknown'
-            ];
-        }
+
+        $editor = $this->getEditor($record ?? null);
 
         // Try to determine panel URL
         $pathParts = explode('/', $relativePath);
@@ -164,7 +151,7 @@ class ContentWatchController
             }
 
             $historyEntry = [
-                'editor' => $editor,
+                'editor' => $this->getEditor($entry),
                 'time' => $entry['time'] ?? 0,
                 'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0),
                 'has_snapshot' => !empty($entry['content']),
@@ -177,6 +164,31 @@ class ContentWatchController
         }
 
         $files[$dirPath . '/' . $fileKey] = $fileData;
+    }
+
+    /**
+     * @param mixed $record
+     * @return array|string[]
+     */
+    public function getEditor(mixed $record): array
+    {
+        $editor = [
+            'id' => 'unknown',
+            'name' => 'Unknown',
+            'email' => 'unknown'
+        ];
+
+        if (isset($record) && !empty($record['editor_id']) && $record['editor_id'] !== 'unknown') {
+            $user = kirby()->user($record['editor_id']);
+            if ($user) {
+                $editor = [
+                    'id' => $user->id(),
+                    'name' => $user->name()->value(),
+                    'email' => $user->email()
+                ];
+            }
+        }
+        return $editor;
     }
 
 }
