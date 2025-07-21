@@ -189,6 +189,7 @@
 
     <!-- Confirmation dialog for restore -->
     <k-dialog
+        class="k-content-watch-restore-dialog"
         v-if="enableRestore"
         ref="restoreDialog"
         :button="$t('restore')"
@@ -684,5 +685,9 @@ export default {
 
 .k-content-watch-pagination-pagesize {
   width: 150px;
+}
+.k-content-watch-restore-dialog .k-dialog-body {
+  display: grid;
+  gap: 0.5rem;
 }
 </style>
