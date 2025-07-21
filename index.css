@@ -1,178 +1,180 @@
 
+.k-content-watch-view {
 .k-content-watch-section, .k-content-watch-locked {
-  margin-top: 1rem;
+    margin-top: 1rem;
 }
 .k-content-watch-file {
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
-  overflow: hidden;
-  transition: all 0.3s ease;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
 }
 .k-content-watch-buttons .k-button-group {
-  justify-content: flex-end;
+    justify-content: flex-end;
 }
 .k-content-watch-file-open {
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 .k-content-watch-file-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  background-color: var(--item-color-back);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    background-color: var(--item-color-back);
 }
 .k-content-watch-file-header-compact {
-  padding: 0.2rem 0.6rem;
+    padding: 0.2rem 0.6rem;
 }
 .k-content-watch-file-info {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  line-height: 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    line-height: 1.2rem;
 }
 .k-content-watch-file-path {
-  font-size: .875rem;
-  opacity: 0.7;
-  margin-top: 0.25rem;
+    font-size: .875rem;
+    opacity: 0.7;
+    margin-top: 0.25rem;
 }
 .k-content-watch-file-editor {
-  font-size: .875rem;
-  margin-top: 0.25rem;
-  text-align: right;
-  opacity: 0.7;
+    font-size: .875rem;
+    margin-top: 0.25rem;
+    text-align: right;
+    opacity: 0.7;
 }
 .k-content-watch-file-actions {
-  display: flex;
-  gap: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
 }
 .k-button-rotated {
-  transform: rotate(180deg);
+    transform: rotate(180deg);
 }
 .k-button-group .k-button {
-  margin-inline: 0.5rem;
+    margin-inline: 0.5rem;
 }
 .k-content-watch-file-timeline {
-  padding: 0.5rem 1rem;
-  border-top: 1px solid var(--color-border);
+    padding: 0.5rem 1rem;
+    border-top: 1px solid var(--color-border);
 }
 .k-timeline-list {
-  --colums: 20;
-  display: grid;
-  align-items: center;
-  grid-template-columns: repeat(var(--colums), minmax(0, 1fr));
-  margin: 0;
-  padding: 0.75rem 0.5rem;
-  font-size: .875rem;
-  opacity: 0.7;
+    --colums: 20;
+    display: grid;
+    align-items: center;
+    grid-template-columns: repeat(var(--colums), minmax(0, 1fr));
+    margin: 0;
+    padding: 0.75rem 0.5rem;
+    font-size: .875rem;
+    opacity: 0.7;
 }
 .k-timeline-item {
-  display: contents;
+    display: contents;
 }
 .k-timeline-item > :not(:last-child) {
-  padding: 0.6rem 0.5rem;
+    padding: 0.6rem 0.5rem;
 }
 .k-timeline-item:last-child {
-  border-bottom: none;
+    border-bottom: none;
 }
 .k-timeline-item-version {
-  font-size: 0.8rem;
-  grid-column: span 1;
+    font-size: 0.8rem;
+    grid-column: span 1;
 }
 .k-timeline-item-language {
-  font-size: 0.8rem;
-  grid-column: span 1;
+    font-size: 0.8rem;
+    grid-column: span 1;
 }
 .k-timeline-item-time {
-  font-size: 0.8rem;
-  grid-column: span 4;
+    font-size: 0.8rem;
+    grid-column: span 4;
 }
 .k-timeline-item-time-rel {
-  font-size: 0.7rem;
-  grid-column: span 5;
+    font-size: 0.7rem;
+    grid-column: span 5;
 }
 .k-timeline-item-editor-label {
-  font-size: 0.7rem;
-  text-align: right;
-  grid-column: span 3;
+    font-size: 0.7rem;
+    text-align: right;
+    grid-column: span 3;
 }
 .k-timeline-item-editor {
-  text-align: right;
-  grid-column: span 5;
+    text-align: right;
+    grid-column: span 5;
 }
 .k-timeline-item-actions {
-  text-align: right;
-  display: inline-block;
-  font-size: 0.8rem;
-  grid-column: span 1;
+    text-align: right;
+    display: inline-block;
+    font-size: 0.8rem;
+    grid-column: span 1;
 }
 .k-timeline-item-line {
-  grid-column: span var(--colums);
-  border-bottom: 1px solid var(--color-border);
+    grid-column: span var(--colums);
+    border-bottom: 1px solid var(--color-border);
 }
 .k-restore-button {
-  height: auto !important;
-  line-height: 1 !important;
-  color: var(--color-positive) !important;
+    height: auto !important;
+    line-height: 1 !important;
+    color: var(--color-positive) !important;
 }
 .k-timeline-footer {
-  padding: 0.5rem 1rem 0;
-  font-size: 0.75rem;
-  color: var(--color-gray-800);
-  text-align: right;
+    padding: 0.5rem 1rem 0;
+    font-size: 0.75rem;
+    color: var(--color-gray-800);
+    text-align: right;
 }
 .k-content-watch-locked .k-item {
-  padding: 0rem 0.5rem;
-  height: unset;
+    padding: 0rem 0.5rem;
+    height: unset;
 }
 .k-content-watch-locked .k-item-content {
-  line-height: 1.2rem;
+    line-height: 1.2rem;
 }
 .k-content-watch-locked .k-item-content .k-item-info {
-  text-align: right;
+    text-align: right;
 }
 .k-button-active {
-  background-color: var(--color-gray-200);
-  color: var(--color-black);
-  font-weight: 500;
+    background-color: var(--color-gray-200);
+    color: var(--color-black);
+    font-weight: 500;
 }
 
-/* Custom tab styles */
+  /* Custom tab styles */
 .k-content-watch-view .k-button-active {
-  border-bottom: 2px solid var(--color-gray-500);
+    border-bottom: 2px solid var(--color-gray-500);
 }
 .k-content-watch-files {
-  margin-top: 1rem;
+    margin-top: 1rem;
 }
 
-/* Pagination styles */
+  /* Pagination styles */
 .k-content-watch-pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 1rem;
-  padding: 0.5rem 0;
-  border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--color-border);
 }
 .k-content-watch-pagination-info {
-  font-size: 0.875rem;
-  color: var(--color-gray-600);
+    font-size: 0.875rem;
+    color: var(--color-gray-600);
 }
 .k-content-watch-pagination-controls {
-  display: flex;
-  align-items: center;
+    display: flex;
+    align-items: center;
 }
 .k-content-watch-pagination-page-info {
-  display: inline-block;
-  padding: 0 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
+    display: inline-block;
+    padding: 0 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
 }
 .k-content-watch-pagination-pagesize {
-  width: 150px;
+    width: 150px;
 }
 .k-content-watch-restore-dialog .k-dialog-body {
-  display: grid;
-  gap: 0.5rem;
+    display: grid;
+    gap: 0.5rem;
+}
 }
