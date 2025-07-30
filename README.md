@@ -106,7 +106,7 @@ When restore functionality is disabled:
 ## Requirements
 
 - Kirby 4 or 5
-- PHP 8.0+
+- PHP 8.1+
 
 ## Todo
 
