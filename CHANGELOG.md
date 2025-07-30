@@ -1,3 +1,10 @@
+## [1.3.11](https://github.com/tearoom1/kirby-content-watch/compare/v1.3.10...v1.3.11) (2025-07-30)
+
+
+### Bug Fixes
+
+* fixed panel message ([8b0fbce](https://github.com/tearoom1/kirby-content-watch/commit/8b0fbce4fcefbc791b4fbb6fb7515dd66db9aae9))
+
 ## [1.3.10](https://github.com/tearoom1/kirby-content-watch/compare/v1.3.9...v1.3.10) (2025-07-21)
 
 
@@ -15,6 +22,4 @@
 ## [1.3.8](https://github.com/tearoom1/kirby-content-watch/compare/v1.3.7...v1.3.8) (2025-07-21)
 
 ## [1.3.7](https://github.com/tearoom1/kirby-content-watch/compare/v1.3.6...v1.3.7) (2025-07-21)
-
-## [1.3.6](https://github.com/tearoom1/kirby-content-watch/compare/v1.3.5...v1.3.6) (2025-07-21)
 
