@@ -7,6 +7,3 @@
 # Composer files
 /vendor
 /kirby
-
-/.phpunit.result.cache
-/site/
