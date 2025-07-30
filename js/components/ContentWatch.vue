@@ -463,10 +463,10 @@ export default {
           // this.$store.dispatch('notification/success', 'Content restored successfully');
           this.refresh();
         } else {
-          this.$store.dispatch('notification/error', response.message || 'Failed to restore content');
+          window.panel.notification.error(response.message || 'Failed to restore content');
         }
       } catch (error) {
-        this.$store.dispatch('notification/error', 'Error restoring content: ' + (error.message || 'Unknown error'));
+        window.panel.notification.error('Error restoring content: ' + (error.message || 'Unknown error'));
       } finally {
         this.isLoading = false;
         this.restoreTarget = null;
