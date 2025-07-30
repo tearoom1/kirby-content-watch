@@ -8,6 +8,8 @@ Additionally it provides a view to see which pages are currently locked and by w
 
 [![Screenshot](screenshot.jpg)](https://github.com/tearoom1/kirby-content-watch)
 
+***
+
 ## Features
 
 - **Change Tracking**: Automatically tracks all content changes in pages and files
@@ -23,7 +25,7 @@ Additionally it provides a view to see which pages are currently locked and by w
 ## Known Limitations
 
 This plugin has been developed for rather smaller websites. It has not been tested on big sites or slow servers.
-It stores all history entries in a single file for each content directory, and goes through them each time you open the plugins page. 
+It stores all history entries in a single file for each content directory, and goes through them each time you open the plugins page.
 This may be a problem for sites with a large number of files.
 
 The restore feature also has some limitations
@@ -97,7 +99,7 @@ When restore functionality is disabled:
 3. The restore buttons will not be displayed in the interface
 
 > NOTE: The restore functionality only works for page content.
-> It does not track changes of media/binary files. 
+> It does not track changes of media/binary files.
 > And when restoring a page, it does not restore its files.
 
 
