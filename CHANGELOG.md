@@ -1,3 +1,10 @@
+## [1.3.13](https://github.com/tearoom1/kirby-content-watch/compare/v1.3.12...v1.3.13) (2025-08-01)
+
+
+### Bug Fixes
+
+* fixed repo url ([ee68bd0](https://github.com/tearoom1/kirby-content-watch/commit/ee68bd0dd8a8d2293c124d21c2c58b2003cb2950))
+
 ## [1.3.12](https://github.com/tearoom1/kirby-content-watch/compare/v1.3.11...v1.3.12) (2025-07-30)
 
 
@@ -25,6 +32,4 @@
 ### Bug Fixes
 
 * Added conventional updates ([6603571](https://github.com/tearoom1/kirby-content-watch/commit/6603571ec69d580f57fafdc2e6ebb77af86471e4))
-
-## [1.3.8](https://github.com/tearoom1/kirby-content-watch/compare/v1.3.7...v1.3.8) (2025-07-21)
 
