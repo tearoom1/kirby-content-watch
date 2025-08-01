@@ -1,11 +1,11 @@
 <?php
 
+@include_once __DIR__ . '/vendor/autoload.php';
+
 // support manual installation in plugins folder
 use Kirby\Http\Response;
 use TearoomOne\ContentWatch\ChangeTracker;
 use TearoomOne\ContentWatch\ContentRestore;
-
-@include_once __DIR__ . '/vendor/autoload.php';
 
 // don't load plugin if it's disabled in the config.
 if (option('tearoom1.content-watch.disable', false)) {
