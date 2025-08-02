@@ -85,7 +85,7 @@ return [
 
 The diff only works ok for block structures if pretty-printed JSON is used.
 Use `pretty: true` in the `layout` or `block` field type to enable this.
-Event then the diff is pretty basic, but might be enough in mnay cases
+Event then the diff is pretty basic, but might be enough in many cases
 to see what has changed.
 
 ## How It Works
