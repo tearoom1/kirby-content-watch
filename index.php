@@ -1,8 +1,12 @@
 <?php
 
-@include_once __DIR__ . '/vendor/autoload.php';
+load([
+    'TearoomOne\\ContentWatch\\ContentWatchController' => 'src/ContentWatchController.php',
+    'TearoomOne\\ContentWatch\\ChangeTracker' => 'src/ChangeTracker.php',
+    'TearoomOne\\ContentWatch\\ContentRestore' => 'src/ContentRestore.php',
+    'TearoomOne\\ContentWatch\\LockedPages' => 'src/LockedPages.php',
+], __DIR__);
 
-// support manual installation in plugins folder
 use Kirby\Http\Response;
 use TearoomOne\ContentWatch\ChangeTracker;
 use TearoomOne\ContentWatch\ContentRestore;
