@@ -200,94 +200,10 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
  */
 function generateDiff($oldContent, $newContent): string
 {
-    // Handle both string and array content types
-    if (is_string($oldContent) && is_string($newContent)) {
-        if (trim($oldContent) === trim($newContent)) {
-            return 'No changes found';
-        }
-        return diffStrings($oldContent, $newContent);
+    if (trim($oldContent) === trim($newContent)) {
+        return 'No changes found';
     }
-
-    // Convert to arrays if needed
-    if (!is_array($oldContent)) {
-        $oldContent = is_string($oldContent) ? ['content' => $oldContent] : [];
-    }
-
-    if (!is_array($newContent)) {
-        $newContent = is_string($newContent) ? ['content' => $newContent] : [];
-    }
-
-    $output = '';
-    $changesFound = false;
-
-    // Get all keys from both arrays
-    $allKeys = array_unique(array_merge(array_keys($oldContent), array_keys($newContent)));
-    sort($allKeys);
-
-    foreach ($allKeys as $key) {
-        $oldValue = $oldContent[$key] ?? null;
-        $newValue = $newContent[$key] ?? null;
-
-        // Skip empty fields in both versions
-        if (isEmpty($oldValue) && isEmpty($newValue)) {
-            continue;
-        }
-
-        // Field was added (and not empty)
-        if ($oldValue === null && !isEmpty($newValue)) {
-            $output .= "Added: $key\n";
-            $output .= "+ " . formatValue($newValue) . "\n\n";
-            $changesFound = true;
-            continue;
-        }
-
-        // Field was removed (and not empty)
-        if ($newValue === null && !isEmpty($oldValue)) {
-            $output .= "Removed: $key\n";
-            $output .= "- " . formatValue($oldValue) . "\n\n";
-            $changesFound = true;
-            continue;
-        }
-
-        // Field was changed and neither value is empty
-        if ($oldValue !== $newValue && !(isEmpty($oldValue) && isEmpty($newValue))) {
-            $output .= "Changed: $key\n";
-
-            // If both are strings, show a more detailed diff
-            if (is_string($oldValue) && is_string($newValue)) {
-                if (trim($oldValue) !== trim($newValue)) {
-                    $output .= diffStrings($oldValue, $newValue);
-                    $changesFound = true;
-                }
-            } else {
-                if (!isEmpty($oldValue)) {
-                    $output .= "- " . formatValue($oldValue) . "\n";
-                }
-                if (!isEmpty($newValue)) {
-                    $output .= "+ " . formatValue($newValue) . "\n";
-                }
-                $changesFound = true;
-                $output .= "\n";
-            }
-        }
-    }
-
-    return $changesFound ? $output : 'No significant changes found';
-}
-
-/**
- * Format a value for display in the diff
- *
- * @param mixed $value
- * @return string
- */
-function formatValue($value): string
-{
-    if (is_array($value)) {
-        return json_encode($value, JSON_PRETTY_PRINT);
-    }
-
-    return (string)$value;
+    return diffStrings($oldContent, $newContent);
 }
 
 /**
