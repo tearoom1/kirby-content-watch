@@ -42,6 +42,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         'retentionDays' => 30, // default to 30 days of history
         'enableLockedPages' => true,
         'enableRestore' => false, // enable or disable the restore functionality
+        'enableDiff' => false, // enable or disable the diff functionality
     ],
     'api' => [
         'routes' => [
@@ -95,7 +96,260 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                         ], 500);
                     }
                 }
+            ],
+            [
+                'pattern' => '/content-watch/diff',
+                'method' => 'POST',
+                'action' => function () {
+                    // Get the current user
+                    if (!$user = kirby()->user()) {
+                        return Response::json([
+                            'status' => 'error',
+                            'message' => 'Unauthorized'
+                        ], 401);
+                    }
+
+                    // Get data from request
+                    $request = kirby()->request();
+                    $dirPath = $request->get('dirPath');
+                    $fileKey = $request->get('fileKey');
+                    $fromTimestamp = (int)$request->get('fromTimestamp');
+                    $toTimestamp = (int)$request->get('toTimestamp');
+
+                    // Validate data
+                    if (!$dirPath || !$fileKey || !$fromTimestamp || !$toTimestamp) {
+                        return Response::json([
+                            'status' => 'error',
+                            'message' => 'Missing required parameters'
+                        ], 400);
+                    }
+
+                    // Get content versions and generate diff
+                    try {
+                        $historyFile = $dirPath . '/.content-watch.json';
+                        if (!file_exists($historyFile)) {
+                            return Response::json([
+                                'status' => 'error',
+                                'message' => 'History file not found'
+                            ], 404);
+                        }
+
+                        $history = json_decode(file_get_contents($historyFile), true) ?: [];
+                        if (!isset($history[$fileKey])) {
+                            return Response::json([
+                                'status' => 'error',
+                                'message' => 'No history found for this file'
+                            ], 404);
+                        }
+
+                        // Find the two versions
+                        $fromVersion = null;
+                        $toVersion = null;
+                        foreach ($history[$fileKey] as $entry) {
+                            if ($entry['time'] === $fromTimestamp) {
+                                $fromVersion = $entry;
+                            }
+                            if ($entry['time'] === $toTimestamp) {
+                                $toVersion = $entry;
+                            }
+                        }
+
+                        if (!$fromVersion || !$toVersion) {
+                            return Response::json([
+                                'status' => 'error',
+                                'message' => 'One or both versions not found'
+                            ], 404);
+                        }
+
+                        // Extract content from versions - handle different content structures
+                        $fromContent = $fromVersion['content'] ?? null;
+                        $toContent = $toVersion['content'] ?? null;
+
+                        if ($fromContent === null || $toContent === null) {
+                            return Response::json([
+                                'status' => 'error',
+                                'message' => 'One or both versions have no content'
+                            ], 404);
+                        }
+
+                        // Generate the diff
+                        $diff = generateDiff($fromContent, $toContent);
+
+                        return Response::json([
+                            'status' => 'success',
+                            'diff' => $diff
+                        ]);
+                    } catch (\Exception $e) {
+                        return Response::json([
+                            'status' => 'error',
+                            'message' => 'Error generating diff: ' . $e->getMessage()
+                        ], 500);
+                    }
+                }
             ]
         ]
     ]
 ]);
+
+/**
+ * Generate a visual diff between two content arrays or strings
+ *
+ * @param mixed $oldContent Array or string content
+ * @param mixed $newContent Array or string content
+ * @return string
+ */
+function generateDiff($oldContent, $newContent): string
+{
+    // Handle both string and array content types
+    if (is_string($oldContent) && is_string($newContent)) {
+        if (trim($oldContent) === trim($newContent)) {
+            return 'No changes found';
+        }
+        return diffStrings($oldContent, $newContent);
+    }
+
+    // Convert to arrays if needed
+    if (!is_array($oldContent)) {
+        $oldContent = is_string($oldContent) ? ['content' => $oldContent] : [];
+    }
+
+    if (!is_array($newContent)) {
+        $newContent = is_string($newContent) ? ['content' => $newContent] : [];
+    }
+
+    $output = '';
+    $changesFound = false;
+
+    // Get all keys from both arrays
+    $allKeys = array_unique(array_merge(array_keys($oldContent), array_keys($newContent)));
+    sort($allKeys);
+
+    foreach ($allKeys as $key) {
+        $oldValue = $oldContent[$key] ?? null;
+        $newValue = $newContent[$key] ?? null;
+
+        // Skip empty fields in both versions
+        if (isEmpty($oldValue) && isEmpty($newValue)) {
+            continue;
+        }
+
+        // Field was added (and not empty)
+        if ($oldValue === null && !isEmpty($newValue)) {
+            $output .= "Added: $key\n";
+            $output .= "+ " . formatValue($newValue) . "\n\n";
+            $changesFound = true;
+            continue;
+        }
+
+        // Field was removed (and not empty)
+        if ($newValue === null && !isEmpty($oldValue)) {
+            $output .= "Removed: $key\n";
+            $output .= "- " . formatValue($oldValue) . "\n\n";
+            $changesFound = true;
+            continue;
+        }
+
+        // Field was changed and neither value is empty
+        if ($oldValue !== $newValue && !(isEmpty($oldValue) && isEmpty($newValue))) {
+            $output .= "Changed: $key\n";
+
+            // If both are strings, show a more detailed diff
+            if (is_string($oldValue) && is_string($newValue)) {
+                if (trim($oldValue) !== trim($newValue)) {
+                    $output .= diffStrings($oldValue, $newValue);
+                    $changesFound = true;
+                }
+            } else {
+                if (!isEmpty($oldValue)) {
+                    $output .= "- " . formatValue($oldValue) . "\n";
+                }
+                if (!isEmpty($newValue)) {
+                    $output .= "+ " . formatValue($newValue) . "\n";
+                }
+                $changesFound = true;
+                $output .= "\n";
+            }
+        }
+    }
+
+    return $changesFound ? $output : 'No significant changes found';
+}
+
+/**
+ * Format a value for display in the diff
+ *
+ * @param mixed $value
+ * @return string
+ */
+function formatValue($value): string
+{
+    if (is_array($value)) {
+        return json_encode($value, JSON_PRETTY_PRINT);
+    }
+
+    return (string)$value;
+}
+
+/**
+ * Generate a line-by-line diff between two strings
+ *
+ * @param string $oldStr
+ * @param string $newStr
+ * @return string
+ */
+function diffStrings(string $oldStr, string $newStr): string
+{
+    $oldLines = explode("\n", $oldStr);
+    $newLines = explode("\n", $newStr);
+
+    $output = '';
+    $changes = false;
+
+    // Simple line-by-line diff
+    $maxLines = max(count($oldLines), count($newLines));
+
+    for ($i = 0; $i < $maxLines; $i++) {
+        $oldLine = $i < count($oldLines) ? $oldLines[$i] : '';
+        $newLine = $i < count($newLines) ? $newLines[$i] : '';
+
+        if ($oldLine !== $newLine) {
+            if ($oldLine !== '') {
+                $output .= "- " . $oldLine . "\n";
+            }
+
+            if ($newLine !== '') {
+                $output .= "+ " . $newLine . "\n";
+            }
+            $changes = true;
+        }
+    }
+
+    return $changes ? $output : '';
+}
+
+/**
+ * Check if a value is empty (considers more than just PHP's empty())
+ *
+ * @param mixed $value
+ * @return bool
+ */
+function isEmpty($value): bool
+{
+    if ($value === null) {
+        return true;
+    }
+
+    if (is_string($value) && trim($value) === '') {
+        return true;
+    }
+
+    if (is_array($value) && count($value) === 0) {
+        return true;
+    }
+
+    if ($value === false || $value === 0 || $value === '0') {
+        return false;  // These are not considered empty for our purposes
+    }
+
+    return empty($value);
+}

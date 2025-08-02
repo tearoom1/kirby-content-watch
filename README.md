@@ -76,9 +76,15 @@ return [
         // Whether to enable content restore functionality (default: false)
         // When disabled, content snapshots are not stored to save disk space
         'enableRestore' => true,
+        // Whether to enable content diff functionality (default: false)
+        // Only works if restore is enabled
+        'enableDiff' => true,
     ]
 ];
 ```
+
+The diff only works ok for block structures if pretty-printed JSON is used.
+Use `pretty: true` in the `layout` or `block` field type to enable this.
 
 ## How It Works
 

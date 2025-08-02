@@ -110,6 +110,13 @@
                   </span>
                 <div class="k-timeline-item-actions">
                   <k-button
+                    v-if="enableDiff && entry.has_snapshot"
+                    @click.stop="viewDiff(file, entry, entryIndex)"
+                    icon="split"
+                    class="k-diff-button"
+                    title="View changes"
+                  />
+                  <k-button
                       v-if="enableRestore && entry.has_snapshot && entryIndex > 0"
                       @click.stop="confirmRestore(file, entry)"
                       icon="undo"
@@ -205,6 +212,57 @@
       </k-text>
       <k-text>This will overwrite the current content with this previous version.</k-text>
     </k-dialog>
+
+    <!-- Diff dialog for comparing versions -->
+    <k-dialog
+        class="k-content-watch-diff-dialog"
+        ref="diffDialog"
+        size="large"
+        :button="$t('close')"
+        cancelButton=""
+        submitButton="Close"
+        @close="closeDiff"
+    >
+      <div v-if="diffTarget" class="k-content-watch-diff-header">
+        <div>
+          <div class="k-content-watch-diff-file-info">
+            Page:<strong>{{ diffTarget.file?.title }}</strong>
+            <span class="k-content-watch-diff-path"> ~ {{ diffTarget.file?.path_short }}</span>
+          </div>
+
+          <div class="k-content-watch-diff-current-version">
+            <strong>Current version:</strong> v{{ diffTarget.entry?.version }} / {{ diffTarget.entry?.language }} / {{ diffTarget.entry?.time_formatted }}
+            <span class="k-content-watch-diff-editor">
+              ({{ diffTarget.entry?.editor.name || diffTarget.entry?.editor.email || 'Unknown' }})
+            </span>
+          </div>
+        </div>
+
+        <div class="k-content-watch-diff-version-select">
+          <div class="k-content-watch-diff-compare-version">
+            <strong>Compare with:</strong>
+            <span v-if="diffCompareVersionId !== null && diffTarget" class="k-content-watch-diff-version-number">
+              v{{ getVersionNumber(diffCompareVersionId) }}
+            </span>
+          </div>
+
+          <k-select-field
+              :options="diffVersionOptions"
+              @input="changeCompareVersion"
+              :value="diffCompareVersionId"
+              placeholder="Select version to compare"
+          />
+        </div>
+      </div>
+
+      <k-loader v-if="isDiffLoading" />
+
+      <div v-else-if="diffContent" class="k-content-watch-diff-content">
+        <pre class="k-content-watch-diff-code">{{ diffContent }}</pre>
+      </div>
+
+      <k-empty v-else icon="document" text="No diff available" />
+    </k-dialog>
   </k-panel-inside>
 </template>
 
@@ -228,6 +286,10 @@ export default {
       default: () => []
     },
     enableRestore: {
+      type: Boolean,
+      default: false
+    },
+    enableDiff: {
       type: Boolean,
       default: false
     },
@@ -259,7 +321,12 @@ export default {
         {text: '20 per page', value: 20},
         {text: '50 per page', value: 50}
       ],
-      tab: 'content' // Default tab is content
+      tab: 'content', // Default tab is content
+      diffTarget: null,
+      diffVersionOptions: [],
+      diffCompareVersionId: null,
+      diffContent: null,
+      isDiffLoading: false
     };
   },
 
@@ -471,6 +538,78 @@ export default {
         this.isLoading = false;
         this.restoreTarget = null;
       }
+    },
+
+    viewDiff(file, entry, entryIndex) {
+      this.diffTarget = {file, entry};
+
+      // Create version options with version numbers
+      this.diffVersionOptions = file.history
+        .filter((_, i) => i !== entryIndex) // Remove current version from options
+        .map((entry, i) => ({
+          text: 'v' + entry.version + ' / ' + entry.language + ' / ' +
+            this.formatRelative(entry.time) + ' (' + (entry.editor.name || entry.editor.email || 'Unknown') + ')',
+          value: i < entryIndex ? i : i + 1 // Adjust index based on filtering
+        }));
+
+      // Always default to comparing with the previous version
+      const compareIndex = entryIndex < this.diffVersionOptions.length ? entryIndex + 1 : null;
+      console.log(entryIndex + ' - ' + compareIndex);
+      this.diffCompareVersionId = compareIndex;
+
+      this.$refs.diffDialog.open();
+
+      // Load the initial diff if we have a valid compare version
+      this.loadDiff(compareIndex);
+    },
+
+    closeDiff() {
+      this.diffTarget = null;
+      this.diffVersionOptions = [];
+      this.diffCompareVersionId = null;
+      this.diffContent = null;
+    },
+
+    changeCompareVersion(versionId) {
+      this.diffCompareVersionId = versionId;
+      this.loadDiff(versionId);
+    },
+
+    loadDiff(versionId) {
+
+      if (versionId === null) {
+        this.diffContent = null;
+        return;
+      }
+
+      this.isDiffLoading = true;
+      this.diffContent = null;
+
+      const file = this.diffTarget.file;
+      const entry = this.diffTarget.entry;
+      const compareEntry = file.history[versionId];
+
+      this.$api.post('/content-watch/diff', {
+        dirPath: file.dir_path,
+        fileKey: file.uid,
+        fromTimestamp: compareEntry.time,
+        toTimestamp: entry.time
+      })
+      .then(response => {
+        this.diffContent = response.diff;
+      })
+      .catch(error => {
+        window.panel.notification.error('Error loading diff: ' + (error.message || 'Unknown error'));
+      })
+      .finally(() => {
+        this.isDiffLoading = false;
+      });
+    },
+
+    getVersionNumber(versionId) {
+      const file = this.diffTarget.file;
+      const entry = file.history[versionId];
+      return entry.version;
     }
   }
 };
@@ -589,7 +728,7 @@ export default {
 
   .k-timeline-item-time-rel {
     font-size: 0.7rem;
-    grid-column: span 5;
+    grid-column: span 4;
   }
 
   .k-timeline-item-editor-label {
@@ -605,9 +744,11 @@ export default {
 
   .k-timeline-item-actions {
     text-align: right;
-    display: inline-block;
+    display: inline-flex;
+    justify-content: end;
+    gap: 0.5rem;
     font-size: 0.8rem;
-    grid-column: span 1;
+    grid-column: span 2;
   }
 
   .k-timeline-item-line {
@@ -619,6 +760,12 @@ export default {
     height: auto !important;
     line-height: 1 !important;
     color: var(--color-positive) !important;
+  }
+
+  .k-diff-button {
+    height: auto !important;
+    line-height: 1 !important;
+    color: var(--color-orange-400) !important;
   }
 
   .k-timeline-footer {
@@ -689,9 +836,61 @@ export default {
     width: 150px;
   }
 
-  .k-content-watch-restore-dialog .k-dialog-body {
+  .k-content-watch-diff-dialog .k-dialog-body {
     display: grid;
     gap: 0.5rem;
+  }
+
+  .k-content-watch-diff-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .k-content-watch-diff-file-info {
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .k-content-watch-diff-path {
+    font-size: 0.875rem;
+    opacity: 0.7;
+  }
+
+  .k-content-watch-diff-current-version {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
+
+  .k-content-watch-diff-editor {
+    font-size: 0.875rem;
+    opacity: 0.7;
+  }
+
+  .k-content-watch-diff-version-select {
+    margin-top: 1rem;
+  }
+
+  .k-content-watch-diff-compare-version {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .k-content-watch-diff-content {
+    padding: 1rem;
+  }
+
+  .k-content-watch-diff-code {
+    font-size: 0.875rem;
+    font-family: monospace;
+    white-space: pre-wrap;
+  }
+  .k-content-watch-diff-dialog {
+    .k-button-group.k-dialog-buttons {
+      grid-template-columns: 1fr;
+    }
+    .k-dialog-button-cancel {
+      display: none;
+    }
   }
 }
 </style>

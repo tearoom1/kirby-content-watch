@@ -91,7 +91,7 @@
 }
 .k-timeline-item-time-rel {
     font-size: 0.7rem;
-    grid-column: span 5;
+    grid-column: span 4;
 }
 .k-timeline-item-editor-label {
     font-size: 0.7rem;
@@ -104,9 +104,11 @@
 }
 .k-timeline-item-actions {
     text-align: right;
-    display: inline-block;
+    display: inline-flex;
+    justify-content: end;
+    gap: 0.5rem;
     font-size: 0.8rem;
-    grid-column: span 1;
+    grid-column: span 2;
 }
 .k-timeline-item-line {
     grid-column: span var(--colums);
@@ -116,6 +118,11 @@
     height: auto !important;
     line-height: 1 !important;
     color: var(--color-positive) !important;
+}
+.k-diff-button {
+    height: auto !important;
+    line-height: 1 !important;
+    color: var(--color-orange-400) !important;
 }
 .k-timeline-footer {
     padding: 0.5rem 1rem 0;
@@ -173,8 +180,51 @@
 .k-content-watch-pagination-pagesize {
     width: 150px;
 }
-.k-content-watch-restore-dialog .k-dialog-body {
+.k-content-watch-diff-dialog .k-dialog-body {
     display: grid;
     gap: 0.5rem;
+}
+.k-content-watch-diff-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border);
+}
+.k-content-watch-diff-file-info {
+    font-size: 1rem;
+    font-weight: 500;
+}
+.k-content-watch-diff-path {
+    font-size: 0.875rem;
+    opacity: 0.7;
+}
+.k-content-watch-diff-current-version {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+.k-content-watch-diff-editor {
+    font-size: 0.875rem;
+    opacity: 0.7;
+}
+.k-content-watch-diff-version-select {
+    margin-top: 1rem;
+}
+.k-content-watch-diff-compare-version {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+.k-content-watch-diff-content {
+    padding: 1rem;
+}
+.k-content-watch-diff-code {
+    font-size: 0.875rem;
+    font-family: monospace;
+    white-space: pre-wrap;
+}
+.k-content-watch-diff-dialog {
+.k-button-group.k-dialog-buttons {
+      grid-template-columns: 1fr;
+}
+.k-dialog-button-cancel {
+      display: none;
+}
 }
 }
