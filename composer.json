@@ -1,44 +1,44 @@
 {
-    "name": "tearoom1/kirby-content-watch",
-    "description": "Kirby plugin that allows you to keep track of what has been changed and by whom.",
-    "type": "kirby-plugin",
-    "license": "MIT",
-    "homepage": "https://github.com/tearoom1/kirby-content-watch",
-    "version": "2.4.3",
-    "keywords": [
-        "kirby",
-        "panel",
-        "content",
-        "history"
-    ],
-    "authors": [
-        {
-            "name": "Mathis Koblin",
-            "email": "mail@tearoom.one",
-            "homepage": "https://www.tearoom.one",
-            "role": "Maintainer"
-        }
-    ],
-    "support": {
-        "docs": "https://github.com/tearoom1/kirby-content-watch/blob/main/README.md",
-        "source": "https://github.com/tearoom1/kirby-content-watch"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/tearoom1/kirby-content-watch.git"
-    },
-    "require": {
-        "getkirby/composer-installer": "^1.2"
-    },
-    "autoload": {
-        "psr-4": {
-            "TearoomOne\\ContentWatch\\": "src/"
-        }
-    },
-    "config": {
-        "optimize-autoloader": true,
-        "allow-plugins": {
-            "getkirby/composer-installer": true
-        }
+  "name": "tearoom1/kirby-content-watch",
+  "description": "Kirby plugin that allows you to keep track of what has been changed and by whom.",
+  "type": "kirby-plugin",
+  "license": "MIT",
+  "homepage": "https://github.com/tearoom1/kirby-content-watch",
+  "version": "2.4.4",
+  "keywords": [
+    "kirby",
+    "panel",
+    "content",
+    "history"
+  ],
+  "authors": [
+    {
+      "name": "Mathis Koblin",
+      "email": "mail@tearoom.one",
+      "homepage": "https://www.tearoom.one",
+      "role": "Maintainer"
     }
+  ],
+  "support": {
+    "docs": "https://github.com/tearoom1/kirby-content-watch/blob/main/README.md",
+    "source": "https://github.com/tearoom1/kirby-content-watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tearoom1/kirby-content-watch.git"
+  },
+  "require": {
+    "getkirby/composer-installer": "^1.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "TearoomOne\\ContentWatch\\": "src/"
+    }
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "allow-plugins": {
+      "getkirby/composer-installer": true
+    }
+  }
 }

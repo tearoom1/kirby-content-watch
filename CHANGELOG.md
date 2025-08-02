@@ -1,3 +1,10 @@
+## [2.4.4](https://github.com/tearoom1/kirby-content-watch/compare/v2.4.3...v2.4.4) (2025-08-02)
+
+
+### Bug Fixes
+
+* reverted to use class loading in index.php ([c77d570](https://github.com/tearoom1/kirby-content-watch/commit/c77d57050be469da9b25d225ef9735907b29b19d))
+
 ## [2.4.3](https://github.com/tearoom1/kirby-content-watch/compare/v2.4.2...v2.4.3) (2025-08-01)
 
 
@@ -29,6 +36,4 @@
 ### Bug Fixes
 
 * Added conventional updates ([6603571](https://github.com/tearoom1/kirby-content-watch/commit/6603571ec69d580f57fafdc2e6ebb77af86471e4))
-
-## [1.3.8](https://github.com/tearoom1/kirby-content-watch/compare/v1.3.7...v1.3.8) (2025-07-21)
 
