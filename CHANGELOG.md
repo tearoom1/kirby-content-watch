@@ -1,3 +1,10 @@
+## [2.6.0](https://github.com/tearoom1/kirby-content-watch/compare/v2.5.0...v2.6.0) (2025-08-03)
+
+
+### Features
+
+* better diff feature and optional advanced diff with jfcherng/php-diff package. ([5a44727](https://github.com/tearoom1/kirby-content-watch/commit/5a447279ef1512df91f6785e98ad5e5cf335529f))
+
 ## [2.5.0](https://github.com/tearoom1/kirby-content-watch/compare/v2.4.4...v2.5.0) (2025-08-02)
 
 
@@ -34,11 +41,4 @@
 * readme ([fc19bf0](https://github.com/tearoom1/kirby-content-watch/commit/fc19bf070e85c9a79d420e9573a6486a4dca18eb))
 * updated composer ([5c7aa23](https://github.com/tearoom1/kirby-content-watch/commit/5c7aa2320da975e8da72bf5c782bb7aa935a133b))
 * updated composer ([c63d36e](https://github.com/tearoom1/kirby-content-watch/commit/c63d36e52f74b4e69e91b3cbbe0569f18cb370e4))
-
-## [1.3.10](https://github.com/tearoom1/kirby-content-watch/compare/v1.3.9...v1.3.10) (2025-07-21)
-
-
-### Bug Fixes
-
-* Back to v prefix in version ([78606a4](https://github.com/tearoom1/kirby-content-watch/commit/78606a44413efc87d11df87fc16e97750c0b11c5))
 
