@@ -1,3 +1,10 @@
+## [2.6.1](https://github.com/tearoom1/kirby-content-watch/compare/v2.6.0...v2.6.1) (2025-08-03)
+
+
+### Bug Fixes
+
+* better diff ([35cc87f](https://github.com/tearoom1/kirby-content-watch/commit/35cc87fa4c2ae77e09626e0c4b7be05b0bf82b52))
+
 ## [2.6.0](https://github.com/tearoom1/kirby-content-watch/compare/v2.5.0...v2.6.0) (2025-08-03)
 
 
@@ -30,15 +37,4 @@
 ### Bug Fixes
 
 * updated composer and autoloading ([ac65b42](https://github.com/tearoom1/kirby-content-watch/commit/ac65b4257efd0e6e1a5152b3deb487f46ccd675b))
-
-## [2.4.2](https://github.com/tearoom1/kirby-content-watch/compare/v1.3.10...v2.4.2) (2025-08-01)
-
-
-### Bug Fixes
-
-* fixed panel message ([8b0fbce](https://github.com/tearoom1/kirby-content-watch/commit/8b0fbce4fcefbc791b4fbb6fb7515dd66db9aae9))
-* fixed repo url ([ee68bd0](https://github.com/tearoom1/kirby-content-watch/commit/ee68bd0dd8a8d2293c124d21c2c58b2003cb2950))
-* readme ([fc19bf0](https://github.com/tearoom1/kirby-content-watch/commit/fc19bf070e85c9a79d420e9573a6486a4dca18eb))
-* updated composer ([5c7aa23](https://github.com/tearoom1/kirby-content-watch/commit/5c7aa2320da975e8da72bf5c782bb7aa935a133b))
-* updated composer ([c63d36e](https://github.com/tearoom1/kirby-content-watch/commit/c63d36e52f74b4e69e91b3cbbe0569f18cb370e4))
 
