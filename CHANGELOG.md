@@ -1,3 +1,10 @@
+## [2.6.2](https://github.com/tearoom1/kirby-content-watch/compare/v2.6.1...v2.6.2) (2025-08-03)
+
+
+### Bug Fixes
+
+* better diff ([f1c79a1](https://github.com/tearoom1/kirby-content-watch/commit/f1c79a1e3fba9abece587a10ae804906fa4ccb6b))
+
 ## [2.6.1](https://github.com/tearoom1/kirby-content-watch/compare/v2.6.0...v2.6.1) (2025-08-03)
 
 
@@ -30,11 +37,4 @@
 ### Bug Fixes
 
 * reverted to use class loading in index.php ([c77d570](https://github.com/tearoom1/kirby-content-watch/commit/c77d57050be469da9b25d225ef9735907b29b19d))
-
-## [2.4.3](https://github.com/tearoom1/kirby-content-watch/compare/v2.4.2...v2.4.3) (2025-08-01)
-
-
-### Bug Fixes
-
-* updated composer and autoloading ([ac65b42](https://github.com/tearoom1/kirby-content-watch/commit/ac65b4257efd0e6e1a5152b3deb487f46ccd675b))
 
