@@ -203,7 +203,14 @@ class DiffGenerator
             // if fields is json, decode it and pretty print it
             if (strpos($field, '[') === 0) {
                 unset($fields[$key]);
-                $object = json_decode($field, true);
+                // Use JSON_UNESCAPED_UNICODE flag to properly decode UTF-8 characters
+                $object = json_decode($field, true, 512, JSON_UNESCAPED_UNICODE);
+                if ($object === null && json_last_error() !== JSON_ERROR_NONE) {
+                    // Fallback: try to manually decode Unicode escape sequences
+                    $field = self::decodeUnicodeEscapes($field);
+                    $object = json_decode($field, true, 512, JSON_UNESCAPED_UNICODE);
+                }
+                
                 // find array value for key 'content'
                 $contents = self::array_value_recursive('content', $object);
                 foreach ($contents as $id => $content) {
@@ -221,11 +228,36 @@ class DiffGenerator
         $val = array();
         foreach ($arr as $k => $v) {
             if ($k === $key) {
-                $val[$arr['id']] = $arr['type'] . ': ' . json_encode($v, JSON_PRETTY_PRINT);
+                // Use JSON_PRETTY_PRINT and JSON_UNESCAPED_UNICODE for proper UTF-8 output
+                $val[$arr['id']] = $arr['type'] . ': ' . self::jsonEncodeFormatted($v);
             } elseif (is_array($v)) {
                 $val = array_merge($val, self::array_value_recursive($key, $v));
             }
         }
         return $val;
+    }
+    
+    /**
+     * Encode JSON with pretty printing and proper UTF-8 handling
+     *
+     * @param mixed $data Data to encode
+     * @return string Formatted JSON string
+     */
+    private static function jsonEncodeFormatted($data): string
+    {
+        return json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+    
+    /**
+     * Manually decode Unicode escape sequences in a string
+     * 
+     * @param string $str String with Unicode escape sequences
+     * @return string String with decoded UTF-8 characters
+     */
+    private static function decodeUnicodeEscapes(string $str): string
+    {
+        return preg_replace_callback('/\\\\u([0-9a-fA-F]{4})/', function ($matches) {
+            return mb_convert_encoding(pack('H*', $matches[1]), 'UTF-8', 'UCS-2BE');
+        }, $str);
     }
 }
