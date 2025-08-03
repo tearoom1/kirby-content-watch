@@ -212,7 +212,7 @@
     margin-bottom: 0.5rem;
 }
 .k-content-watch-diff-content {
-    padding: 1rem;
+    padding: 1rem 1rem 0 1rem;
 }
 .k-content-watch-diff-code {
     font-size: 0.875rem;
@@ -225,6 +225,25 @@
 }
 .k-dialog-button-cancel {
       display: none;
+}
+hr {
+      border: 1px solid var(--color-border);
+      margin: 1rem 0;
+}
+ul {
+li {
+        margin-bottom: 0.5rem;
+}
+li.removed::before {
+        content: '-';
+        position: absolute;
+        transform: translateX(-15px);
+}
+li.added::before {
+        content: '+';
+        position: absolute;
+        transform: translateX(-15px);
+}
 }
 }
 }

@@ -5,15 +5,15 @@
       <div class="k-content-watch-tabs">
         <k-button-group>
           <k-button
-              :class="{'k-button-active': tab === 'content'}"
-              @click="tab = 'content'"
-              icon="edit-line">
+            :class="{'k-button-active': tab === 'content'}"
+            @click="tab = 'content'"
+            icon="edit-line">
             Content Changes
           </k-button>
           <k-button
-              :class="{'k-button-active': tab === 'locked'}"
-              @click="tab = 'locked'"
-              icon="lock">
+            :class="{'k-button-active': tab === 'locked'}"
+            @click="tab = 'locked'"
+            icon="lock">
             Locked Pages
           </k-button>
         </k-button-group>
@@ -25,12 +25,12 @@
       <k-grid v-if="files.length">
         <k-column width="1/2">
           <k-input
-              class="k-content-watch-search"
-              type="text"
-              :placeholder="$t('search') + '...'"
-              v-model="search"
-              @input="filterFiles"
-              icon="search"
+            class="k-content-watch-search"
+            type="text"
+            :placeholder="$t('search') + '...'"
+            v-model="search"
+            @input="filterFiles"
+            icon="search"
           />
         </k-column>
         <k-column width="1/2" class="k-content-watch-buttons">
@@ -47,10 +47,10 @@
 
       <div v-if="files.length && paginatedFiles.length" class="k-content-watch-files">
         <div
-            v-for="(file, index) in paginatedFiles"
-            :key="file.id"
-            class="k-content-watch-file"
-            :class="{'k-content-watch-file-open': expandedFiles.includes(file.id)}"
+          v-for="(file, index) in paginatedFiles"
+          :key="file.id"
+          class="k-content-watch-file"
+          :class="{'k-content-watch-file-open': expandedFiles.includes(file.id)}"
         >
           <div v-if="layoutStyle === 'default'" class="k-content-watch-file-header" @click="toggleFileExpand(file.id)">
             <div class="k-content-watch-file-info">
@@ -117,18 +117,18 @@
                     title="View changes"
                   />
                   <k-button
-                      v-if="enableRestore && entry.has_snapshot && entryIndex > 0"
-                      @click.stop="confirmRestore(file, entry)"
-                      icon="undo"
-                      class="k-restore-button"
-                      title="Restore this version"
+                    v-if="enableRestore && entry.has_snapshot && entryIndex > 0"
+                    @click.stop="confirmRestore(file, entry)"
+                    icon="undo"
+                    class="k-restore-button"
+                    title="Restore this version"
                   />
                   <k-button
-                      v-if="enableRestore && entryIndex === 0"
-                      icon="check"
-                      style="cursor: default"
-                      class="k-restore-button"
-                      title="Current version"
+                    v-if="enableRestore && entryIndex === 0"
+                    icon="check"
+                    style="cursor: default"
+                    class="k-restore-button"
+                    title="Current version"
                   />
                 </div>
                 <div class="k-timeline-item-line"></div>
@@ -159,9 +159,9 @@
         </div>
         <div class="k-content-watch-pagination-pagesize">
           <k-select-field
-              :value="pageSize"
-              :options="pageSizeOptions"
-              @input="changePageSize"/>
+            :value="pageSize"
+            :options="pageSizeOptions"
+            @input="changePageSize"/>
         </div>
       </div>
 
@@ -176,12 +176,12 @@
       <k-grid v-if="lockedPages.length">
         <k-column width="1/2">
           <k-input
-              class="k-content-watch-search"
-              type="text"
-              :placeholder="$t('search') + '...'"
-              v-model="lockedSearch"
-              @input="filterLockedPages"
-              icon="search"
+            class="k-content-watch-search"
+            type="text"
+            :placeholder="$t('search') + '...'"
+            v-model="lockedSearch"
+            @input="filterLockedPages"
+            icon="search"
           />
         </k-column>
         <k-column width="1/2" class="k-content-watch-buttons">
@@ -196,13 +196,13 @@
 
     <!-- Confirmation dialog for restore -->
     <k-dialog
-        class="k-content-watch-restore-dialog"
-        v-if="enableRestore"
-        ref="restoreDialog"
-        :button="$t('restore')"
-        theme="positive"
-        icon="refresh"
-        @submit="restoreContent"
+      class="k-content-watch-restore-dialog"
+      v-if="enableRestore"
+      ref="restoreDialog"
+      :button="$t('restore')"
+      theme="positive"
+      icon="refresh"
+      @submit="restoreContent"
     >
       <k-text>Are you sure you want to restore this version?</k-text>
       <k-text v-if="restoreTarget">
@@ -215,13 +215,13 @@
 
     <!-- Diff dialog for comparing versions -->
     <k-dialog
-        class="k-content-watch-diff-dialog"
-        ref="diffDialog"
-        size="huge"
-        :button="$t('close')"
-        cancelButton=""
-        submitButton="Close"
-        @close="closeDiff"
+      class="k-content-watch-diff-dialog"
+      ref="diffDialog"
+      size="huge"
+      :button="$t('close')"
+      cancelButton=""
+      submitButton="Close"
+      @close="closeDiff"
     >
       <div v-if="diffTarget" class="k-content-watch-diff-header">
         <div>
@@ -231,7 +231,8 @@
           </div>
 
           <div class="k-content-watch-diff-current-version">
-            <strong>Current version:</strong> v{{ diffTarget.entry?.version }} / {{ diffTarget.entry?.language }} / {{ diffTarget.entry?.time_formatted }}
+            <strong>Current version:</strong> v{{ diffTarget.entry?.version }} / {{ diffTarget.entry?.language }} /
+            {{ diffTarget.entry?.time_formatted }}
             <span class="k-content-watch-diff-editor">
               ({{ diffTarget.entry?.editor.name || diffTarget.entry?.editor.email || 'Unknown' }})
             </span>
@@ -247,21 +248,21 @@
           </div>
 
           <k-select-field
-              :options="diffVersionOptions"
-              @input="changeCompareVersion"
-              :value="diffCompareVersionId"
-              placeholder="Select version to compare"
+            :options="diffVersionOptions"
+            @input="changeCompareVersion"
+            :value="diffCompareVersionId"
+            placeholder="Select version to compare"
           />
         </div>
       </div>
 
-      <k-loader v-if="isDiffLoading" />
+      <k-loader v-if="isDiffLoading"/>
 
       <div v-else-if="diffContent" class="k-content-watch-diff-content"
            v-html="diffContent">
       </div>
 
-      <k-empty v-else icon="document" text="No diff available" />
+      <k-empty v-else icon="document" text="No diff available"/>
     </k-dialog>
   </k-panel-inside>
 </template>
@@ -429,9 +430,9 @@ export default {
 
       // Then apply search filter
       this.filteredFiles = filtered.filter(
-          file =>
-              file.title.toLowerCase().includes(searchLower) ||
-              file.path.toLowerCase().includes(searchLower)
+        file =>
+          file.title.toLowerCase().includes(searchLower) ||
+          file.path.toLowerCase().includes(searchLower)
       );
 
       // Reset to first page when filtering changes
@@ -443,9 +444,9 @@ export default {
 
       // Then apply search filter
       this.filteredLockedPages = this.lockedPages.filter(
-          page =>
-              page.title.toLowerCase().includes(searchLower) ||
-              page.path.toLowerCase().includes(searchLower)
+        page =>
+          page.title.toLowerCase().includes(searchLower) ||
+          page.path.toLowerCase().includes(searchLower)
       );
     },
 
@@ -594,15 +595,15 @@ export default {
         fromTimestamp: compareEntry.time,
         toTimestamp: entry.time
       })
-      .then(response => {
-        this.diffContent = response.diff;
-      })
-      .catch(error => {
-        window.panel.notification.error('Error loading diff: ' + (error.message || 'Unknown error'));
-      })
-      .finally(() => {
-        this.isDiffLoading = false;
-      });
+        .then(response => {
+          this.diffContent = response.diff;
+        })
+        .catch(error => {
+          window.panel.notification.error('Error loading diff: ' + (error.message || 'Unknown error'));
+        })
+        .finally(() => {
+          this.isDiffLoading = false;
+        });
     },
 
     getVersionNumber(versionId) {
@@ -875,7 +876,7 @@ export default {
   }
 
   .k-content-watch-diff-content {
-    padding: 1rem;
+    padding: 1rem 1rem 0 1rem;
   }
 
   .k-content-watch-diff-code {
@@ -883,12 +884,38 @@ export default {
     font-family: monospace;
     white-space: pre-wrap;
   }
+
   .k-content-watch-diff-dialog {
     .k-button-group.k-dialog-buttons {
       grid-template-columns: 1fr;
     }
+
     .k-dialog-button-cancel {
       display: none;
+    }
+
+    hr {
+      border: 1px solid var(--color-border);
+      margin: 1rem 0;
+    }
+
+    ul {
+
+      li {
+        margin-bottom: 0.5rem;
+      }
+
+      li.removed::before {
+        content: '-';
+        position: absolute;
+        transform: translateX(-15px);
+      }
+
+      li.added::before {
+        content: '+';
+        position: absolute;
+        transform: translateX(-15px);
+      }
     }
   }
 }

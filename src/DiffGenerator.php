@@ -25,21 +25,58 @@ class DiffGenerator
             return 'No changes found';
         }
 
+        $oldFields = self::flattenJSON(Txt::decode($oldContent));
+        $newFields = self::flattenJSON(Txt::decode($newContent));
 
-        return self::diffStrings($oldContent, $newContent);
+        // check if package is installed
+        if (!class_exists('Jfcherng\Diff\Differ')) {
+            return self::diffStringsSimple($oldFields, $newFields);
+        }
+
+        return self::diffStrings($oldFields, $newFields);
     }
 
-    private static function array_value_recursive($key, array $arr): array
+    /**
+     * Generate a line-by-line diff between two strings
+     *
+     * @param string $oldStr
+     * @param string $newStr
+     * @return string
+     */
+    private static function diffStringsSimple(array $oldLines, array $newLines): string
     {
-        $val = array();
-        foreach ($arr as $k => $v) {
-            if ($k === $key) {
-                $val[] = $arr['type'] . ': ' . json_encode($v, JSON_PRETTY_PRINT);
-            } elseif (is_array($v)) {
-                $val = array_merge($val, self::array_value_recursive($key, $v));
+        $output = '';
+        $changes = false;
+
+        $allKeys = array_unique(array_merge(array_keys($oldLines), array_keys($newLines)));
+
+        foreach ($allKeys as $key) {
+            $oldLine = $oldLines[$key] ?? '';
+            $newLine = $newLines[$key] ?? '';
+
+            $oldLine = htmlentities($oldLine);
+            $newLine = htmlentities($newLine);
+
+            if ($oldLine !== $newLine) {
+                $diffLine = '';
+                if ($oldLine !== '') {
+                    $diffLine .= "<li class='removed'>{$oldLine}</li>";
+                }
+
+                if ($newLine !== '') {
+                    $diffLine .= "<li class='added'>{$newLine}</li>";
+                }
+                $changes = true;
+
+                if (!empty($diffLine)) {
+                    $output .= '<ul>';
+                    $output .= $diffLine;
+                    $output .= '</ul><hr/>';
+                }
             }
         }
-        return $val;
+
+        return $changes ? $output : '';
     }
 
     /**
@@ -49,17 +86,24 @@ class DiffGenerator
      * @param string $newStr
      * @return string
      */
-    protected static function diffStrings(string $oldStr, string $newStr): string
+    protected static function diffStrings(array $oldFields, array $newFields): string
     {
-        $oldFields = Txt::decode($oldStr);
-        $newFields = Txt::decode($newStr);
+        $allKeys = array_unique(array_merge(array_keys($oldFields), array_keys($newFields)));
 
-        $oldFields = self::flattenJSON($oldFields);
-        $newFields = self::flattenJSON($newFields);
+        $oldValues = [];
+        $newValues = [];
+        foreach ($allKeys as $key) {
+            $old = $oldFields[$key] ?? '';
+            $new = $newFields[$key] ?? '';
+            if ($old !== $new) {
+                $oldValues = array_merge($oldValues, explode("\n", $old));
+                $newValues = array_merge($newValues, explode("\n", $new));
+            }
+        }
 
         $options = [
             // show how many neighbor lines
-            'context' => 0,
+            'context' => 1,
             // ignore case difference
             'ignoreCase' => false,
             // ignore whitespace difference
@@ -67,7 +111,7 @@ class DiffGenerator
         ];
 
         // Initialize the differ
-        $differ = new Differ(array_values($oldFields), array_values($newFields), $options);
+        $differ = new Differ($oldValues, $newValues, $options);
 
         // Create a renderer
         $renderer = RendererFactory::make('Combined', [
@@ -101,14 +145,26 @@ class DiffGenerator
                 $object = json_decode($field, true);
                 // find array value for key 'content'
                 $contents = self::array_value_recursive('content', $object);
-                $index = 0;
-                foreach ($contents as $content) {
-                    $fields[$key . $index++] = $key . " - " . $content;
+                foreach ($contents as $id => $content) {
+                    $fields[$key . $id] = $key . " - " . $content;
                 }
             } else {
                 $fields[$key] = $key . ": \n" . $field;
             }
         }
         return $fields;
+    }
+
+    private static function array_value_recursive($key, array $arr): array
+    {
+        $val = array();
+        foreach ($arr as $k => $v) {
+            if ($k === $key) {
+                $val[$arr['id']] = $arr['type'] . ': ' . json_encode($v, JSON_PRETTY_PRINT);
+            } elseif (is_array($v)) {
+                $val = array_merge($val, self::array_value_recursive($key, $v));
+            }
+        }
+        return $val;
     }
 }

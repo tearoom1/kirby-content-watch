@@ -83,11 +83,6 @@ return [
 ];
 ```
 
-The diff only works ok for block structures if pretty-printed JSON is used.
-Use `pretty: true` in the `layout` or `block` field type to enable this.
-Event then the diff is pretty basic, but might be enough in many cases
-to see what has changed.
-
 ## How It Works
 
 The plugin creates a `.content-watch.json` file in each content directory that has been modified. This file stores the history of changes including editor information, timestamps, and content snapshots for restoration (if restore is enabled).
@@ -109,6 +104,16 @@ When restore functionality is disabled:
 > NOTE: The restore functionality only works for page content.
 > It does not track changes of media/binary files.
 > And when restoring a page, it does not restore its files.
+
+
+### Diff Generation
+
+If you like to have a more advanced diff, you can install `jfcherng/php-diff`
+```bash
+composer require jfcherng/php-diff
+```
+
+This will automatically make use of the advanced diff.
 
 
 ## Requirements
