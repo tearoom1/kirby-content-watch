@@ -24,16 +24,35 @@ class DiffGenerator
         if (trim($oldContent) === trim($newContent)) {
             return 'No changes found';
         }
+        // check if package is installed
+        $useAdvancedDiff = class_exists('Jfcherng\Diff\Differ');
 
         $oldFields = self::flattenJSON(Txt::decode($oldContent));
         $newFields = self::flattenJSON(Txt::decode($newContent));
 
-        // check if package is installed
-        if (!class_exists('Jfcherng\Diff\Differ')) {
-            return self::diffStringsSimple($oldFields, $newFields);
+        $allKeys = array_unique(array_merge(array_keys($oldFields), array_keys($newFields)));
+
+        $oldValues = [];
+        $newValues = [];
+        foreach ($allKeys as $key) {
+            $old = $oldFields[$key] ?? '';
+            $new = $newFields[$key] ?? '';
+            if ($old !== $new) {
+                if ($useAdvancedDiff) {
+                    $oldValues = array_merge($oldValues, explode("\n", $old));
+                    $newValues = array_merge($newValues, explode("\n", $new));
+                } else {
+                    $oldValues[] = $old;
+                    $newValues[] = $new;
+                }
+            }
         }
 
-        return self::diffStrings($oldFields, $newFields);
+        if (!$useAdvancedDiff) {
+            return self::diffStringsSimple($oldValues, $newValues);
+        }
+
+        return self::diffStringsWithDiffer($oldValues, $newValues);
     }
 
     /**
@@ -48,16 +67,70 @@ class DiffGenerator
         $output = '';
         $changes = false;
 
-        $allKeys = array_unique(array_merge(array_keys($oldLines), array_keys($newLines)));
-
-        foreach ($allKeys as $key) {
-            $oldLine = $oldLines[$key] ?? '';
-            $newLine = $newLines[$key] ?? '';
+        for ($i = 0; $i < count($oldLines); $i++) {
+            $oldLine = $oldLines[$i];
+            $newLine = $newLines[$i];
 
             $oldLine = htmlentities($oldLine);
             $newLine = htmlentities($newLine);
 
             if ($oldLine !== $newLine) {
+
+                // Split lines into words and highlight differences
+                $oldWords = preg_split('/\s+/', $oldLine);
+                $newWords = preg_split('/\s+/', $newLine);
+
+                // Find common words at the beginning
+                $startCommon = 0;
+                $minLength = min(count($oldWords), count($newWords));
+                while ($startCommon < $minLength && $oldWords[$startCommon] === $newWords[$startCommon]) {
+                    $startCommon++;
+                }
+
+                // Find common words at the end
+                $oldEnd = count($oldWords) - 1;
+                $newEnd = count($newWords) - 1;
+                $endCommon = 0;
+                while ($endCommon < $minLength - $startCommon &&
+                    $oldEnd - $endCommon >= $startCommon &&
+                    $newEnd - $endCommon >= $startCommon &&
+                    $oldWords[$oldEnd - $endCommon] === $newWords[$newEnd - $endCommon]) {
+                    $endCommon++;
+                }
+
+                // Highlight the differences
+                $oldLine = '';
+                $newLine = '';
+
+                // Add common prefix
+                for ($j = 0; $j < $startCommon; $j++) {
+                    $oldLine .= $oldWords[$j] . ' ';
+                    $newLine .= $newWords[$j] . ' ';
+                }
+
+                $oldLine .= '<span class="diff-delete">';
+                // Add highlighted differences
+                $oldHighContent = '';
+                for ($j = $startCommon; $j <= $oldEnd - $endCommon; $j++) {
+                    $oldHighContent .= $oldWords[$j] . ' ';
+                }
+                $oldLine .= trim($oldHighContent) . '</span> ';
+                $newLine .= '<span class="diff-add">';
+                $newHighContent = '';
+                for ($j = $startCommon; $j <= $newEnd - $endCommon; $j++) {
+                    $newHighContent .= $newWords[$j] . ' ';
+                }
+                $newLine .= trim($newHighContent) . '</span> ';
+
+                // Add common suffix
+                for ($j = 0; $j < $endCommon; $j++) {
+                    $oldLine .= $oldWords[$oldEnd - $endCommon + 1 + $j] . ' ';
+                    $newLine .= $newWords[$newEnd - $endCommon + 1 + $j] . ' ';
+                }
+
+                $oldLine = trim($oldLine);
+                $newLine = trim($newLine);
+
                 $diffLine = '';
                 if ($oldLine !== '') {
                     $diffLine .= "<li class='removed'>{$oldLine}</li>";
@@ -86,20 +159,8 @@ class DiffGenerator
      * @param string $newStr
      * @return string
      */
-    protected static function diffStrings(array $oldFields, array $newFields): string
+    protected static function diffStringsWithDiffer(array $oldValues, array $newValues): string
     {
-        $allKeys = array_unique(array_merge(array_keys($oldFields), array_keys($newFields)));
-
-        $oldValues = [];
-        $newValues = [];
-        foreach ($allKeys as $key) {
-            $old = $oldFields[$key] ?? '';
-            $new = $newFields[$key] ?? '';
-            if ($old !== $new) {
-                $oldValues = array_merge($oldValues, explode("\n", $old));
-                $newValues = array_merge($newValues, explode("\n", $new));
-            }
-        }
 
         $options = [
             // show how many neighbor lines

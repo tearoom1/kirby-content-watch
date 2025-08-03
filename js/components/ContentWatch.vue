@@ -765,7 +765,7 @@ export default {
   .k-diff-button {
     height: auto !important;
     line-height: 1 !important;
-    color: var(--color-orange-400) !important;
+    color: var(--color-orange-600) !important;
   }
 
   .k-timeline-footer {
@@ -892,6 +892,14 @@ export default {
 
     .k-dialog-button-cancel {
       display: none;
+    }
+
+    .diff-delete {
+      background-color: var(--color-red-600);
+    }
+
+    .diff-add {
+      background-color: var(--color-green-600);
     }
 
     hr {
