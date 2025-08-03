@@ -217,7 +217,7 @@
     <k-dialog
         class="k-content-watch-diff-dialog"
         ref="diffDialog"
-        size="large"
+        size="huge"
         :button="$t('close')"
         cancelButton=""
         submitButton="Close"
@@ -257,8 +257,8 @@
 
       <k-loader v-if="isDiffLoading" />
 
-      <div v-else-if="diffContent" class="k-content-watch-diff-content">
-        <pre class="k-content-watch-diff-code">{{ diffContent }}</pre>
+      <div v-else-if="diffContent" class="k-content-watch-diff-content"
+           v-html="diffContent">
       </div>
 
       <k-empty v-else icon="document" text="No diff available" />
@@ -554,7 +554,6 @@ export default {
 
       // Always default to comparing with the previous version
       const compareIndex = entryIndex < this.diffVersionOptions.length ? entryIndex + 1 : null;
-      console.log(entryIndex + ' - ' + compareIndex);
       this.diffCompareVersionId = compareIndex;
 
       this.$refs.diffDialog.open();

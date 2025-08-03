@@ -28,7 +28,8 @@
     "url": "https://github.com/tearoom1/kirby-content-watch.git"
   },
   "require": {
-    "getkirby/composer-installer": "^1.2"
+    "getkirby/composer-installer": "^1.2",
+    "jfcherng/php-diff": "^6.15"
   },
   "autoload": {
     "psr-4": {

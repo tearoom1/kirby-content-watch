@@ -1,15 +1,21 @@
 <?php
 
+@include_once __DIR__ . '/vendor/autoload.php';
+
 load([
     'TearoomOne\\ContentWatch\\ContentWatchController' => 'src/ContentWatchController.php',
-    'TearoomOne\\ContentWatch\\ChangeTracker' => 'src/ChangeTracker.php',
     'TearoomOne\\ContentWatch\\ContentRestore' => 'src/ContentRestore.php',
+    'TearoomOne\\ContentWatch\\ChangeTracker' => 'src/ChangeTracker.php',
     'TearoomOne\\ContentWatch\\LockedPages' => 'src/LockedPages.php',
+    'TearoomOne\\ContentWatch\\DiffGenerator' => 'src/DiffGenerator.php',
 ], __DIR__);
 
 use Kirby\Http\Response;
 use TearoomOne\ContentWatch\ChangeTracker;
 use TearoomOne\ContentWatch\ContentRestore;
+use TearoomOne\ContentWatch\DiffGenerator;
+use Jfcherng\Diff\Differ;
+use Jfcherng\Diff\Factory\RendererFactory;
 
 // don't load plugin if it's disabled in the config.
 if (option('tearoom1.content-watch.disable', false)) {
@@ -42,7 +48,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         'retentionDays' => 30, // default to 30 days of history
         'enableLockedPages' => true,
         'enableRestore' => false, // enable or disable the restore functionality
-        'enableDiff' => false, // enable or disable the diff functionality
+        'enableDiff' => true, // enable or disable the diff functionality
     ],
     'api' => [
         'routes' => [
@@ -172,8 +178,8 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                             ], 404);
                         }
 
-                        // Generate the diff
-                        $diff = generateDiff($fromContent, $toContent);
+                        // Generate the diff using the new DiffGenerator class
+                        $diff = DiffGenerator::generate($fromContent, $toContent);
 
                         return Response::json([
                             'status' => 'success',
@@ -191,81 +197,3 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
     ]
 ]);
 
-/**
- * Generate a visual diff between two content arrays or strings
- *
- * @param mixed $oldContent Array or string content
- * @param mixed $newContent Array or string content
- * @return string
- */
-function generateDiff($oldContent, $newContent): string
-{
-    if (trim($oldContent) === trim($newContent)) {
-        return 'No changes found';
-    }
-    return diffStrings($oldContent, $newContent);
-}
-
-/**
- * Generate a line-by-line diff between two strings
- *
- * @param string $oldStr
- * @param string $newStr
- * @return string
- */
-function diffStrings(string $oldStr, string $newStr): string
-{
-    $oldLines = explode("\n", $oldStr);
-    $newLines = explode("\n", $newStr);
-
-    $output = '';
-    $changes = false;
-
-    // Simple line-by-line diff
-    $maxLines = max(count($oldLines), count($newLines));
-
-    for ($i = 0; $i < $maxLines; $i++) {
-        $oldLine = $i < count($oldLines) ? $oldLines[$i] : '';
-        $newLine = $i < count($newLines) ? $newLines[$i] : '';
-
-        if ($oldLine !== $newLine) {
-            if ($oldLine !== '') {
-                $output .= "- " . $oldLine . "\n";
-            }
-
-            if ($newLine !== '') {
-                $output .= "+ " . $newLine . "\n";
-            }
-            $changes = true;
-        }
-    }
-
-    return $changes ? $output : '';
-}
-
-/**
- * Check if a value is empty (considers more than just PHP's empty())
- *
- * @param mixed $value
- * @return bool
- */
-function isEmpty($value): bool
-{
-    if ($value === null) {
-        return true;
-    }
-
-    if (is_string($value) && trim($value) === '') {
-        return true;
-    }
-
-    if (is_array($value) && count($value) === 0) {
-        return true;
-    }
-
-    if ($value === false || $value === 0 || $value === '0') {
-        return false;  // These are not considered empty for our purposes
-    }
-
-    return empty($value);
-}
