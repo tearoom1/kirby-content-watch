@@ -998,7 +998,7 @@
   );
   __component__.options.__file = "/Users/mathis/Work/Basic/kirby-basic/site/plugins/kirby-content-watch/js/components/ContentWatch.vue";
   const ContentWatch = __component__.exports;
-  panel.plugin("tearoom1/content-watch", {
+  panel.plugin("tearoom1/kirby-content-watch", {
     components: {
       "content-watch": ContentWatch
     }

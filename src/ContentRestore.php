@@ -18,7 +18,7 @@ class ContentRestore
     public function restoreContent(string $dirPath, string $fileKey, int $timestamp): bool
     {
         // Check if restore functionality is enabled
-        if (option('tearoom1.content-watch.enableRestore') !== true) {
+        if (option('tearoom1.kirby-content-watch.enableRestore') !== true) {
             return false;
         }
 

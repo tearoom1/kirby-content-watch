@@ -18,7 +18,7 @@ use Jfcherng\Diff\Differ;
 use Jfcherng\Diff\Factory\RendererFactory;
 
 // don't load plugin if it's disabled in the config.
-if (option('tearoom1.content-watch.disable', false)) {
+if (option('tearoom1.kirby-content-watch.disable', false)) {
     return;
 }
 
@@ -44,11 +44,13 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         'content-watch' => require __DIR__ . '/src/areas/content-watch.php',
     ],
     'options' => [
-        'pagination' => 20,
         'retentionDays' => 30, // default to 30 days of history
+        'retentionCount' => 10,
         'enableLockedPages' => true,
         'enableRestore' => false, // enable or disable the restore functionality
         'enableDiff' => true, // enable or disable the diff functionality
+        'defaultPageSize' => 20,
+        'layoutStyle' => 'compact',
     ],
     'api' => [
         'routes' => [
@@ -65,7 +67,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                     }
 
                     // Check if restore functionality is enabled
-                    if (option('tearoom1.content-watch.enableRestore') !== true) {
+                    if (option('tearoom1.kirby-content-watch.enableRestore') !== true) {
                         return Response::json([
                             'status' => 'error',
                             'message' => 'Restore functionality is disabled'

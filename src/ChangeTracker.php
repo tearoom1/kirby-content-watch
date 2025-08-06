@@ -27,7 +27,7 @@ class ChangeTracker
             $kirbyLanguage = kirby()->language();
             $record['type'] = 'page';
 
-            if (option('tearoom1.content-watch.enableRestore') === true) {
+            if (option('tearoom1.kirby-content-watch.enableRestore') === true) {
                 $language = $kirbyLanguage ? $kirbyLanguage->code() : '';
                 $languagePart = $language !== '' ?  '.' . $language : '';
                 $contentFile = $dirPath . '/' . $fileKey . $languagePart . '.txt';
@@ -71,8 +71,8 @@ class ChangeTracker
         $record['version'] = $latestVersion + 1;
 
         // Get history retention period from options (default 30 days, 10 entries)
-        $retentionDays = (int)option('tearoom1.content-watch.retentionDays', 30);
-        $retentionCount = (int)option('tearoom1.content-watch.retentionCount', 10);
+        $retentionDays = (int)option('tearoom1.kirby-content-watch.retentionDays', 30);
+        $retentionCount = (int)option('tearoom1.kirby-content-watch.retentionCount', 10);
         $cutoffTime = time() - ($retentionDays * 86400); // 86400 seconds per day
 
         // Add new history entry to the beginning of the array

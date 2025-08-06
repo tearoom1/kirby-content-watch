@@ -62,7 +62,7 @@ You can configure the plugin in your `config.php`:
 
 ```php
 return [
-    'tearoom1.content-watch' => [
+    'tearoom1.kirby-content-watch' => [
         // How many days to keep history entries (default: 30)
         'retentionDays' => 30,
         // Maximum number of history entries to keep per file (default: 10)

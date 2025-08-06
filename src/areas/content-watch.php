@@ -15,13 +15,13 @@ return [
                 $contentWatchController = new ContentWatchController();
                 $files = $contentWatchController->getContentFiles();
 
-                $lockedPages = (bool)option('tearoom1.content-watch.enableLockedPages', true) ?
+                $lockedPages = (bool)option('tearoom1.kirby-content-watch.enableLockedPages', true) ?
                     (new LockedPages())->getLockedPages() : [];
-                $retentionDays = (int)option('tearoom1.content-watch.retentionDays', 30);
-                $retentionCount = (int)option('tearoom1.content-watch.retentionCount', 10);
+                $retentionDays = (int)option('tearoom1.kirby-content-watch.retentionDays', 30);
+                $retentionCount = (int)option('tearoom1.kirby-content-watch.retentionCount', 10);
 
-                $enableRestore = option('tearoom1.content-watch.enableRestore', false);
-                $enabledDiff =option('tearoom1.content-watch.enableDiff', false);
+                $enableRestore = option('tearoom1.kirby-content-watch.enableRestore', false);
+                $enabledDiff =option('tearoom1.kirby-content-watch.enableDiff', false);
 
                 return [
                     'component' => 'content-watch',
@@ -33,8 +33,8 @@ return [
                         'retentionCount' => $retentionCount,
                         'enableRestore' => $enableRestore,
                         'enableDiff' => $enableRestore && $enabledDiff,
-                        'defaultPageSize' => option('tearoom1.content-watch.defaultPageSize', 10),
-                        'layoutStyle' => option('tearoom1.content-watch.layoutStyle', 'default'),
+                        'defaultPageSize' => option('tearoom1.kirby-content-watch.defaultPageSize', 10),
+                        'layoutStyle' => option('tearoom1.kirby-content-watch.layoutStyle', 'default'),
                     ],
                 ];
             }
