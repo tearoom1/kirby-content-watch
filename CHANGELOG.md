@@ -1,3 +1,14 @@
+## [3.0.0](https://github.com/tearoom1/kirby-content-watch/compare/v2.6.2...v3.0.0) (2025-08-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* Changed the name for options by adding the kirby- prefix to match the plugin name properly.
+
+### Bug Fixes
+
+* Changed the name for options by adding the kirby- prefix to match the plugin name properly. ([3e22f1d](https://github.com/tearoom1/kirby-content-watch/commit/3e22f1d837dfb520f9a0d9cdeb3dc7f71bf1594f))
+
 ## [2.6.2](https://github.com/tearoom1/kirby-content-watch/compare/v2.6.1...v2.6.2) (2025-08-03)
 
 
@@ -30,11 +41,4 @@
 ### Bug Fixes
 
 * cleanup and readme ([4b38ab5](https://github.com/tearoom1/kirby-content-watch/commit/4b38ab54a6489d87899f8820e29d5282cd4ca39c))
-
-## [2.4.4](https://github.com/tearoom1/kirby-content-watch/compare/v2.4.3...v2.4.4) (2025-08-02)
-
-
-### Bug Fixes
-
-* reverted to use class loading in index.php ([c77d570](https://github.com/tearoom1/kirby-content-watch/commit/c77d57050be469da9b25d225ef9735907b29b19d))
 
