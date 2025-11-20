@@ -30,6 +30,14 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         'page.update:after' => function ($newPage, $oldPage) {
             (new ChangeTracker())->trackContentChange($newPage);
         },
+        'page.delete:before' => function ($page) {
+            // Delete the .content-watch.json file before page deletion
+            // This allows the page to be deleted without issues
+            $historyFile = $page->root() . '/.content-watch.json';
+            if (file_exists($historyFile)) {
+                @unlink($historyFile);
+            }
+        },
         'site.update:after' => function ($newSite, $oldSite) {
             (new ChangeTracker())->trackContentChange($newSite);
         },
