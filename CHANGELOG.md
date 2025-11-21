@@ -1,3 +1,10 @@
+## [3.0.2](https://github.com/tearoom1/kirby-content-watch/compare/v3.0.1...v3.0.2) (2025-11-21)
+
+
+### Bug Fixes
+
+* open site in panel ([8135e11](https://github.com/tearoom1/kirby-content-watch/commit/8135e113edfccefda7b0f5539dfe8759a527ade6))
+
 ## [3.0.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.0.0...v3.0.1) (2025-11-20)
 
 
@@ -29,11 +36,4 @@
 ### Bug Fixes
 
 * better diff ([35cc87f](https://github.com/tearoom1/kirby-content-watch/commit/35cc87fa4c2ae77e09626e0c4b7be05b0bf82b52))
-
-## [2.6.0](https://github.com/tearoom1/kirby-content-watch/compare/v2.5.0...v2.6.0) (2025-08-03)
-
-
-### Features
-
-* better diff feature and optional advanced diff with jfcherng/php-diff package. ([5a44727](https://github.com/tearoom1/kirby-content-watch/commit/5a447279ef1512df91f6785e98ad5e5cf335529f))
 
