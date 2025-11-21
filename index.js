@@ -73,7 +73,7 @@
   };
   var defaultRoundingMethod = "trunc";
   function getRoundingMethod(method) {
-    return method ? roundingMap[method] : roundingMap[defaultRoundingMethod];
+    return roundingMap[defaultRoundingMethod];
   }
   function endOfDay(dirtyDate) {
     requiredArgs(1, arguments);
@@ -119,7 +119,7 @@
   function differenceInSeconds(dateLeft, dateRight, options) {
     requiredArgs(2, arguments);
     var diff = differenceInMilliseconds(dateLeft, dateRight) / 1e3;
-    return getRoundingMethod(void 0)(diff);
+    return getRoundingMethod()(diff);
   }
   var formatDistanceLocale = {
     lessThanXSeconds: {

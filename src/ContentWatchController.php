@@ -117,7 +117,7 @@ class ContentWatchController
         $pathParts = explode('/', $relativePath);
 
         if ($fileId === 'site') {
-            $panelUrl = '/site';
+            $panelUrl = kirby()->url('panel') . '/site';
         } else if ($isMediaFile) {
             $panelUrl = kirby()->url('panel') . '/pages/' . $pathId . '/files/' . $fileId;
         } else {
