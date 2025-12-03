@@ -4,7 +4,7 @@
   "type": "kirby-plugin",
   "license": "MIT",
   "homepage": "https://github.com/tearoom1/kirby-content-watch",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "keywords": [
     "kirby",
     "panel",
