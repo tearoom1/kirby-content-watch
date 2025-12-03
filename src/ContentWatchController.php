@@ -35,7 +35,7 @@ class ContentWatchController
         // Process all content files
         foreach ($iterator as $file) {
             if ($file->isFile() &&
-                $file->getExtension() === 'txt' &&
+                $this->isDefaultContentFile($file) &&
                 !str_ends_with(dirname($file->getPathname()), '_changes') &&
                 $file->getBasename() !== '.content-watch.json'
             ) {
@@ -127,27 +127,18 @@ class ContentWatchController
 
         $modified = $file->getMTime();
 
-        // Build file data
-        $fileData = [
-            'id' => $fileId,
-            'uid' => $fileKey,
-            'path_short' => $pathShort,
-            'path' => dirname($relativePath),
-            'title' => $title,
-            'parent' => end($pathParts) ?: 'root',
-            'modified' => $modified,
-            'modified_formatted' => date('Y-m-d H:i:s', $modified),
-            'editor' => $editor,
-            'panel_url' => $panelUrl,
-            'history' => [],
-            'dir_path' => $dirPath,
-            'is_media_file' => $isMediaFile,
-        ];
-
+        $historyEntriesBuilt = [];
         // Add history entries
         foreach ($historyEntries as $entry) {
             if (!is_array($entry)) {
                 continue; // Skip non-array entries
+            }
+
+            // make sure we use the latest modified date
+            // this is needed as we only look at the default language
+            // fixme: this should be improved so that we get the correct time also if no history is available yet
+            if ($entry['time'] > $modified) {
+                $modified = $entry['time'];
             }
 
             $historyEntry = [
@@ -160,8 +151,25 @@ class ContentWatchController
                 'language' => $entry['language'] ?? '',
             ];
 
-            $fileData['history'][] = $historyEntry;
+            $historyEntriesBuilt[] = $historyEntry;
         }
+
+        // Build file data
+        $fileData = [
+            'id' => $fileId,
+            'uid' => $fileKey,
+            'path_short' => $pathShort,
+            'path' => dirname($relativePath),
+            'title' => $title,
+            'parent' => end($pathParts) ?: 'root',
+            'modified' => $modified,
+            'modified_formatted' => date('Y-m-d H:i:s', $modified),
+            'editor' => $editor,
+            'panel_url' => $panelUrl,
+            'dir_path' => $dirPath,
+            'is_media_file' => $isMediaFile,
+            'history' => $historyEntriesBuilt,
+        ];
 
         $files[$dirPath . '/' . $fileKey] = $fileData;
     }
@@ -189,6 +197,18 @@ class ContentWatchController
             }
         }
         return $editor;
+    }
+
+    /**
+     * @param mixed $file
+     * @return bool
+     */
+    public function isDefaultContentFile(mixed $file): bool
+    {
+        if (kirby()->multilang()) {
+            return preg_match('/' . kirby()->defaultLanguage()->code() . '\.txt$/', $file->getBasename());
+        }
+        return $file->getExtension() === 'txt';
     }
 
 }
