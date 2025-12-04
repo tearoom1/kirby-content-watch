@@ -99,20 +99,6 @@ class ContentWatchController
             }
         }
 
-        // Get editor history for this file
-        $historyEntries = [];
-        if (isset($historyFiles[$dirPath]) && isset($historyFiles[$dirPath][$fileKey])) {
-            $historyEntries = $historyFiles[$dirPath][$fileKey];
-        }
-
-        if (!empty($historyEntries) && is_array($historyEntries) && isset($historyEntries[0])) {
-            // The latest entry is at index 0 because we used array_unshift when adding
-            $record = $historyEntries[0];
-        }
-
-
-        $editor = $this->getEditor($record ?? null);
-
         // Try to determine panel URL
         $pathParts = explode('/', $relativePath);
 
@@ -124,21 +110,25 @@ class ContentWatchController
             $panelUrl = kirby()->url('panel') . '/pages/' . $pathId;
         }
 
+        // Get editor history for this file
+        $historyEntries = [];
+        if (isset($historyFiles[$dirPath]) && isset($historyFiles[$dirPath][$fileKey])) {
+            $historyEntries = $historyFiles[$dirPath][$fileKey];
+        }
 
-        $modified = $file->getMTime();
+        if (!empty($historyEntries) && is_array($historyEntries) && isset($historyEntries[0])) {
+            // The latest entry is at index 0 because we used array_unshift when adding
+            $record = $historyEntries[0];
+        }
+
+        $modified = isset($record) ? $record['time'] : $file->getMTime();
+        $editor = $this->getEditor($record ?? null);
 
         $historyEntriesBuilt = [];
         // Add history entries
         foreach ($historyEntries as $entry) {
             if (!is_array($entry)) {
                 continue; // Skip non-array entries
-            }
-
-            // make sure we use the latest modified date
-            // this is needed as we only look at the default language
-            // fixme: this should be improved so that we get the correct time also if no history is available yet
-            if ($entry['time'] > $modified) {
-                $modified = $entry['time'];
             }
 
             $historyEntry = [

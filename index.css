@@ -51,6 +51,10 @@
 .k-button-rotated {
     transform: rotate(180deg);
 }
+.k-button-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 .k-button-group .k-button {
     margin-inline: 0.5rem;
 }

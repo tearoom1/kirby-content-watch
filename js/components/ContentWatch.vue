@@ -64,7 +64,7 @@
               </span>
             </div>
             <div class="k-content-watch-file-actions">
-              <k-button icon="angle-down" :class="{'k-button-rotated': expandedFiles.includes(file.id)}"/>
+              <k-button icon="angle-down" :class="{'k-button-rotated': expandedFiles.includes(file.id), 'k-button-disabled': !file.history || file.history.length === 0}"/>
               <k-button @click.stop="openFile(file)" icon="edit"/>
             </div>
           </div>
@@ -82,7 +82,7 @@
               </span>
             </div>
             <div class="k-content-watch-file-actions">
-              <k-button icon="angle-down" :class="{'k-button-rotated': expandedFiles.includes(file.id)}"/>
+              <k-button icon="angle-down" :class="{'k-button-rotated': expandedFiles.includes(file.id), 'k-button-disabled': !file.history || file.history.length === 0}"/>
               <k-button @click.stop="openFile(file)" icon="edit"/>
             </div>
           </div>
@@ -110,7 +110,7 @@
                   </span>
                 <div class="k-timeline-item-actions">
                   <k-button
-                    v-if="enableDiff && entry.has_snapshot"
+                    v-if="enableDiff && entry.has_snapshot && entryIndex > 0"
                     @click.stop="viewDiff(file, entry, entryIndex)"
                     icon="split"
                     class="k-diff-button"
@@ -677,6 +677,11 @@ export default {
 
   .k-button-rotated {
     transform: rotate(180deg);
+  }
+
+  .k-button-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .k-button-group .k-button {
