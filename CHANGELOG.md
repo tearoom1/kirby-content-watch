@@ -1,3 +1,10 @@
+## [3.1.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.0.4...v3.1.0) (2026-03-03)
+
+
+### Features
+
+* added page method to allow content history in templates, fixes [#10](https://github.com/tearoom1/kirby-content-watch/issues/10) ([2a584f0](https://github.com/tearoom1/kirby-content-watch/commit/2a584f017e361a64e95032813218c2dab4272f83))
+
 ## [3.0.4](https://github.com/tearoom1/kirby-content-watch/compare/v3.0.3...v3.0.4) (2025-12-04)
 
 
@@ -25,15 +32,4 @@
 ### Bug Fixes
 
 * remove content-watch file before page deletion ([98e3b64](https://github.com/tearoom1/kirby-content-watch/commit/98e3b64ab38880ae1b5a37218fcd7d90091dc42c))
-
-## [3.0.0](https://github.com/tearoom1/kirby-content-watch/compare/v2.6.2...v3.0.0) (2025-08-06)
-
-
-### ⚠ BREAKING CHANGES
-
-* Changed the name for options by adding the kirby- prefix to match the plugin name properly.
-
-### Bug Fixes
-
-* Changed the name for options by adding the kirby- prefix to match the plugin name properly. ([3e22f1d](https://github.com/tearoom1/kirby-content-watch/commit/3e22f1d837dfb520f9a0d9cdeb3dc7f71bf1594f))
 
