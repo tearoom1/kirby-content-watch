@@ -51,6 +51,21 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
     'areas' => [
         'content-watch' => require __DIR__ . '/src/areas/content-watch.php',
     ],
+    'pageMethods' => [
+        'contentHistory' => function (string $language = null) {
+            $historyFile = $this->root() . '/.content-watch.json';
+            if (!file_exists($historyFile)) return [];
+
+            $history = json_decode(file_get_contents($historyFile), true) ?: [];
+            $entries = $history[$this->template()->name()] ?? [];
+
+            if ($language !== null) {
+                $entries = array_filter($entries, fn($e) => ($e['language'] ?? '') === $language);
+            }
+
+            return array_values($entries);
+        }
+    ],
     'options' => [
         'retentionDays' => 30, // default to 30 days of history
         'retentionCount' => 10,
