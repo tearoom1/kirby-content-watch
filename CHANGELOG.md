@@ -1,3 +1,10 @@
+## [3.1.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.1.0...v3.1.1) (2026-03-03)
+
+
+### Bug Fixes
+
+* updated readme with sample code for working with history content [#10](https://github.com/tearoom1/kirby-content-watch/issues/10) ([925be3c](https://github.com/tearoom1/kirby-content-watch/commit/925be3c95ab324786ccb79a66387739f805b8ac3))
+
 ## [3.1.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.0.4...v3.1.0) (2026-03-03)
 
 
@@ -25,11 +32,4 @@
 ### Bug Fixes
 
 * open site in panel ([8135e11](https://github.com/tearoom1/kirby-content-watch/commit/8135e113edfccefda7b0f5539dfe8759a527ade6))
-
-## [3.0.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.0.0...v3.0.1) (2025-11-20)
-
-
-### Bug Fixes
-
-* remove content-watch file before page deletion ([98e3b64](https://github.com/tearoom1/kirby-content-watch/commit/98e3b64ab38880ae1b5a37218fcd7d90091dc42c))
 
