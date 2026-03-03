@@ -142,6 +142,24 @@ if (!empty($history)) {
 }
 ```
 
+**Example: access field values from a snapshot (requires `enableRestore: true`)**
+
+```php
+foreach ($page->contentHistory() as $entry) {
+    $fields = isset($entry['content'])
+        ? new \Kirby\Cms\Content(\Kirby\Data\Txt::decode($entry['content']), $page)
+        : null;
+
+    echo 'v' . $entry['version'] . ' — ' . date('Y-m-d H:i', $entry['time']);
+
+    if ($fields) {
+        echo ' — title: ' . $fields->title()->html();
+    }
+}
+```
+
+This gives you full Kirby field method access (`.html()`, `.kirbytext()`, `.value()`, etc.) on any historical snapshot.
+
 ### Diff Generation
 
 If you like to have a more advanced diff, you can install `jfcherng/php-diff`
