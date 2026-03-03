@@ -21,6 +21,7 @@ Additionally it provides a view to see which pages are currently locked and by w
 - **Customizable Retention**: Configure how long history is kept
 - **Version Restore**: Restore previous versions of content with a single click (optional)
 - **Dark Mode and Compact Layout**: Supports Kirby 5 dark mode and a compact layout option
+- **Page Method**: Access change history programmatically via `$page->contentHistory()`
 
 ## Known Limitations
 
@@ -105,6 +106,41 @@ When restore functionality is disabled:
 > It does not track changes of media/binary files.
 > And when restoring a page, it does not restore its files.
 
+
+### Page Method
+
+The plugin exposes a `contentHistory()` method on all pages, giving you programmatic access to the change history from within templates or plugins.
+
+```php
+// Get all history entries for the current page
+$history = $page->contentHistory();
+
+// Filter by language (multilang setups)
+$history = $page->contentHistory('en');
+```
+
+Each entry is an array with the following keys:
+
+| Key | Description |
+|-----|-------------|
+| `version` | Incrementing version number |
+| `time` | Unix timestamp of the change |
+| `editor_id` | ID of the Kirby user who made the change |
+| `type` | Always `page` for page content |
+| `language` | Language code (multilang only, requires `enableRestore`) |
+| `content` | Raw content snapshot (only present when `enableRestore` is `true`) |
+
+**Example: display last editor info**
+
+```php
+$history = $page->contentHistory();
+if (!empty($history)) {
+    $latest = $history[0];
+    $editor = kirby()->user($latest['editor_id']);
+    echo 'Last edited ' . date('Y-m-d H:i', $latest['time']);
+    echo ' by ' . ($editor ? $editor->name() : $latest['editor_id']);
+}
+```
 
 ### Diff Generation
 
