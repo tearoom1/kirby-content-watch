@@ -1,3 +1,10 @@
+## [3.1.2](https://github.com/tearoom1/kirby-content-watch/compare/v3.1.1...v3.1.2) (2026-03-12)
+
+
+### Bug Fixes
+
+* add id to prevent errors with filtering table ([4d39136](https://github.com/tearoom1/kirby-content-watch/commit/4d39136f3335619dc5dbba9bff07ac04c2a3e791))
+
 ## [3.1.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.1.0...v3.1.1) (2026-03-03)
 
 
@@ -25,11 +32,4 @@
 ### Bug Fixes
 
 * sort entries properly in multi language setting ([aca73e5](https://github.com/tearoom1/kirby-content-watch/commit/aca73e55ea6fc51a5235b697f7297bffb624e516))
-
-## [3.0.2](https://github.com/tearoom1/kirby-content-watch/compare/v3.0.1...v3.0.2) (2025-11-21)
-
-
-### Bug Fixes
-
-* open site in panel ([8135e11](https://github.com/tearoom1/kirby-content-watch/commit/8135e113edfccefda7b0f5539dfe8759a527ade6))
 
