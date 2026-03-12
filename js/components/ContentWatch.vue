@@ -48,7 +48,7 @@
       <div v-if="files.length && paginatedFiles.length" class="k-content-watch-files">
         <div
           v-for="(file, index) in paginatedFiles"
-          :key="file.id"
+          :key="file.dir_path + '/' + file.uid"
           class="k-content-watch-file"
           :class="{'k-content-watch-file-open': expandedFiles.includes(file.id)}"
         >
