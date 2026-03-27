@@ -17,8 +17,8 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
-        $this->initialErrorHandler     = get_error_handler();
-        $this->initialExceptionHandler = get_exception_handler();
+        $this->initialErrorHandler     = $this->currentErrorHandler();
+        $this->initialExceptionHandler = $this->currentExceptionHandler();
 
         // Use realpath to get the canonical path (avoids macOS /var → /private/var symlink issues)
         $this->tempDir    = realpath(sys_get_temp_dir()) . '/kirby-cw-test-' . uniqid();
@@ -113,12 +113,30 @@ abstract class TestCase extends BaseTestCase
 
     protected function restorePhpHandlers(): void
     {
-        while (get_error_handler() !== $this->initialErrorHandler) {
-            restore_error_handler();
+        while ($this->currentErrorHandler() !== $this->initialErrorHandler) {
+            \restore_error_handler();
         }
 
-        while (get_exception_handler() !== $this->initialExceptionHandler) {
-            restore_exception_handler();
+        while ($this->currentExceptionHandler() !== $this->initialExceptionHandler) {
+            \restore_exception_handler();
         }
+    }
+
+    protected function currentErrorHandler(): mixed
+    {
+        $handler = \set_error_handler(static fn () => false);
+        \restore_error_handler();
+
+        return $handler;
+    }
+
+    protected function currentExceptionHandler(): mixed
+    {
+        $handler = \set_exception_handler(static function (\Throwable $exception): void {
+            throw $exception;
+        });
+        \restore_exception_handler();
+
+        return $handler;
     }
 }
