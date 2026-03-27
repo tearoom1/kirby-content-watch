@@ -40,7 +40,7 @@
             <k-button :class="{'k-button-active': !showOnlyPages}" @click="toggleShowAll" icon="file-document">All
               files
             </k-button>
-            <k-button :class="{'k-button-active': showFilters}" @click="toggleFilters" icon="filter">
+            <k-button :class="{'k-button-active': showFilters || hasActiveFilters}" @click="toggleFilters" icon="filter">
               Filters
             </k-button>
             <k-button icon="refresh" @click="refresh"/>
@@ -67,6 +67,15 @@
           :options="templateFilterOptions"
           @input="changeTemplateFilter"
         />
+        <div class="k-content-watch-filters-reset">
+          <k-button
+            icon="cancel"
+            :disabled="!hasActiveFilters"
+            @click="resetFilters"
+          >
+            Reset
+          </k-button>
+        </div>
       </div>
 
       <div v-if="files.length && paginatedFiles.length" class="k-content-watch-files">
@@ -559,6 +568,10 @@ export default {
       ];
     },
 
+    hasActiveFilters() {
+      return Boolean(this.selectedAuthor || this.selectedStatus || this.selectedTemplate);
+    },
+
     items() {
       return this.filteredFiles.map(file => {
         const modifiedDate = new Date(file.modified * 1000);
@@ -733,6 +746,13 @@ export default {
 
     changeTemplateFilter(value) {
       this.selectedTemplate = this.normalizeFilterValue(value);
+      this.filterFiles();
+    },
+
+    resetFilters() {
+      this.selectedAuthor = '';
+      this.selectedStatus = '';
+      this.selectedTemplate = '';
       this.filterFiles();
     },
 
@@ -1193,9 +1213,16 @@ export default {
 
   .k-content-watch-filters {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
     gap: 0.75rem;
     margin-top: 0.75rem;
+    align-items: end;
+  }
+
+  .k-content-watch-filters-reset {
+    display: flex;
+    justify-content: flex-end;
+    padding-bottom: 0.125rem;
   }
 
   /* Pagination styles */

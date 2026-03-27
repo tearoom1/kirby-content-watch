@@ -807,6 +807,9 @@
           }))
         ];
       },
+      hasActiveFilters() {
+        return Boolean(this.selectedAuthor || this.selectedStatus || this.selectedTemplate);
+      },
       items() {
         return this.filteredFiles.map((file) => {
           const modifiedDate = new Date(file.modified * 1e3);
@@ -937,6 +940,12 @@
       },
       changeTemplateFilter(value) {
         this.selectedTemplate = this.normalizeFilterValue(value);
+        this.filterFiles();
+      },
+      resetFilters() {
+        this.selectedAuthor = "";
+        this.selectedStatus = "";
+        this.selectedTemplate = "";
         this.filterFiles();
       },
       formatRelative(date) {
@@ -1093,7 +1102,7 @@
       _vm.tab = "locked";
     } } }, [_vm._v(" Locked Pages ")])], 1)], 1)]), _vm.tab === "content" ? _c("section", { staticClass: "k-content-watch-section" }, [_vm.files.length ? _c("k-grid", [_c("k-column", { attrs: { "width": "1/2" } }, [_c("k-input", { staticClass: "k-content-watch-search", attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.filterFiles }, model: { value: _vm.search, callback: function($$v) {
       _vm.search = $$v;
-    }, expression: "search" } })], 1), _c("k-column", { staticClass: "k-content-watch-buttons", attrs: { "width": "1/2" } }, [_c("k-button-group", [_c("k-button", { class: { "k-button-active": _vm.showOnlyPages }, attrs: { "icon": "page" }, on: { "click": _vm.toggleShowOnlyPages } }, [_vm._v("Pages only ")]), _c("k-button", { class: { "k-button-active": !_vm.showOnlyPages }, attrs: { "icon": "file-document" }, on: { "click": _vm.toggleShowAll } }, [_vm._v("All files ")]), _c("k-button", { class: { "k-button-active": _vm.showFilters }, attrs: { "icon": "filter" }, on: { "click": _vm.toggleFilters } }, [_vm._v(" Filters ")]), _c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1)], 1) : _vm._e(), _vm.files.length && _vm.showFilters ? _c("div", { staticClass: "k-content-watch-filters" }, [_c("k-select-field", { attrs: { "label": "Author", "value": _vm.selectedAuthor, "options": _vm.authorFilterOptions }, on: { "input": _vm.changeAuthorFilter } }), _c("k-select-field", { attrs: { "label": "Status", "value": _vm.selectedStatus, "options": _vm.statusFilterOptions }, on: { "input": _vm.changeStatusFilter } }), _c("k-select-field", { attrs: { "label": "Template", "value": _vm.selectedTemplate, "options": _vm.templateFilterOptions }, on: { "input": _vm.changeTemplateFilter } })], 1) : _vm._e(), _vm.files.length && _vm.paginatedFiles.length ? _c("div", { staticClass: "k-content-watch-files" }, _vm._l(_vm.paginatedFiles, function(file, index) {
+    }, expression: "search" } })], 1), _c("k-column", { staticClass: "k-content-watch-buttons", attrs: { "width": "1/2" } }, [_c("k-button-group", [_c("k-button", { class: { "k-button-active": _vm.showOnlyPages }, attrs: { "icon": "page" }, on: { "click": _vm.toggleShowOnlyPages } }, [_vm._v("Pages only ")]), _c("k-button", { class: { "k-button-active": !_vm.showOnlyPages }, attrs: { "icon": "file-document" }, on: { "click": _vm.toggleShowAll } }, [_vm._v("All files ")]), _c("k-button", { class: { "k-button-active": _vm.showFilters || _vm.hasActiveFilters }, attrs: { "icon": "filter" }, on: { "click": _vm.toggleFilters } }, [_vm._v(" Filters ")]), _c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1)], 1) : _vm._e(), _vm.files.length && _vm.showFilters ? _c("div", { staticClass: "k-content-watch-filters" }, [_c("k-select-field", { attrs: { "label": "Author", "value": _vm.selectedAuthor, "options": _vm.authorFilterOptions }, on: { "input": _vm.changeAuthorFilter } }), _c("k-select-field", { attrs: { "label": "Status", "value": _vm.selectedStatus, "options": _vm.statusFilterOptions }, on: { "input": _vm.changeStatusFilter } }), _c("k-select-field", { attrs: { "label": "Template", "value": _vm.selectedTemplate, "options": _vm.templateFilterOptions }, on: { "input": _vm.changeTemplateFilter } }), _c("div", { staticClass: "k-content-watch-filters-reset" }, [_c("k-button", { attrs: { "icon": "cancel", "disabled": !_vm.hasActiveFilters }, on: { "click": _vm.resetFilters } }, [_vm._v(" Reset ")])], 1)], 1) : _vm._e(), _vm.files.length && _vm.paginatedFiles.length ? _c("div", { staticClass: "k-content-watch-files" }, _vm._l(_vm.paginatedFiles, function(file, index) {
       return _c("div", { key: file.dir_path + "/" + file.uid, staticClass: "k-content-watch-file", class: { "k-content-watch-file-open": _vm.expandedFiles.includes(file.id) } }, [_vm.layoutStyle === "default" ? _c("div", { staticClass: "k-content-watch-file-header", on: { "click": function($event) {
         return _vm.toggleFileExpand(file.id);
       } } }, [_c("div", { staticClass: "k-content-watch-file-info" }, [_c("span", { staticClass: "k-content-watch-file-path" }, [_c("span", { staticClass: "k-content-watch-file-title-row" }, [file.page_status ? _c("k-icon", { staticClass: "k-content-watch-status-icon", class: "k-content-watch-status-icon-" + file.page_status, attrs: { "type": "status-" + file.page_status, "title": file.page_status } }) : _vm._e(), _c("strong", { staticClass: "k-content-watch-file-title" }, [_vm._v(_vm._s(file.title))])], 1), _c("span", { staticClass: "k-content-watch-file-subpath", class: { "k-content-watch-file-subpath-indented": file.page_status } }, [_vm._v(" " + _vm._s(file.path_short) + " ")])]), _c("span", { staticClass: "k-content-watch-file-editor" }, [_vm._v(" " + _vm._s(file.editor.name || file.editor.email || "Unknown")), _c("br"), _vm._v(" " + _vm._s(_vm.formatRelative(file.modified)) + " ")])]), _c("div", { staticClass: "k-content-watch-file-actions" }, [_c("k-button", { class: { "k-button-rotated": _vm.expandedFiles.includes(file.id), "k-button-disabled": !file.history || file.history.length === 0 }, attrs: { "icon": "angle-down" } }), _c("k-button", { attrs: { "icon": "edit" }, on: { "click": function($event) {

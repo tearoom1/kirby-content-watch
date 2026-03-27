@@ -218,9 +218,15 @@
 }
 .k-content-watch-filters {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
     gap: 0.75rem;
     margin-top: 0.75rem;
+    align-items: end;
+}
+.k-content-watch-filters-reset {
+    display: flex;
+    justify-content: flex-end;
+    padding-bottom: 0.125rem;
 }
 
   /* Pagination styles */
