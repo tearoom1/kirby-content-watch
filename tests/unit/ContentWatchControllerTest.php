@@ -129,6 +129,18 @@ class ContentWatchControllerTest extends TestCase
         $this->assertSame('unlisted', $files[0]['page_status']);
     }
 
+    public function testGetContentFilesExposesPageTemplate(): void
+    {
+        $this->writeContent($this->contentDir . '/article/article.txt', "Title: Article\n");
+        $this->kirby = $this->makeApp();
+        $this->kirby->impersonate('kirby');
+
+        $files = (new ContentWatchController())->getContentFiles();
+
+        $this->assertCount(1, $files);
+        $this->assertSame('article', $files[0]['page_template']);
+    }
+
     public function testGetContentFilesDetectsSiteFile(): void
     {
         $this->writeContent($this->contentDir . '/site.txt', "Title: My Site\n");

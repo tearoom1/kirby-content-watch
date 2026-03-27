@@ -40,10 +40,34 @@
             <k-button :class="{'k-button-active': !showOnlyPages}" @click="toggleShowAll" icon="file-document">All
               files
             </k-button>
+            <k-button :class="{'k-button-active': showFilters}" @click="toggleFilters" icon="filter">
+              Filters
+            </k-button>
             <k-button icon="refresh" @click="refresh"/>
           </k-button-group>
         </k-column>
       </k-grid>
+
+      <div v-if="files.length && showFilters" class="k-content-watch-filters">
+        <k-select-field
+          label="Author"
+          :value="selectedAuthor"
+          :options="authorFilterOptions"
+          @input="changeAuthorFilter"
+        />
+        <k-select-field
+          label="Status"
+          :value="selectedStatus"
+          :options="statusFilterOptions"
+          @input="changeStatusFilter"
+        />
+        <k-select-field
+          label="Template"
+          :value="selectedTemplate"
+          :options="templateFilterOptions"
+          @input="changeTemplateFilter"
+        />
+      </div>
 
       <div v-if="files.length && paginatedFiles.length" class="k-content-watch-files">
         <div
@@ -135,7 +159,7 @@
                   </span>
                 <div class="k-timeline-item-actions">
                   <k-button
-                    v-if="enableDiff && entry.has_snapshot && file.history.length > 1"
+                    v-if="enableDiff && entry.has_snapshot && entryIndex < file.history.length - 1"
                     @click.stop="viewDiff(file, entry, entryIndex)"
                     icon="split"
                     class="k-diff-button"
@@ -430,6 +454,10 @@ export default {
       lockedSearch: '',
       filteredFiles: [],
       filteredLockedPages: [],
+      selectedAuthor: '',
+      selectedStatus: '',
+      selectedTemplate: '',
+      showFilters: false,
       lockedShowOnlyPages: true,
       expandedFiles: [],
       restoreTarget: null,
@@ -475,11 +503,67 @@ export default {
       return this.filteredFiles.slice(start, end);
     },
 
+    authorFilterOptions() {
+      const seen = new Set();
+      const options = [];
+
+      this.files.forEach(file => {
+        const name = this.fileEditorName(file);
+        const value = file.editor?.id || name;
+
+        if (seen.has(value)) {
+          return;
+        }
+
+        seen.add(value);
+        options.push({
+          text: name,
+          value
+        });
+      });
+
+      return options;
+    },
+
+    statusFilterOptions() {
+      const labels = {
+        listed: 'Listed',
+        unlisted: 'Unlisted',
+        draft: 'Draft'
+      };
+
+      const statuses = [...new Set(this.files
+        .map(file => file.page_status)
+        .filter(Boolean)
+      )];
+
+      return [
+        ...statuses.map(status => ({
+          text: labels[status] || status,
+          value: status
+        }))
+      ];
+    },
+
+    templateFilterOptions() {
+      const templates = [...new Set(this.files
+        .map(file => file.page_template)
+        .filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b));
+
+      return [
+        ...templates.map(template => ({
+          text: template,
+          value: template
+        }))
+      ];
+    },
+
     items() {
       return this.filteredFiles.map(file => {
         const modifiedDate = new Date(file.modified * 1000);
         const timeAgo = formatDistance(modifiedDate, new Date(), {addSuffix: true});
-        const editorName = file.editor?.name || file.editor?.email || 'Unknown';
+        const editorName = this.fileEditorName(file);
 
         return {
           id: file.id,
@@ -539,6 +623,18 @@ export default {
         filtered = filtered.filter(file => file.panel_url && file.panel_url.indexOf('/files/') === -1 && !file.is_media_file);
       }
 
+      if (this.selectedAuthor) {
+        filtered = filtered.filter(file => (file.editor?.id || this.fileEditorName(file)) === this.selectedAuthor);
+      }
+
+      if (this.selectedStatus) {
+        filtered = filtered.filter(file => file.page_status === this.selectedStatus);
+      }
+
+      if (this.selectedTemplate) {
+        filtered = filtered.filter(file => file.page_template === this.selectedTemplate);
+      }
+
       // Then apply search filter
       this.filteredFiles = filtered.filter(
         file =>
@@ -586,6 +682,10 @@ export default {
       this.filterFiles();
     },
 
+    toggleFilters() {
+      this.showFilters = !this.showFilters;
+    },
+
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
@@ -619,6 +719,21 @@ export default {
 
       // Always reset to first page when changing page size
       this.currentPage = 1;
+    },
+
+    changeAuthorFilter(value) {
+      this.selectedAuthor = this.normalizeFilterValue(value);
+      this.filterFiles();
+    },
+
+    changeStatusFilter(value) {
+      this.selectedStatus = this.normalizeFilterValue(value);
+      this.filterFiles();
+    },
+
+    changeTemplateFilter(value) {
+      this.selectedTemplate = this.normalizeFilterValue(value);
+      this.filterFiles();
     },
 
     formatRelative(date) {
@@ -792,6 +907,18 @@ export default {
       }
 
       return versionId === null || versionId === undefined ? null : String(versionId);
+    },
+
+    normalizeFilterValue(value) {
+      if (value && typeof value === 'object') {
+        return value.value !== undefined ? String(value.value) : '';
+      }
+
+      return value === null || value === undefined ? '' : String(value);
+    },
+
+    fileEditorName(file) {
+      return file.editor?.name || file.editor?.email || 'Unknown';
     }
   }
 };
@@ -1064,6 +1191,13 @@ export default {
     margin-top: 1rem;
   }
 
+  .k-content-watch-filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
   /* Pagination styles */
 
   .k-content-watch-pagination {
@@ -1205,6 +1339,18 @@ export default {
         position: absolute;
         transform: translateX(-15px);
       }
+    }
+  }
+
+  @media (max-width: 62rem) {
+    .k-content-watch-filters {
+      grid-template-columns: 1fr;
+    }
+
+    .k-content-watch-pagination {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch;
     }
   }
 }

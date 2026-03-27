@@ -148,6 +148,7 @@ class ContentWatchController
             'path_short'         => $pathShort,
             'path'               => dirname($relativePath),
             'page_status'        => $page ? $this->pageStatus($page) : null,
+            'page_template'      => $page ? $page->intendedTemplate()->name() : null,
             'title'              => $title,
             'parent'             => end($pathParts) ?: 'root',
             'modified'           => $modified,
