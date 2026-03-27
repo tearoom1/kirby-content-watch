@@ -1,3 +1,10 @@
+## [3.2.2](https://github.com/tearoom1/kirby-content-watch/compare/v3.2.1...v3.2.2) (2026-03-27)
+
+
+### Bug Fixes
+
+* updated composer ([d137502](https://github.com/tearoom1/kirby-content-watch/commit/d13750200a9583c239993133ab7d71a9c182d9e3))
+
 ## [3.2.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.2.0...v3.2.1) (2026-03-27)
 
 
@@ -33,11 +40,4 @@
 ### Bug Fixes
 
 * add id to prevent errors with filtering table ([4d39136](https://github.com/tearoom1/kirby-content-watch/commit/4d39136f3335619dc5dbba9bff07ac04c2a3e791))
-
-## [3.1.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.1.0...v3.1.1) (2026-03-03)
-
-
-### Bug Fixes
-
-* updated readme with sample code for working with history content [#10](https://github.com/tearoom1/kirby-content-watch/issues/10) ([925be3c](https://github.com/tearoom1/kirby-content-watch/commit/925be3c95ab324786ccb79a66387739f805b8ac3))
 
