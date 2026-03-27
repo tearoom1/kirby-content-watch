@@ -1,4 +1,9 @@
-## [3.2.2](https://github.com/tearoom1/kirby-content-watch/compare/v3.2.1...v3.2.2) (2026-03-27)
+## [3.3.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.2.1...v3.3.0) (2026-03-27)
+
+
+### Features
+
+* added filters for author, status and template ([8beee8b](https://github.com/tearoom1/kirby-content-watch/commit/8beee8b59e6c01f9d842d8345d0dce196ea83d37))
 
 
 ### Bug Fixes
