@@ -1,3 +1,10 @@
+## [3.2.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.2.0...v3.2.1) (2026-03-27)
+
+
+### Bug Fixes
+
+* minor css fix ([9306f08](https://github.com/tearoom1/kirby-content-watch/commit/9306f081aa60b750a0752f75091ad015f34f1937))
+
 ## [3.2.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.1.3...v3.2.0) (2026-03-27)
 
 
@@ -33,11 +40,4 @@
 ### Bug Fixes
 
 * updated readme with sample code for working with history content [#10](https://github.com/tearoom1/kirby-content-watch/issues/10) ([925be3c](https://github.com/tearoom1/kirby-content-watch/commit/925be3c95ab324786ccb79a66387739f805b8ac3))
-
-## [3.1.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.0.4...v3.1.0) (2026-03-03)
-
-
-### Features
-
-* added page method to allow content history in templates, fixes [#10](https://github.com/tearoom1/kirby-content-watch/issues/10) ([2a584f0](https://github.com/tearoom1/kirby-content-watch/commit/2a584f017e361a64e95032813218c2dab4272f83))
 
