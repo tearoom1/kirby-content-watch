@@ -60,7 +60,8 @@
     margin-left: 1.225rem;
 }
 .k-content-watch-file-header-compact .k-content-watch-file-path {
-    display: block;
+    flex-direction: row;
+    gap: 0.5rem;
 }
 .k-content-watch-status-icon {
     flex: 0 0 auto;

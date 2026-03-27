@@ -872,7 +872,8 @@ export default {
   }
 
   .k-content-watch-file-header-compact .k-content-watch-file-path {
-    display: block;
+    flex-direction: row;
+    gap: 0.5rem;
   }
 
   .k-content-watch-status-icon {
