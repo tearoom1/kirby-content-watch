@@ -102,6 +102,31 @@ class ContentWatchControllerTest extends TestCase
 
         $this->assertCount(1, $files);
         $this->assertSame('home', $files[0]['id']);
+        $this->assertSame('listed', $files[0]['page_status']);
+    }
+
+    public function testGetContentFilesMarksDraftPagesAsDraft(): void
+    {
+        $this->writeContent($this->contentDir . '/_drafts/article/article.txt', "Title: Draft Article\n");
+        $this->kirby = $this->makeApp();
+        $this->kirby->impersonate('kirby');
+
+        $files = (new ContentWatchController())->getContentFiles();
+
+        $this->assertCount(1, $files);
+        $this->assertSame('draft', $files[0]['page_status']);
+    }
+
+    public function testGetContentFilesMarksUnlistedPagesAsUnlisted(): void
+    {
+        $this->writeContent($this->contentDir . '/article/article.txt', "Title: Article\n");
+        $this->kirby = $this->makeApp();
+        $this->kirby->impersonate('kirby');
+
+        $files = (new ContentWatchController())->getContentFiles();
+
+        $this->assertCount(1, $files);
+        $this->assertSame('unlisted', $files[0]['page_status']);
     }
 
     public function testGetContentFilesDetectsSiteFile(): void

@@ -15,6 +15,7 @@ class LockedPagesTest extends TestCase
     {
         $lockDir  = $this->contentDir . '/1_about';
         mkdir($lockDir, 0777, true);
+        file_put_contents($lockDir . '/about.txt', "Title: About\n");
         $lockTime = time() - 60;
         file_put_contents($lockDir . '/.lock', "user: kirby\ntime: $lockTime\n");
 
@@ -23,6 +24,8 @@ class LockedPagesTest extends TestCase
         $this->assertCount(1, $results);
         $this->assertSame($lockTime, $results[0]['time']);
         $this->assertNotEmpty($results[0]['user']);
+        $this->assertSame('listed', $results[0]['page_status']);
+        $this->assertNotEmpty($results[0]['panel_url']);
     }
 
     public function testV4LockIdHasNoOrderNumber(): void
@@ -76,6 +79,7 @@ class LockedPagesTest extends TestCase
     {
         $changesDir = $this->contentDir . '/1_about/_changes';
         mkdir($changesDir, 0777, true);
+        file_put_contents($this->contentDir . '/1_about/about.txt', "Title: About\n");
         file_put_contents($changesDir . '/article.txt', "Lock: kirby\n");
 
         $results = (new LockedPages())->getLockedPagesV5($this->contentDir, []);
@@ -83,6 +87,8 @@ class LockedPagesTest extends TestCase
         $this->assertCount(1, $results);
         $this->assertNotEmpty($results[0]['user']);
         $this->assertNotEmpty($results[0]['time']);
+        $this->assertSame('listed', $results[0]['page_status']);
+        $this->assertNotEmpty($results[0]['panel_url']);
     }
 
     /**

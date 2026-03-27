@@ -2,7 +2,6 @@
 
 namespace TearoomOne\ContentWatch;
 
-use Kirby\Cms\ModelWithContent;
 use Kirby\Cms\Page;
 use Kirby\Cms\Site;
 use Kirby\Data\Data;
@@ -10,7 +9,7 @@ use Kirby\Filesystem\F;
 
 class ContentWatchController
 {
-    protected array $contentModels = [];
+    use ResolvesContentModels;
 
     /**
      * @return array[]
@@ -82,6 +81,7 @@ class ContentWatchController
         $isMediaFile = F::exists(preg_replace('%(\.[a-z]{2})?\.txt$%', '', $filePath));
 
         $record = null;
+        $page   = null;
 
         if ($isMediaFile) {
             $fileKey = preg_replace('%(\.[a-z]{2})?\.txt$%', '', basename($relativePath));
@@ -145,6 +145,7 @@ class ContentWatchController
             'uid'                => $fileKey,
             'path_short'         => $pathShort,
             'path'               => dirname($relativePath),
+            'page_status'        => $page ? $this->pageStatus($page) : null,
             'title'              => $title,
             'parent'             => end($pathParts) ?: 'root',
             'modified'           => $modified,
@@ -187,24 +188,6 @@ class ContentWatchController
         }
 
         return $file->getExtension() === 'txt';
-    }
-
-    protected function findContentModelByRoot(string $root): ModelWithContent|null
-    {
-        $root = realpath($root) ?: $root;
-
-        if (array_key_exists($root, $this->contentModels)) {
-            return $this->contentModels[$root];
-        }
-
-        $site     = kirby()->site();
-        $siteRoot = realpath($site->root()) ?: $site->root();
-
-        if ($siteRoot === $root) {
-            return $this->contentModels[$root] = $site;
-        }
-
-        return $this->contentModels[$root] = $site->index(true)->findBy('root', $root);
     }
 
     protected function fallbackModelId(string $path): string

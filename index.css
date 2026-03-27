@@ -34,9 +34,67 @@
     line-height: 1.2rem;
 }
 .k-content-watch-file-path {
+    display: flex;
+    flex-direction: column;
     font-size: .875rem;
     opacity: 0.7;
     margin-top: 0.25rem;
+}
+.k-content-watch-file-title-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.k-content-watch-file-title {
+    color: var(--color-text);
+}
+.k-content-watch-file-title-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.k-content-watch-file-subpath {
+    display: block;
+}
+.k-content-watch-file-subpath-indented {
+    margin-left: 1.225rem;
+}
+.k-content-watch-file-header-compact .k-content-watch-file-path {
+    display: block;
+}
+.k-content-watch-status-icon {
+    flex: 0 0 auto;
+    color: var(--color-gray-500);
+    --icon-size: 0.875rem;
+}
+.k-content-watch-status-icon-listed {
+    color: var(--color-positive-light);
+}
+.k-content-watch-status-icon-unlisted {
+    color: var(--color-blue-500);
+}
+.k-content-watch-status-icon-draft {
+    color: var(--color-notice-light);
+}
+.k-content-watch-status-glyph {
+    position: relative;
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 999px;
+    flex: 0 0 auto;
+    margin-top: 0.05rem;
+    box-sizing: border-box;
+}
+.k-content-watch-status-glyph-listed {
+    background: var(--color-positive-light);
+}
+.k-content-watch-status-glyph-unlisted {
+    border: 2px solid var(--color-blue-500);
+    background: linear-gradient(to right, var(--color-blue-500) 50%, transparent 50%);
+}
+.k-content-watch-status-glyph-draft {
+    border: 2px solid var(--color-notice-light);
+    background: transparent;
 }
 .k-content-watch-file-editor {
     font-size: .875rem;

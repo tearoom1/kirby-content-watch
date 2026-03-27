@@ -2,10 +2,15 @@
 
 namespace TearoomOne\ContentWatch;
 
+use Kirby\Cms\ModelWithContent;
+use Kirby\Cms\Page;
+use Kirby\Cms\Site;
 use Kirby\Filesystem\Dir;
 
 class LockedPages
 {
+    use ResolvesContentModels;
+
     public function getLockedPages(): array
     {
         // Resolve canonical path to avoid /var vs /private/var mismatches on macOS
@@ -30,22 +35,19 @@ class LockedPages
             $userString = $user ? (string)$user->name()->or($user->email()) : $userId;
 
             $fileDir = preg_replace('%' . preg_quote($contentRoot, '%') . '/|/.lock$%', '', $file);
-            $fileId  = preg_replace('%_?drafts/%', '', $fileDir);
-            $fileId  = preg_replace('%\d+_%', '', $fileId);
-
-            $title = 'Unknown';
-            $page  = kirby()->page($fileId);
-            if ($page) {
-                $title = $page->title()->value();
-            }
+            $model   = $this->findContentModelByRoot(dirname($file));
+            $fileId  = $model instanceof Site ? 'site' : ($model?->id() ?? $this->fallbackModelId($fileDir));
+            $title   = $this->modelTitle($model);
 
             $lockFiles[] = [
-                'id'    => $fileId,
-                'title' => $title,
-                'path'  => $fileDir,
-                'time'  => $time,
-                'date'  => $date,
-                'user'  => $userString,
+                'id'          => $fileId,
+                'title'       => $title,
+                'path'        => $fileDir,
+                'page_status' => $model instanceof Page ? $this->pageStatus($model) : null,
+                'panel_url'   => $this->modelPanelUrl($model, $fileId),
+                'time'        => $time,
+                'date'        => $date,
+                'user'        => $userString,
             ];
         }
 
@@ -79,23 +81,19 @@ class LockedPages
             $userString = $user ? (string)$user->name()->or($user->email()) : $userId;
 
             $fileDir = preg_replace('%' . preg_quote($contentRoot, '%') . '/|/.lock$%', '', $file);
-            $fileId  = preg_replace('%_?drafts/%', '', $fileDir);
-            $fileId  = preg_replace('%/_changes/.*%', '', $fileId); // was incorrectly $fileDir
-            $fileId  = preg_replace('%\d+_%', '', $fileId);
-
-            $title = 'Unknown';
-            $page  = kirby()->page($fileId);
-            if ($page) {
-                $title = $page->title()->value();
-            }
+            $model   = $this->findContentModelByRoot(dirname(dirname($file)));
+            $fileId  = $model instanceof Site ? 'site' : ($model?->id() ?? $this->fallbackModelId($fileDir));
+            $title   = $this->modelTitle($model);
 
             $lockFiles[] = [
-                'id'    => $fileId,
-                'title' => $title,
-                'path'  => $fileDir,
-                'time'  => $time,
-                'date'  => $date,
-                'user'  => $userString,
+                'id'          => $fileId,
+                'title'       => $title,
+                'path'        => $fileDir,
+                'page_status' => $model instanceof Page ? $this->pageStatus($model) : null,
+                'panel_url'   => $this->modelPanelUrl($model, $fileId),
+                'time'        => $time,
+                'date'        => $date,
+                'user'        => $userString,
             ];
         }
 
@@ -115,5 +113,31 @@ class LockedPages
         }
 
         return $results;
+    }
+
+    protected function fallbackModelId(string $path): string
+    {
+        $id = preg_replace('%/_changes/.*%', '', $path);
+        $id = preg_replace('%_?drafts/%', '', $id);
+
+        return preg_replace('%\d+_%', '', $id);
+    }
+
+    protected function modelTitle(ModelWithContent|null $model): string
+    {
+        return match (true) {
+            $model instanceof Page => $model->title()->value(),
+            $model instanceof Site => 'Site',
+            default => 'Unknown',
+        };
+    }
+
+    protected function modelPanelUrl(ModelWithContent|null $model, string $fileId): string
+    {
+        return match (true) {
+            $model instanceof Page => $model->panel()->url(),
+            $model instanceof Site => $model->panel()->url(),
+            default => kirby()->url('panel') . '/pages/' . str_replace('/', '+', $fileId),
+        };
     }
 }

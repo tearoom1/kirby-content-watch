@@ -55,8 +55,22 @@
           <div v-if="layoutStyle === 'default'" class="k-content-watch-file-header" @click="toggleFileExpand(file.id)">
             <div class="k-content-watch-file-info">
               <span class="k-content-watch-file-path">
-                <strong>{{ file.title }}</strong>
-                <br>{{ file.path_short }}
+                <span class="k-content-watch-file-title-row">
+                  <k-icon
+                    v-if="file.page_status"
+                    class="k-content-watch-status-icon"
+                    :class="'k-content-watch-status-icon-' + file.page_status"
+                    :type="'status-' + file.page_status"
+                    :title="file.page_status"
+                  />
+                  <strong class="k-content-watch-file-title">{{ file.title }}</strong>
+                </span>
+                <span
+                  class="k-content-watch-file-subpath"
+                  :class="{'k-content-watch-file-subpath-indented': file.page_status}"
+                >
+                  {{ file.path_short }}
+                </span>
               </span>
               <span class="k-content-watch-file-editor">
                 {{ file.editor.name || file.editor.email || 'Unknown' }}<br>
@@ -73,7 +87,16 @@
                @click="toggleFileExpand(file.id)">
             <div class="k-content-watch-file-info">
               <span class="k-content-watch-file-path">
-                <strong>{{ file.title }}</strong> ~ {{ file.path_short }}
+                <strong class="k-content-watch-file-title k-content-watch-file-title-inline">
+                  <k-icon
+                    v-if="file.page_status"
+                    class="k-content-watch-status-icon"
+                    :class="'k-content-watch-status-icon-' + file.page_status"
+                    :type="'status-' + file.page_status"
+                    :title="file.page_status"
+                  />
+                  {{ file.title }}
+                </strong> ~ {{ file.path_short }}
               </span>
               <span class="k-content-watch-file-editor">
                  {{ formatRelative(file.modified) }} by <strong>{{
@@ -186,11 +209,79 @@
         </k-column>
         <k-column width="1/2" class="k-content-watch-buttons">
           <k-button-group>
+            <k-button :class="{'k-button-active': lockedShowOnlyPages}" @click="toggleLockedShowOnlyPages" icon="page">Pages only
+            </k-button>
+            <k-button :class="{'k-button-active': !lockedShowOnlyPages}" @click="toggleLockedShowAll" icon="file-document">All
+              files
+            </k-button>
             <k-button icon="refresh" @click="refresh"/>
           </k-button-group>
         </k-column>
       </k-grid>
-      <k-collection v-if="filteredLockedPages.length" :items="lockItems" class="k-content-watch-locked"/>
+
+      <div v-if="filteredLockedPages.length" class="k-content-watch-files k-content-watch-locked">
+        <div
+          v-for="lock in filteredLockedPages"
+          :key="lock.id + '-' + lock.time"
+          class="k-content-watch-file"
+        >
+          <div v-if="layoutStyle === 'default'" class="k-content-watch-file-header" @click="openLockedPage(lock)">
+            <div class="k-content-watch-file-info">
+              <span class="k-content-watch-file-path">
+                <span class="k-content-watch-file-title-row">
+                  <span
+                    v-if="lock.page_status"
+                    class="k-content-watch-status-glyph"
+                    :class="'k-content-watch-status-glyph-' + lock.page_status"
+                    :title="lock.page_status"
+                  ></span>
+                  <strong class="k-content-watch-file-title">{{ lock.title }}</strong>
+                </span>
+                <span
+                  class="k-content-watch-file-subpath"
+                  :class="{'k-content-watch-file-subpath-indented': lock.page_status}"
+                >
+                  {{ lock.id }}
+                </span>
+              </span>
+              <span class="k-content-watch-file-editor">
+                {{ lock.user || 'Unknown' }}<br>
+                {{ formatRelative(lock.time) }}
+              </span>
+            </div>
+            <div class="k-content-watch-file-actions">
+              <k-button @click.stop="openLockedPage(lock)" icon="edit"/>
+            </div>
+          </div>
+
+          <div
+            v-if="layoutStyle === 'compact'"
+            class="k-content-watch-file-header k-content-watch-file-header-compact"
+            @click="openLockedPage(lock)"
+          >
+            <div class="k-content-watch-file-info">
+              <span class="k-content-watch-file-path">
+                <strong class="k-content-watch-file-title k-content-watch-file-title-inline">
+                  <span
+                    v-if="lock.page_status"
+                    class="k-content-watch-status-glyph"
+                    :class="'k-content-watch-status-glyph-' + lock.page_status"
+                    :title="lock.page_status"
+                  ></span>
+                  {{ lock.title }}
+                </strong> ~ {{ lock.id }}
+              </span>
+              <span class="k-content-watch-file-editor">
+                {{ formatRelative(lock.time) }} by <strong>{{ lock.user || 'Unknown' }}</strong>
+              </span>
+            </div>
+            <div class="k-content-watch-file-actions">
+              <k-button @click.stop="openLockedPage(lock)" icon="edit"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <k-empty v-else icon="lock" text="No locked pages found"/>
     </section>
 
@@ -312,6 +403,7 @@ export default {
       lockedSearch: '',
       filteredFiles: [],
       filteredLockedPages: [],
+      lockedShowOnlyPages: true,
       expandedFiles: [],
       restoreTarget: null,
       showOnlyPages: true,
@@ -375,23 +467,6 @@ export default {
       });
     },
 
-    lockItems() {
-      const items = [];
-
-      this.filteredLockedPages.forEach(lock => {
-        items.push({
-          id: lock.id,
-          text: '<span class="k-content-watch-file-path"><strong>' + lock.title + '</strong><br>' + lock.id + '</span>',
-          info: lock.user + ' <br> ' + lock.date + ' (' + this.formatRelative(lock.time) + ')',
-          options: [{
-            icon: 'edit',
-            click: () => this.open(lock.id)
-          }]
-        });
-      });
-
-      return items;
-    },
   },
 
   methods: {
@@ -403,6 +478,12 @@ export default {
     open(id) {
       const file = this.filteredFiles.find(f => f.id === id);
       this.openFile(file);
+    },
+
+    openLockedPage(lock) {
+      if (lock?.panel_url) {
+        window.location.href = lock.panel_url;
+      }
     },
 
     openFile(file) {
@@ -443,13 +524,28 @@ export default {
 
     filterLockedPages() {
       const searchLower = this.lockedSearch.toLowerCase();
+      let filtered = this.lockedPages;
+
+      if (this.lockedShowOnlyPages) {
+        filtered = filtered.filter(page => !!page.page_status);
+      }
 
       // Then apply search filter
-      this.filteredLockedPages = this.lockedPages.filter(
+      this.filteredLockedPages = filtered.filter(
         page =>
           page.title.toLowerCase().includes(searchLower) ||
           page.path.toLowerCase().includes(searchLower)
       );
+    },
+
+    toggleLockedShowOnlyPages() {
+      this.lockedShowOnlyPages = true;
+      this.filterLockedPages();
+    },
+
+    toggleLockedShowAll() {
+      this.lockedShowOnlyPages = false;
+      this.filterLockedPages();
     },
 
     toggleShowOnlyPages() {
@@ -672,9 +768,81 @@ export default {
   }
 
   .k-content-watch-file-path {
+    display: flex;
+    flex-direction: column;
     font-size: .875rem;
     opacity: 0.7;
     margin-top: 0.25rem;
+  }
+
+  .k-content-watch-file-title-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .k-content-watch-file-title {
+    color: var(--color-text);
+  }
+
+  .k-content-watch-file-title-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .k-content-watch-file-subpath {
+    display: block;
+  }
+
+  .k-content-watch-file-subpath-indented {
+    margin-left: 1.225rem;
+  }
+
+  .k-content-watch-file-header-compact .k-content-watch-file-path {
+    display: block;
+  }
+
+  .k-content-watch-status-icon {
+    flex: 0 0 auto;
+    color: var(--color-gray-500);
+    --icon-size: 0.875rem;
+  }
+
+  .k-content-watch-status-icon-listed {
+    color: var(--color-positive-light);
+  }
+
+  .k-content-watch-status-icon-unlisted {
+    color: var(--color-blue-500);
+  }
+
+  .k-content-watch-status-icon-draft {
+    color: var(--color-notice-light);
+  }
+
+  .k-content-watch-status-glyph {
+    position: relative;
+    width: 0.875rem;
+    height: 0.875rem;
+    border-radius: 999px;
+    flex: 0 0 auto;
+    margin-top: 0.05rem;
+    box-sizing: border-box;
+  }
+
+  .k-content-watch-status-glyph-listed {
+    background: var(--color-positive-light);
+  }
+
+  .k-content-watch-status-glyph-unlisted {
+    border: 2px solid var(--color-blue-500);
+    background: linear-gradient(to right, var(--color-blue-500) 50%, transparent 50%);
+  }
+
+  .k-content-watch-status-glyph-draft {
+    border: 2px solid var(--color-notice-light);
+    background: transparent;
   }
 
   .k-content-watch-file-editor {
