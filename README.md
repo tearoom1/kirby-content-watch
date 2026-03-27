@@ -64,25 +64,28 @@ You can configure the plugin in your `config.php`:
 ```php
 return [
     'tearoom1.kirby-content-watch' => [
-        // How many days to keep history entries (default: 30)
-        'retentionDays' => 30,
-        // Maximum number of history entries to keep per file (default: 10)
-        'retentionCount' => 10,
-        // Default page size for pagination, default is 10. Possible values: 10, 20, 50
-        'defaultPageSize' => 20,
-        // Render the list more compact, default is 'default'
-        'layoutStyle' => 'compact',
-        // Whether to show locked pages in the interface (default: true)
+        'retentionDays'    => 30,
+        'retentionCount'   => 10,
+        'defaultPageSize'  => 10,
+        'layoutStyle'      => 'default',
         'enableLockedPages' => true,
-        // Whether to enable content restore functionality (default: false)
-        // When disabled, content snapshots are not stored to save disk space
-        'enableRestore' => true,
-        // Whether to enable content diff functionality (default: false)
-        // Only works if restore is enabled
-        'enableDiff' => true,
+        'enableRestore'    => false,
+        'enableDiff'       => false,
+        'disable'          => false,
     ]
 ];
 ```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `retentionDays` | `int` | `30` | Number of days to keep history entries before they are pruned |
+| `retentionCount` | `int` | `10` | Maximum number of history entries to keep per file |
+| `defaultPageSize` | `int` | `10` | Default number of items per page in the panel view. Possible values: `10`, `20`, `50` |
+| `layoutStyle` | `string` | `'default'` | Layout density of the list. Set to `'compact'` for a tighter layout |
+| `enableLockedPages` | `bool` | `true` | Whether to show the locked pages view in the panel |
+| `enableRestore` | `bool` | `false` | Enable content restore functionality. When enabled, full content snapshots are saved — increases disk usage |
+| `enableDiff` | `bool` | `false` | Enable content diff view. Requires `enableRestore` to be `true` |
+| `disable` | `bool` | `false` | Completely disable the plugin without uninstalling it |
 
 ## How It Works
 
@@ -187,6 +190,6 @@ This plugin is licensed under the [MIT License](LICENSE)
 ## Credits
 
 - Developed by Mathis Koblin
-- Assisted by AI Claude 3.7 Sonnet
+- Assisted by Claude (Anthropic)
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://coff.ee/tearoom1)
