@@ -35,6 +35,11 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         'page.changeSlug:after' => function ($newPage, $oldPage) {
             (new ChangeTracker())->trackContentChange($newPage);
         },
+        'page.move:after' => function ($newPage, $oldPage) {
+            (new ChangeTracker())->trackContentChange($newPage, [
+                'action' => 'moved',
+            ]);
+        },
         'page.delete:before' => function ($page) {
             F::remove($page->root() . '/.content-watch.json');
         },
@@ -160,7 +165,10 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
 
                         $diff = DiffGenerator::generate($fromContent, $toContent);
 
-                        return Response::json(['status' => 'success', 'diff' => $diff]);
+                        return Response::json([
+                            'status' => 'success',
+                            'diff'   => $diff,
+                        ]);
                     } catch (\Exception $e) {
                         return Response::json(['status' => 'error', 'message' => 'Error generating diff: ' . $e->getMessage()], 500);
                     }

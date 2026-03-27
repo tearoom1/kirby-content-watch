@@ -201,7 +201,7 @@ class DiffGenerator
     {
         foreach ($fields as $key => $field) {
             // if fields is json, decode it and pretty print it
-            if (strpos($field, '[') === 0) {
+            if (is_string($field) && strpos($field, '[') === 0) {
                 unset($fields[$key]);
                 // Use JSON_UNESCAPED_UNICODE flag to properly decode UTF-8 characters
                 $object = json_decode($field, true, 512, JSON_UNESCAPED_UNICODE);

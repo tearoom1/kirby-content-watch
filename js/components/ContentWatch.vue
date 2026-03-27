@@ -103,7 +103,7 @@
                   {{ formatRelative(entry.time) }}
                 </div>
                 <span class="k-timeline-item-editor-label">
-                    {{ entry.restored_from ? 'restored by' : 'edited by' }}
+                    {{ getEntryLabel(entry) }}
                   </span>
                 <span class="k-timeline-item-editor">
                     {{ entry.editor.name || entry.editor.email || 'Unknown' }}
@@ -259,7 +259,8 @@
       <k-loader v-if="isDiffLoading"/>
 
       <div v-else-if="diffContent" class="k-content-watch-diff-content"
-           v-html="diffContent">
+        >
+        <div v-html="diffContent"></div>
       </div>
 
       <k-empty v-else icon="document" text="No diff available"/>
@@ -512,6 +513,18 @@ export default {
 
       this.restoreTarget = {file, entry};
       this.$refs.restoreDialog.open();
+    },
+
+    getEntryLabel(entry) {
+      if (entry?.restored_from) {
+        return 'restored by';
+      }
+
+      if (entry?.action === 'moved') {
+        return 'moved by';
+      }
+
+      return 'edited by';
     },
 
     async restoreContent() {

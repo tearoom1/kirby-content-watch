@@ -121,6 +121,39 @@ class ChangeTrackerTest extends TestCase
         $this->assertStringContainsString('Slug: test-page', $snapshot);
     }
 
+    public function testContentSnapshotIncludesPathField(): void
+    {
+        $this->kirby = $this->makeApp([
+            'options' => ['tearoom1.kirby-content-watch.enableRestore' => true],
+        ]);
+        $this->kirby->impersonate('kirby');
+
+        (new ChangeTracker())->trackContentChange(kirby()->page('test-page'));
+
+        $history  = $this->readHistory($this->pageDir);
+        $snapshot = $history[$this->templateKey][0]['content'];
+
+        $this->assertStringContainsString('Path: test-page', $snapshot);
+    }
+
+    public function testPageMoveMetadataIsRecorded(): void
+    {
+        $this->kirby = $this->makeApp([
+            'options' => ['tearoom1.kirby-content-watch.enableRestore' => true],
+        ]);
+        $this->kirby->impersonate('kirby');
+
+        (new ChangeTracker())->trackContentChange(kirby()->page('test-page'), [
+            'action' => 'moved',
+        ]);
+
+        $history = $this->readHistory($this->pageDir);
+        $entry   = $history[$this->templateKey][0];
+
+        $this->assertSame('moved', $entry['action']);
+        $this->assertArrayNotHasKey('move', $entry);
+    }
+
     public function testNoContentSnapshotWhenRestoreDisabled(): void
     {
         // Default setup has enableRestore = false

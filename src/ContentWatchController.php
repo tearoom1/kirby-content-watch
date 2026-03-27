@@ -2,11 +2,16 @@
 
 namespace TearoomOne\ContentWatch;
 
+use Kirby\Cms\ModelWithContent;
+use Kirby\Cms\Page;
+use Kirby\Cms\Site;
 use Kirby\Data\Data;
 use Kirby\Filesystem\F;
 
 class ContentWatchController
 {
+    protected array $contentModels = [];
+
     /**
      * @return array[]
      */
@@ -67,10 +72,10 @@ class ContentWatchController
         $filePath     = $file->getPathname();
         $dirPath      = dirname($filePath);
         $relativePath = str_replace($contentDir . '/', '', $filePath);
-
-        $fileId    = preg_replace('%_?drafts/%', '', dirname($relativePath));
-        $fileId    = preg_replace('%\d+_%', '', $fileId);
-        $pathShort = $fileId;
+        $owner       = $this->findContentModelByRoot($dirPath);
+        $fallbackId  = $this->fallbackModelId(dirname($relativePath));
+        $fileId      = $owner instanceof Site ? 'site' : ($owner?->id() ?? $fallbackId);
+        $pathShort   = $fileId;
         $pathId    = str_replace('/', '+', $pathShort);
 
         // A file that has a sibling without extension is a media file (image, PDF, etc.)
@@ -82,16 +87,16 @@ class ContentWatchController
             $fileKey = preg_replace('%(\.[a-z]{2})?\.txt$%', '', basename($relativePath));
             $title   = 'File: ' . $fileKey;
             $fileId  = $fileKey;
-            $panelUrl = kirby()->url('panel') . '/pages/' . $pathId . '/files/' . $fileKey;
-        } elseif ($fileId === '.') {
-            // Site-level file
+            $panelUrl = $owner?->file($fileKey)?->panel()->url()
+                ?? kirby()->url('panel') . '/pages/' . $pathId . '/files/' . $fileKey;
+        } elseif ($owner instanceof Site) {
             $fileId    = 'site';
             $fileKey   = 'site';
             $pathShort = 'site';
             $title     = 'Site';
-            $panelUrl  = kirby()->url('panel') . '/site';
+            $panelUrl  = $owner->panel()->url();
         } else {
-            $page  = kirby()->page($fileId);
+            $page  = $owner instanceof Page ? $owner : null;
             $title = 'Unknown';
             // Use intendedTemplate() so the key matches what ChangeTracker stores
             $fileKey = basename($fileId);
@@ -127,6 +132,7 @@ class ContentWatchController
                 'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0),
                 'has_snapshot'   => !empty($entry['content']),
                 'restored_from'  => $entry['restored_from'] ?? null,
+                'action'         => $entry['action'] ?? null,
                 'version'        => $entry['version'] ?? 1,
                 'language'       => $entry['language'] ?? '',
             ];
@@ -181,5 +187,30 @@ class ContentWatchController
         }
 
         return $file->getExtension() === 'txt';
+    }
+
+    protected function findContentModelByRoot(string $root): ModelWithContent|null
+    {
+        $root = realpath($root) ?: $root;
+
+        if (array_key_exists($root, $this->contentModels)) {
+            return $this->contentModels[$root];
+        }
+
+        $site     = kirby()->site();
+        $siteRoot = realpath($site->root()) ?: $site->root();
+
+        if ($siteRoot === $root) {
+            return $this->contentModels[$root] = $site;
+        }
+
+        return $this->contentModels[$root] = $site->index(true)->findBy('root', $root);
+    }
+
+    protected function fallbackModelId(string $path): string
+    {
+        $id = preg_replace('%_?drafts/%', '', $path);
+
+        return preg_replace('%\d+_%', '', $id);
     }
 }

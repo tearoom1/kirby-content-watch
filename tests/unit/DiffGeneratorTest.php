@@ -63,6 +63,18 @@ class DiffGeneratorTest extends TestCase
         $this->assertStringContainsString('New', $result);
     }
 
+    public function testPathChangeAppearsInDiff(): void
+    {
+        $old = "Path: archive/test-page\n----\nSlug: test-page\n----\nTitle: Hello";
+        $new = "Path: section/test-page\n----\nSlug: test-page\n----\nTitle: Hello";
+
+        $result = DiffGenerator::generate($old, $new);
+
+        $this->assertNotSame('No changes found', $result);
+        $this->assertStringContainsString('archive/test-page', $result);
+        $this->assertStringContainsString('section/test-page', $result);
+    }
+
     // -------------------------------------------------------------------------
     // flattenJSON()
     // -------------------------------------------------------------------------

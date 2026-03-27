@@ -183,4 +183,27 @@ class ContentWatchControllerTest extends TestCase
 
         $this->assertCount(1, $files[0]['history']);
     }
+
+    public function testGetContentFilesExposesMoveActionInHistory(): void
+    {
+        $pageDir = $this->contentDir . '/1_home';
+        $this->writeContent($pageDir . '/home.txt', "Title: Home\n");
+        $this->writeHistory($pageDir, [
+            'home' => [[
+                'editor_id' => 'kirby',
+                'time'      => time(),
+                'version'   => 2,
+                'type'      => 'page',
+                'action'    => 'moved',
+            ]],
+        ]);
+
+        $this->kirby = $this->makeApp();
+        $this->kirby->impersonate('kirby');
+
+        $files = (new ContentWatchController())->getContentFiles();
+
+        $this->assertSame('moved', $files[0]['history'][0]['action']);
+        $this->assertArrayNotHasKey('move', $files[0]['history'][0]);
+    }
 }

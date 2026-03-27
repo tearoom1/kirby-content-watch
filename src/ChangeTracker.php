@@ -8,7 +8,7 @@ use Kirby\Filesystem\F;
 
 class ChangeTracker
 {
-    public function trackContentChange(ModelWithContent $content): void
+    public function trackContentChange(ModelWithContent $content, array $meta = []): void
     {
         $user = kirby()->user();
         if (!$user) {
@@ -19,6 +19,10 @@ class ChangeTracker
             'editor_id' => $user->id(),
             'time'      => time(),
         ];
+
+        if (!empty($meta['action']) && is_string($meta['action'])) {
+            $record['action'] = $meta['action'];
+        }
 
         $isPage = $content instanceof \Kirby\Cms\Page;
         $isSite = $content instanceof \Kirby\Cms\Site;
@@ -36,11 +40,12 @@ class ChangeTracker
                 $contentFile  = $dirPath . '/' . $fileKey . $languagePart . '.txt';
                 $fileContent  = F::read($contentFile) ?? '';
 
-                // Prepend slug as a synthetic field so slug renames are visible in diffs.
+                // Prepend synthetic fields so structural page changes remain visible in diffs.
                 // The title lives in the content file itself and is captured automatically.
+                $pathPrefix = $isPage ? 'Path: ' . $content->id() . "\n----\n" : '';
                 $slugPrefix = $isPage ? 'Slug: ' . $content->slug() . "\n----\n" : '';
 
-                $record['content']  = $slugPrefix . $fileContent;
+                $record['content']  = $pathPrefix . $slugPrefix . $fileContent;
                 $record['language'] = $language;
             }
         } else {
