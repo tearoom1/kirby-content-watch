@@ -110,7 +110,7 @@
                   </span>
                 <div class="k-timeline-item-actions">
                   <k-button
-                    v-if="enableDiff && entry.has_snapshot && entryIndex > 0"
+                    v-if="enableDiff && entry.has_snapshot && file.history.length > 1"
                     @click.stop="viewDiff(file, entry, entryIndex)"
                     icon="split"
                     class="k-diff-button"
