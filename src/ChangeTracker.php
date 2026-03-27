@@ -3,107 +3,103 @@
 namespace TearoomOne\ContentWatch;
 
 use Kirby\Cms\ModelWithContent;
+use Kirby\Data\Data;
 use Kirby\Filesystem\F;
 
 class ChangeTracker
 {
-    // Helper function to track content changes
-    public function trackContentChange(ModelWithContent $content)
+    public function trackContentChange(ModelWithContent $content): void
     {
         $user = kirby()->user();
-        if (!$user) return;
+        if (!$user) {
+            return;
+        }
 
         $record = [
             'editor_id' => $user->id(),
-            'time' => time()
+            'time'      => time(),
         ];
 
-        // Determine the history file path and filename key
         $isPage = $content instanceof \Kirby\Cms\Page;
         $isSite = $content instanceof \Kirby\Cms\Site;
+
         if ($isPage || $isSite) {
             $dirPath = $content->root();
-            $fileKey = $isPage ? $content->template()->name() : 'site';
-            $kirbyLanguage = kirby()->language();
-            $record['type'] = 'page';
+            // intendedTemplate() uses the content filename, not the fallback template
+            $fileKey         = $isPage ? $content->intendedTemplate()->name() : 'site';
+            $kirbyLanguage   = kirby()->language();
+            $record['type']  = 'page';
 
             if (option('tearoom1.kirby-content-watch.enableRestore') === true) {
-                $language = $kirbyLanguage ? $kirbyLanguage->code() : '';
-                $languagePart = $language !== '' ?  '.' . $language : '';
-                $contentFile = $dirPath . '/' . $fileKey . $languagePart . '.txt';
-                $contentSnapshot = F::read($contentFile);
-                $record['content'] = $contentSnapshot;
+                $language     = $kirbyLanguage ? $kirbyLanguage->code() : '';
+                $languagePart = $language !== '' ? '.' . $language : '';
+                $contentFile  = $dirPath . '/' . $fileKey . $languagePart . '.txt';
+                $fileContent  = F::read($contentFile) ?? '';
+
+                // Prepend slug as a synthetic field so slug renames are visible in diffs.
+                // The title lives in the content file itself and is captured automatically.
+                $slugPrefix = $isPage ? 'Slug: ' . $content->slug() . "\n----\n" : '';
+
+                $record['content']  = $slugPrefix . $fileContent;
                 $record['language'] = $language;
             }
         } else {
-            $dirPath = dirname($content->root());
-            $fileKey = $content->filename();
-            $record['type'] = 'file';
+            $dirPath         = dirname($content->root());
+            $fileKey         = $content->filename();
+            $record['type']  = 'file';
         }
 
-        if (empty($fileKey)) return;
-
-        // Load existing history or create empty array
-        $history = [];
+        if (empty($fileKey)) {
+            return;
+        }
 
         $editorFile = $dirPath . '/.content-watch.json';
-        if (file_exists($editorFile)) {
-            try {
-                $history = json_decode(file_get_contents($editorFile), true) ?: [];
-            } catch (\Exception) {
-                // Ignore errors, start with empty history
-            }
-        }
 
-        // Initialize file history if it doesn't exist
+        $history = F::exists($editorFile)
+            ? (Data::read($editorFile, 'json') ?: [])
+            : [];
+
         if (!isset($history[$fileKey]) || !is_array($history[$fileKey])) {
             $history[$fileKey] = [];
         }
 
-        // Add version number - get the latest version number and increment
+        // Increment version from the highest existing version number
         $latestVersion = 0;
         if (count($history[$fileKey]) > 0) {
-            // find the greatest version without changing the array
-            $latestVersion = max(array_map(function ($entry) {
-                return $entry['version'] ?? 1;
-            }, $history[$fileKey]));
+            $latestVersion = max(array_map(
+                fn($entry) => $entry['version'] ?? 1,
+                $history[$fileKey]
+            ));
         }
         $record['version'] = $latestVersion + 1;
 
-        // Get history retention period from options (default 30 days, 10 entries)
-        $retentionDays = (int)option('tearoom1.kirby-content-watch.retentionDays', 30);
+        $retentionDays  = (int)option('tearoom1.kirby-content-watch.retentionDays', 30);
         $retentionCount = (int)option('tearoom1.kirby-content-watch.retentionCount', 10);
-        $cutoffTime = time() - ($retentionDays * 86400); // 86400 seconds per day
+        $cutoffTime     = time() - ($retentionDays * 86400);
 
-        // Add new history entry to the beginning of the array
+        // Newest entry first
         array_unshift($history[$fileKey], $record);
 
-        // Filter out entries older than the retention period
-        $history[$fileKey] = array_filter($history[$fileKey], function ($entry) use ($retentionCount) {
-            return isset($entry['time']) && $entry['time'];
-        });
+        // Prune entries older than the retention window
+        $history[$fileKey] = array_values(array_filter(
+            $history[$fileKey],
+            fn($entry) => isset($entry['time']) && $entry['time'] >= $cutoffTime
+        ));
 
-        // remove entries that are more than the retention count
+        // Limit to retention count
         if (count($history[$fileKey]) > $retentionCount) {
             $history[$fileKey] = array_slice($history[$fileKey], 0, $retentionCount);
         }
 
-        // Save the updated history
         $this->saveTheUpdatedHistory($editorFile, $history);
     }
 
-    /**
-     * @param string $editorFile
-     * @param mixed $history
-     * @return void
-     */
     public function saveTheUpdatedHistory(string $editorFile, mixed $history): void
     {
         try {
-            file_put_contents($editorFile, json_encode($history, JSON_PRETTY_PRINT));
-        } catch (\Exception $e) {
+            Data::write($editorFile, $history, 'json');
+        } catch (\Exception) {
             // Silently fail if we can't write the file
         }
     }
-
 }

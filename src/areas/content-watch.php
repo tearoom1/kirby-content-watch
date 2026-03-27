@@ -21,7 +21,7 @@ return [
                 $retentionCount = (int)option('tearoom1.kirby-content-watch.retentionCount', 10);
 
                 $enableRestore = option('tearoom1.kirby-content-watch.enableRestore', false);
-                $enabledDiff =option('tearoom1.kirby-content-watch.enableDiff', false);
+                $enabledDiff = option('tearoom1.kirby-content-watch.enableDiff', false);
 
                 return [
                     'component' => 'content-watch',
