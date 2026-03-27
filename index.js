@@ -734,7 +734,8 @@
         // Default tab is content
         diffTarget: null,
         diffVersionOptions: [],
-        diffCompareVersionId: null,
+        diffFromVersionId: null,
+        diffToVersionId: null,
         diffContent: null,
         isDiffLoading: false
       };
@@ -895,6 +896,7 @@
           const response = await this.$api.post("/content-watch/restore", {
             dirPath: file.dir_path,
             fileKey: file.uid,
+            entryId: entry.entry_id ?? null,
             timestamp: entry.time
           });
           if (response.status === "success") {
@@ -910,42 +912,66 @@
         }
       },
       viewDiff(file, entry, entryIndex) {
-        this.diffTarget = { file, entry };
-        this.diffVersionOptions = file.history.filter((_, i) => i !== entryIndex).map((entry2, i) => ({
-          text: "v" + entry2.version + " / " + entry2.language + " / " + this.formatRelative(entry2.time) + " (" + (entry2.editor.name || entry2.editor.email || "Unknown") + ")",
-          value: i < entryIndex ? i : i + 1
-          // Adjust index based on filtering
+        this.diffTarget = { file, entry, entryIndex };
+        this.diffVersionOptions = file.history.map((historyEntry, historyIndex) => ({
+          text: "v" + historyEntry.version + " / " + historyEntry.language + " / " + this.formatRelative(historyEntry.time) + " (" + (historyEntry.editor.name || historyEntry.editor.email || "Unknown") + ")",
+          value: String(historyIndex)
         }));
-        const compareIndex = entryIndex < this.diffVersionOptions.length ? entryIndex + 1 : null;
-        this.diffCompareVersionId = compareIndex;
+        this.diffToVersionId = String(entryIndex);
+        this.diffFromVersionId = entryIndex + 1 < file.history.length ? String(entryIndex + 1) : null;
         this.$refs.diffDialog.open();
-        this.loadDiff(compareIndex);
+        this.loadDiff();
       },
       closeDiff() {
         this.diffTarget = null;
         this.diffVersionOptions = [];
-        this.diffCompareVersionId = null;
+        this.diffFromVersionId = null;
+        this.diffToVersionId = null;
         this.diffContent = null;
       },
-      changeCompareVersion(versionId) {
-        this.diffCompareVersionId = versionId;
-        this.loadDiff(versionId);
+      changeFromVersion(versionId) {
+        this.diffFromVersionId = this.normalizeDiffVersionId(versionId);
+        this.loadDiff();
       },
-      loadDiff(versionId) {
-        if (versionId === null) {
+      changeToVersion(versionId) {
+        this.diffToVersionId = this.normalizeDiffVersionId(versionId);
+        this.loadDiff();
+      },
+      canShiftDiffWindow(delta) {
+        var _a, _b, _c;
+        if (this.diffFromVersionId === null || this.diffToVersionId === null) {
+          return false;
+        }
+        const fromIndex = parseInt(this.diffFromVersionId, 10) + delta;
+        const toIndex = parseInt(this.diffToVersionId, 10) + delta;
+        const historyLength = ((_c = (_b = (_a = this.diffTarget) == null ? void 0 : _a.file) == null ? void 0 : _b.history) == null ? void 0 : _c.length) ?? 0;
+        return fromIndex >= 0 && toIndex >= 0 && fromIndex < historyLength && toIndex < historyLength;
+      },
+      shiftDiffWindow(delta) {
+        if (!this.canShiftDiffWindow(delta)) {
+          return;
+        }
+        this.diffFromVersionId = String(parseInt(this.diffFromVersionId, 10) + delta);
+        this.diffToVersionId = String(parseInt(this.diffToVersionId, 10) + delta);
+        this.loadDiff();
+      },
+      loadDiff() {
+        if (this.diffFromVersionId === null || this.diffToVersionId === null) {
           this.diffContent = null;
           return;
         }
         this.isDiffLoading = true;
         this.diffContent = null;
         const file = this.diffTarget.file;
-        const entry = this.diffTarget.entry;
-        const compareEntry = file.history[versionId];
+        const fromEntry = file.history[parseInt(this.diffFromVersionId, 10)];
+        const toEntry = file.history[parseInt(this.diffToVersionId, 10)];
         this.$api.post("/content-watch/diff", {
           dirPath: file.dir_path,
           fileKey: file.uid,
-          fromTimestamp: compareEntry.time,
-          toTimestamp: entry.time
+          fromEntryId: (fromEntry == null ? void 0 : fromEntry.entry_id) ?? null,
+          toEntryId: (toEntry == null ? void 0 : toEntry.entry_id) ?? null,
+          fromTimestamp: (fromEntry == null ? void 0 : fromEntry.time) ?? null,
+          toTimestamp: (toEntry == null ? void 0 : toEntry.time) ?? null
         }).then((response) => {
           this.diffContent = response.diff;
         }).catch((error) => {
@@ -954,15 +980,27 @@
           this.isDiffLoading = false;
         });
       },
-      getVersionNumber(versionId) {
+      getDiffSelectionLabel(versionId) {
+        if (versionId === null) {
+          return "None";
+        }
         const file = this.diffTarget.file;
-        const entry = file.history[versionId];
-        return entry.version;
+        const entry = file.history[parseInt(versionId, 10)];
+        if (!entry) {
+          return "Unknown version";
+        }
+        return "v" + entry.version + " / " + entry.language + " / " + entry.time_formatted + " (" + (entry.editor.name || entry.editor.email || "Unknown") + ")";
+      },
+      normalizeDiffVersionId(versionId) {
+        if (versionId && typeof versionId === "object") {
+          return versionId.value !== void 0 ? String(versionId.value) : null;
+        }
+        return versionId === null || versionId === void 0 ? null : String(versionId);
       }
     }
   };
   var _sfc_render = function render() {
-    var _a, _b, _c2, _d, _e, _f, _g, _h, _i, _j;
+    var _a, _b, _c2, _d, _e;
     var _vm = this, _c = _vm._self._c;
     return _c("k-panel-inside", { staticClass: "k-content-watch-view" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("div", { staticClass: "k-content-watch-tabs" }, [_c("k-button-group", [_c("k-button", { class: { "k-button-active": _vm.tab === "content" }, attrs: { "icon": "edit-line" }, on: { "click": function($event) {
       _vm.tab = "content";
@@ -982,7 +1020,7 @@
         $event.stopPropagation();
         return _vm.openFile(file);
       } } })], 1)]) : _vm._e(), _vm.expandedFiles.includes(file.id) ? _c("div", { staticClass: "k-content-watch-file-timeline" }, [file.history && file.history.length > 0 ? _c("div", { staticClass: "k-timeline-list" }, _vm._l(file.history, function(entry, entryIndex) {
-        return _c("div", { key: entryIndex, staticClass: "k-timeline-item" }, [_c("div", { staticClass: "k-timeline-item-version" }, [_vm._v(" v" + _vm._s(entry.version) + " ")]), _c("div", { staticClass: "k-timeline-item-language" }, [_vm._v(" " + _vm._s(entry.language) + " ")]), _c("div", { staticClass: "k-timeline-item-time" }, [_vm._v(" " + _vm._s(entry.time_formatted) + " ")]), _c("div", { staticClass: "k-timeline-item-time-rel" }, [_vm._v(" " + _vm._s(_vm.formatRelative(entry.time)) + " ")]), _c("span", { staticClass: "k-timeline-item-editor-label" }, [_vm._v(" " + _vm._s(_vm.getEntryLabel(entry)) + " ")]), _c("span", { staticClass: "k-timeline-item-editor" }, [_vm._v(" " + _vm._s(entry.editor.name || entry.editor.email || "Unknown") + " ")]), _c("div", { staticClass: "k-timeline-item-actions" }, [_vm.enableDiff && entry.has_snapshot && file.history.length > 1 ? _c("k-button", { staticClass: "k-diff-button", attrs: { "icon": "split", "title": "View changes" }, on: { "click": function($event) {
+        return _c("div", { key: entry.entry_id || entryIndex, staticClass: "k-timeline-item" }, [_c("div", { staticClass: "k-timeline-item-version" }, [_vm._v(" v" + _vm._s(entry.version) + " ")]), _c("div", { staticClass: "k-timeline-item-language" }, [_vm._v(" " + _vm._s(entry.language) + " ")]), _c("div", { staticClass: "k-timeline-item-time" }, [_vm._v(" " + _vm._s(entry.time_formatted) + " ")]), _c("div", { staticClass: "k-timeline-item-time-rel" }, [_vm._v(" " + _vm._s(_vm.formatRelative(entry.time)) + " ")]), _c("span", { staticClass: "k-timeline-item-editor-label" }, [_vm._v(" " + _vm._s(_vm.getEntryLabel(entry)) + " ")]), _c("span", { staticClass: "k-timeline-item-editor" }, [_vm._v(" " + _vm._s(entry.editor.name || entry.editor.email || "Unknown") + " ")]), _c("div", { staticClass: "k-timeline-item-actions" }, [_vm.enableDiff && entry.has_snapshot && file.history.length > 1 ? _c("k-button", { staticClass: "k-diff-button", attrs: { "icon": "split", "title": "View changes" }, on: { "click": function($event) {
           $event.stopPropagation();
           return _vm.viewDiff(file, entry, entryIndex);
         } } }) : _vm._e(), _vm.enableRestore && entry.has_snapshot && entryIndex > 0 ? _c("k-button", { staticClass: "k-restore-button", attrs: { "icon": "undo", "title": "Restore this version" }, on: { "click": function($event) {
@@ -1000,7 +1038,7 @@
       return _vm.nextPage.apply(null, arguments);
     } } }, [_vm._v("Next ")])], 1)], 1), _c("div", { staticClass: "k-content-watch-pagination-pagesize" }, [_c("k-select-field", { attrs: { "value": _vm.pageSize, "options": _vm.pageSizeOptions }, on: { "input": _vm.changePageSize } })], 1)]) : _vm._e(), _vm.files.length && !_vm.filteredFiles.length ? _c("k-empty", { attrs: { "icon": "page", "text": _vm.$t("no.files.found") } }) : _vm._e(), !_vm.files.length ? _c("k-empty", { attrs: { "icon": "page", "text": "No content change data available" } }) : _vm._e(), _vm.isLoading ? _c("k-loader") : _vm._e()], 1) : _vm._e(), _vm.tab === "locked" ? _c("section", { staticClass: "k-content-watch-section" }, [_vm.lockedPages.length ? _c("k-grid", [_c("k-column", { attrs: { "width": "1/2" } }, [_c("k-input", { staticClass: "k-content-watch-search", attrs: { "type": "text", "placeholder": _vm.$t("search") + "...", "icon": "search" }, on: { "input": _vm.filterLockedPages }, model: { value: _vm.lockedSearch, callback: function($$v) {
       _vm.lockedSearch = $$v;
-    }, expression: "lockedSearch" } })], 1), _c("k-column", { staticClass: "k-content-watch-buttons", attrs: { "width": "1/2" } }, [_c("k-button-group", [_c("k-button", { class: { "k-button-active": _vm.lockedShowOnlyPages }, attrs: { "icon": "page" }, on: { "click": _vm.toggleLockedShowOnlyPages } }, [_vm._v("Pages only ")]), _c("k-button", { class: { "k-button-active": !_vm.lockedShowOnlyPages }, attrs: { "icon": "file-document" }, on: { "click": _vm.toggleLockedShowAll } }, [_vm._v("All files ")]), _c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1)], 1) : _vm._e(), _vm.filteredLockedPages.length ? _c("div", { staticClass: "k-content-watch-files k-content-watch-locked" }, _vm._l(_vm.filteredLockedPages, function(lock) {
+    }, expression: "lockedSearch" } })], 1), _c("k-column", { staticClass: "k-content-watch-buttons", attrs: { "width": "1/2" } }, [_c("k-button-group", [_c("k-button", { class: { "k-button-active": _vm.lockedShowOnlyPages }, attrs: { "icon": "page" }, on: { "click": _vm.toggleLockedShowOnlyPages } }, [_vm._v(" Pages only ")]), _c("k-button", { class: { "k-button-active": !_vm.lockedShowOnlyPages }, attrs: { "icon": "file-document" }, on: { "click": _vm.toggleLockedShowAll } }, [_vm._v("All files ")]), _c("k-button", { attrs: { "icon": "refresh" }, on: { "click": _vm.refresh } })], 1)], 1)], 1) : _vm._e(), _vm.filteredLockedPages.length ? _c("div", { staticClass: "k-content-watch-files k-content-watch-locked" }, _vm._l(_vm.filteredLockedPages, function(lock) {
       return _c("div", { key: lock.id + "-" + lock.time, staticClass: "k-content-watch-file" }, [_vm.layoutStyle === "default" ? _c("div", { staticClass: "k-content-watch-file-header", on: { "click": function($event) {
         return _vm.openLockedPage(lock);
       } } }, [_c("div", { staticClass: "k-content-watch-file-info" }, [_c("span", { staticClass: "k-content-watch-file-path" }, [_c("span", { staticClass: "k-content-watch-file-title-row" }, [lock.page_status ? _c("span", { staticClass: "k-content-watch-status-glyph", class: "k-content-watch-status-glyph-" + lock.page_status, attrs: { "title": lock.page_status } }) : _vm._e(), _c("strong", { staticClass: "k-content-watch-file-title" }, [_vm._v(_vm._s(lock.title))])]), _c("span", { staticClass: "k-content-watch-file-subpath", class: { "k-content-watch-file-subpath-indented": lock.page_status } }, [_vm._v(" " + _vm._s(lock.id) + " ")])]), _c("span", { staticClass: "k-content-watch-file-editor" }, [_vm._v(" " + _vm._s(lock.user || "Unknown")), _c("br"), _vm._v(" " + _vm._s(_vm.formatRelative(lock.time)) + " ")])]), _c("div", { staticClass: "k-content-watch-file-actions" }, [_c("k-button", { attrs: { "icon": "edit" }, on: { "click": function($event) {
@@ -1012,7 +1050,11 @@
         $event.stopPropagation();
         return _vm.openLockedPage(lock);
       } } })], 1)]) : _vm._e()]);
-    }), 0) : _c("k-empty", { attrs: { "icon": "lock", "text": "No locked pages found" } })], 1) : _vm._e(), _vm.enableRestore ? _c("k-dialog", { ref: "restoreDialog", staticClass: "k-content-watch-restore-dialog", attrs: { "button": _vm.$t("restore"), "theme": "positive", "icon": "refresh" }, on: { "submit": _vm.restoreContent } }, [_c("k-text", [_vm._v("Are you sure you want to restore this version?")]), _vm.restoreTarget ? _c("k-text", [_c("strong", [_vm._v("File:")]), _vm._v(" " + _vm._s((_a = _vm.restoreTarget.file) == null ? void 0 : _a.title)), _c("br"), _c("strong", [_vm._v("Version:")]), _vm._v(" " + _vm._s((_b = _vm.restoreTarget.entry) == null ? void 0 : _b.time_formatted) + " (" + _vm._s(_vm.formatRelative((_c2 = _vm.restoreTarget.entry) == null ? void 0 : _c2.time)) + ") ")]) : _vm._e(), _c("k-text", [_vm._v("This will overwrite the current content with this previous version.")])], 1) : _vm._e(), _c("k-dialog", { ref: "diffDialog", staticClass: "k-content-watch-diff-dialog", attrs: { "size": "huge", "button": _vm.$t("close"), "cancelButton": "", "submitButton": "Close" }, on: { "close": _vm.closeDiff } }, [_vm.diffTarget ? _c("div", { staticClass: "k-content-watch-diff-header" }, [_c("div", [_c("div", { staticClass: "k-content-watch-diff-file-info" }, [_vm._v(" Page:"), _c("strong", [_vm._v(_vm._s((_d = _vm.diffTarget.file) == null ? void 0 : _d.title))]), _c("span", { staticClass: "k-content-watch-diff-path" }, [_vm._v(" ~ " + _vm._s((_e = _vm.diffTarget.file) == null ? void 0 : _e.path_short))])]), _c("div", { staticClass: "k-content-watch-diff-current-version" }, [_c("strong", [_vm._v("Current version:")]), _vm._v(" v" + _vm._s((_f = _vm.diffTarget.entry) == null ? void 0 : _f.version) + " / " + _vm._s((_g = _vm.diffTarget.entry) == null ? void 0 : _g.language) + " / " + _vm._s((_h = _vm.diffTarget.entry) == null ? void 0 : _h.time_formatted) + " "), _c("span", { staticClass: "k-content-watch-diff-editor" }, [_vm._v(" (" + _vm._s(((_i = _vm.diffTarget.entry) == null ? void 0 : _i.editor.name) || ((_j = _vm.diffTarget.entry) == null ? void 0 : _j.editor.email) || "Unknown") + ") ")])])]), _c("div", { staticClass: "k-content-watch-diff-version-select" }, [_c("div", { staticClass: "k-content-watch-diff-compare-version" }, [_c("strong", [_vm._v("Compare with:")]), _vm.diffCompareVersionId !== null && _vm.diffTarget ? _c("span", { staticClass: "k-content-watch-diff-version-number" }, [_vm._v(" v" + _vm._s(_vm.getVersionNumber(_vm.diffCompareVersionId)) + " ")]) : _vm._e()]), _c("k-select-field", { attrs: { "options": _vm.diffVersionOptions, "value": _vm.diffCompareVersionId, "placeholder": "Select version to compare" }, on: { "input": _vm.changeCompareVersion } })], 1)]) : _vm._e(), _vm.isDiffLoading ? _c("k-loader") : _vm.diffContent ? _c("div", { staticClass: "k-content-watch-diff-content" }, [_c("div", { domProps: { "innerHTML": _vm._s(_vm.diffContent) } })]) : _c("k-empty", { attrs: { "icon": "document", "text": "No diff available" } })], 1)], 1);
+    }), 0) : _c("k-empty", { attrs: { "icon": "lock", "text": "No locked pages found" } })], 1) : _vm._e(), _vm.enableRestore ? _c("k-dialog", { ref: "restoreDialog", staticClass: "k-content-watch-restore-dialog", attrs: { "button": _vm.$t("restore"), "theme": "positive", "icon": "refresh" }, on: { "submit": _vm.restoreContent } }, [_c("k-text", [_vm._v("Are you sure you want to restore this version?")]), _vm.restoreTarget ? _c("k-text", [_c("strong", [_vm._v("File:")]), _vm._v(" " + _vm._s((_a = _vm.restoreTarget.file) == null ? void 0 : _a.title)), _c("br"), _c("strong", [_vm._v("Version:")]), _vm._v(" " + _vm._s((_b = _vm.restoreTarget.entry) == null ? void 0 : _b.time_formatted) + " (" + _vm._s(_vm.formatRelative((_c2 = _vm.restoreTarget.entry) == null ? void 0 : _c2.time)) + ") ")]) : _vm._e(), _c("k-text", [_vm._v("This will overwrite the current content with this previous version.")])], 1) : _vm._e(), _c("k-dialog", { ref: "diffDialog", staticClass: "k-content-watch-diff-dialog", attrs: { "size": "huge", "button": _vm.$t("close"), "cancelButton": "", "submitButton": "Close" }, on: { "close": _vm.closeDiff } }, [_vm.diffTarget ? _c("div", { staticClass: "k-content-watch-diff-header" }, [_c("div", [_c("div", { staticClass: "k-content-watch-diff-file-info" }, [_vm._v(" Page: "), _c("strong", [_vm._v(_vm._s((_d = _vm.diffTarget.file) == null ? void 0 : _d.title))]), _c("span", { staticClass: "k-content-watch-diff-path" }, [_vm._v(" ~ " + _vm._s((_e = _vm.diffTarget.file) == null ? void 0 : _e.path_short))])]), _c("div", { staticClass: "k-content-watch-diff-version-select" }, [_c("div", { staticClass: "k-content-watch-diff-nav" }, [_c("k-button-group", [_c("k-button", { attrs: { "icon": "angle-left", "disabled": !_vm.canShiftDiffWindow(1) }, on: { "click": function($event) {
+      return _vm.shiftDiffWindow(1);
+    } } }, [_vm._v(" Prev ")]), _c("k-button", { attrs: { "icon": "angle-right", "icon-after": "", "disabled": !_vm.canShiftDiffWindow(-1) }, on: { "click": function($event) {
+      return _vm.shiftDiffWindow(-1);
+    } } }, [_vm._v(" Next ")])], 1)], 1)]), _c("div", { staticClass: "k-content-watch-diff-compare-versions" }, [_c("div", { staticClass: "k-content-watch-diff-compare-version" }, [_c("strong", [_vm._v("From:")]), _c("k-select-field", { attrs: { "options": _vm.diffVersionOptions, "value": _vm.diffFromVersionId, "placeholder": "Select base version" }, on: { "input": _vm.changeFromVersion } })], 1), _c("div", { staticClass: "k-content-watch-diff-compare-version" }, [_c("strong", [_vm._v("To:")]), _c("k-select-field", { attrs: { "options": _vm.diffVersionOptions, "value": _vm.diffToVersionId, "placeholder": "Select version to compare" }, on: { "input": _vm.changeToVersion } })], 1)])])]) : _vm._e(), _vm.isDiffLoading ? _c("k-loader") : _vm.diffContent ? _c("div", { staticClass: "k-content-watch-diff-content" }, [_c("div", { domProps: { "innerHTML": _vm._s(_vm.diffContent) } })]) : _c("k-empty", { attrs: { "icon": "document", "text": "No diff available" } })], 1)], 1);
   };
   var _sfc_staticRenderFns = [];
   _sfc_render._withStripped = true;

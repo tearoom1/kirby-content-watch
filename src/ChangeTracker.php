@@ -5,9 +5,17 @@ namespace TearoomOne\ContentWatch;
 use Kirby\Cms\ModelWithContent;
 use Kirby\Data\Data;
 use Kirby\Filesystem\F;
+use Kirby\Cms\Page;
 
 class ChangeTracker
 {
+    protected static array $requestTrackedEntries = [];
+
+    public static function resetRequestTrackedEntries(): void
+    {
+        self::$requestTrackedEntries = [];
+    }
+
     public function trackContentChange(ModelWithContent $content, array $meta = []): void
     {
         $user = kirby()->user();
@@ -17,6 +25,7 @@ class ChangeTracker
 
         $record = [
             'editor_id' => $user->id(),
+            'uuid'      => bin2hex(random_bytes(16)),
             'time'      => time(),
         ];
 
@@ -40,13 +49,17 @@ class ChangeTracker
                 $contentFile  = $dirPath . '/' . $fileKey . $languagePart . '.txt';
                 $fileContent  = F::read($contentFile) ?? '';
 
-                // Prepend synthetic fields so structural page changes remain visible in diffs.
-                // The title lives in the content file itself and is captured automatically.
-                $pathPrefix = $isPage ? 'Path: ' . $content->id() . "\n----\n" : '';
-                $slugPrefix = $isPage ? 'Slug: ' . $content->slug() . "\n----\n" : '';
-
-                $record['content']  = $pathPrefix . $slugPrefix . $fileContent;
+                $record['content']  = $fileContent;
                 $record['language'] = $language;
+
+                if ($content instanceof Page) {
+                    $record['meta'] = [
+                        'path'     => $content->parent()?->id() ?? '',
+                        'slug'     => $content->slug(),
+                        'status'   => $content->status(),
+                        'template' => $content->intendedTemplate()->name(),
+                    ];
+                }
             }
         } else {
             $dirPath         = dirname($content->root());
@@ -63,6 +76,21 @@ class ChangeTracker
         $history = F::exists($editorFile)
             ? (Data::read($editorFile, 'json') ?: [])
             : [];
+
+        $previousFileKey = $meta['previous_file_key'] ?? null;
+        if (
+            is_string($previousFileKey) &&
+            $previousFileKey !== '' &&
+            $previousFileKey !== $fileKey &&
+            isset($history[$previousFileKey]) &&
+            is_array($history[$previousFileKey])
+        ) {
+            $history[$fileKey] = array_values(array_merge(
+                $history[$fileKey] ?? [],
+                $history[$previousFileKey]
+            ));
+            unset($history[$previousFileKey]);
+        }
 
         if (!isset($history[$fileKey]) || !is_array($history[$fileKey])) {
             $history[$fileKey] = [];
@@ -81,9 +109,17 @@ class ChangeTracker
         $retentionDays  = (int)option('tearoom1.kirby-content-watch.retentionDays', 30);
         $retentionCount = (int)option('tearoom1.kirby-content-watch.retentionCount', 10);
         $cutoffTime     = time() - ($retentionDays * 86400);
+        $requestKey     = $this->requestTrackedKey($editorFile, $fileKey, $record, $meta);
 
-        // Newest entry first
-        array_unshift($history[$fileKey], $record);
+        if ($this->shouldCoalesceWithinRequest($requestKey, $history[$fileKey], $record, $meta)) {
+            $record['uuid'] = $history[$fileKey][0]['uuid'] ?? $record['uuid'];
+            $record['version'] = $history[$fileKey][0]['version'] ?? $record['version'];
+            $history[$fileKey][0] = $record;
+        } else {
+            // Newest entry first
+            array_unshift($history[$fileKey], $record);
+            self::$requestTrackedEntries[$requestKey] = true;
+        }
 
         // Prune entries older than the retention window
         $history[$fileKey] = array_values(array_filter(
@@ -106,5 +142,38 @@ class ChangeTracker
         } catch (\Exception) {
             // Silently fail if we can't write the file
         }
+    }
+
+    protected function requestTrackedKey(string $editorFile, string $fileKey, array $record, array $meta): string
+    {
+        $targetKey = $meta['coalesce_key'] ?? ($editorFile . '|' . $fileKey);
+
+        return implode('|', [
+            $targetKey,
+            $record['editor_id'] ?? '',
+            $record['language'] ?? '',
+            $record['action'] ?? 'edited',
+            $meta['coalesce_group'] ?? '',
+        ]);
+    }
+
+    protected function shouldCoalesceWithinRequest(string $requestKey, array $history, array $record, array $meta): bool
+    {
+        if (!is_string($meta['coalesce_group'] ?? null) || $meta['coalesce_group'] === '') {
+            return false;
+        }
+
+        if ((self::$requestTrackedEntries[$requestKey] ?? false) !== true) {
+            return false;
+        }
+
+        $latest = $history[0] ?? null;
+        if (!is_array($latest)) {
+            return false;
+        }
+
+        return ($latest['editor_id'] ?? null) === ($record['editor_id'] ?? null)
+            && ($latest['language'] ?? '') === ($record['language'] ?? '')
+            && ($latest['action'] ?? null) === ($record['action'] ?? null);
     }
 }

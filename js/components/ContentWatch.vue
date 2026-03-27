@@ -78,7 +78,8 @@
               </span>
             </div>
             <div class="k-content-watch-file-actions">
-              <k-button icon="angle-down" :class="{'k-button-rotated': expandedFiles.includes(file.id), 'k-button-disabled': !file.history || file.history.length === 0}"/>
+              <k-button icon="angle-down"
+                        :class="{'k-button-rotated': expandedFiles.includes(file.id), 'k-button-disabled': !file.history || file.history.length === 0}"/>
               <k-button @click.stop="openFile(file)" icon="edit"/>
             </div>
           </div>
@@ -105,14 +106,15 @@
               </span>
             </div>
             <div class="k-content-watch-file-actions">
-              <k-button icon="angle-down" :class="{'k-button-rotated': expandedFiles.includes(file.id), 'k-button-disabled': !file.history || file.history.length === 0}"/>
+              <k-button icon="angle-down"
+                        :class="{'k-button-rotated': expandedFiles.includes(file.id), 'k-button-disabled': !file.history || file.history.length === 0}"/>
               <k-button @click.stop="openFile(file)" icon="edit"/>
             </div>
           </div>
 
           <div v-if="expandedFiles.includes(file.id)" class="k-content-watch-file-timeline">
             <div v-if="file.history && file.history.length > 0" class="k-timeline-list">
-              <div v-for="(entry, entryIndex) in file.history" :key="entryIndex" class="k-timeline-item">
+              <div v-for="(entry, entryIndex) in file.history" :key="entry.entry_id || entryIndex" class="k-timeline-item">
                 <div class="k-timeline-item-version">
                   v{{ entry.version }}
                 </div>
@@ -209,9 +211,11 @@
         </k-column>
         <k-column width="1/2" class="k-content-watch-buttons">
           <k-button-group>
-            <k-button :class="{'k-button-active': lockedShowOnlyPages}" @click="toggleLockedShowOnlyPages" icon="page">Pages only
+            <k-button :class="{'k-button-active': lockedShowOnlyPages}" @click="toggleLockedShowOnlyPages" icon="page">
+              Pages only
             </k-button>
-            <k-button :class="{'k-button-active': !lockedShowOnlyPages}" @click="toggleLockedShowAll" icon="file-document">All
+            <k-button :class="{'k-button-active': !lockedShowOnlyPages}" @click="toggleLockedShowAll"
+                      icon="file-document">All
               files
             </k-button>
             <k-button icon="refresh" @click="refresh"/>
@@ -287,13 +291,13 @@
 
     <!-- Confirmation dialog for restore -->
     <k-dialog
-      class="k-content-watch-restore-dialog"
       v-if="enableRestore"
       ref="restoreDialog"
       :button="$t('restore')"
       theme="positive"
       icon="refresh"
       @submit="restoreContent"
+      class="k-content-watch-restore-dialog"
     >
       <k-text>Are you sure you want to restore this version?</k-text>
       <k-text v-if="restoreTarget">
@@ -317,40 +321,63 @@
       <div v-if="diffTarget" class="k-content-watch-diff-header">
         <div>
           <div class="k-content-watch-diff-file-info">
-            Page:<strong>{{ diffTarget.file?.title }}</strong>
+            Page: <strong>{{ diffTarget.file?.title }}</strong>
             <span class="k-content-watch-diff-path"> ~ {{ diffTarget.file?.path_short }}</span>
           </div>
 
-          <div class="k-content-watch-diff-current-version">
-            <strong>Current version:</strong> v{{ diffTarget.entry?.version }} / {{ diffTarget.entry?.language }} /
-            {{ diffTarget.entry?.time_formatted }}
-            <span class="k-content-watch-diff-editor">
-              ({{ diffTarget.entry?.editor.name || diffTarget.entry?.editor.email || 'Unknown' }})
-            </span>
+          <div class="k-content-watch-diff-version-select">
+            <div class="k-content-watch-diff-nav">
+              <k-button-group>
+                <k-button
+                  icon="angle-left"
+                  @click="shiftDiffWindow(1)"
+                  :disabled="!canShiftDiffWindow(1)"
+                >
+                  Prev
+                </k-button>
+                <k-button
+                  icon="angle-right"
+                  icon-after
+                  @click="shiftDiffWindow(-1)"
+                  :disabled="!canShiftDiffWindow(-1)"
+                >
+                  Next
+                </k-button>
+              </k-button-group>
+            </div>
           </div>
-        </div>
 
-        <div class="k-content-watch-diff-version-select">
-          <div class="k-content-watch-diff-compare-version">
-            <strong>Compare with:</strong>
-            <span v-if="diffCompareVersionId !== null && diffTarget" class="k-content-watch-diff-version-number">
-              v{{ getVersionNumber(diffCompareVersionId) }}
-            </span>
+          <div class="k-content-watch-diff-compare-versions">
+
+            <div class="k-content-watch-diff-compare-version">
+              <strong>From:</strong>
+
+              <k-select-field
+                :options="diffVersionOptions"
+                @input="changeFromVersion"
+                :value="diffFromVersionId"
+                placeholder="Select base version"
+              />
+            </div>
+
+            <div class="k-content-watch-diff-compare-version">
+              <strong>To:</strong>
+
+              <k-select-field
+                :options="diffVersionOptions"
+                @input="changeToVersion"
+                :value="diffToVersionId"
+                placeholder="Select version to compare"
+              />
+            </div>
           </div>
-
-          <k-select-field
-            :options="diffVersionOptions"
-            @input="changeCompareVersion"
-            :value="diffCompareVersionId"
-            placeholder="Select version to compare"
-          />
         </div>
       </div>
 
       <k-loader v-if="isDiffLoading"/>
 
       <div v-else-if="diffContent" class="k-content-watch-diff-content"
-        >
+      >
         <div v-html="diffContent"></div>
       </div>
 
@@ -418,7 +445,8 @@ export default {
       tab: 'content', // Default tab is content
       diffTarget: null,
       diffVersionOptions: [],
-      diffCompareVersionId: null,
+      diffFromVersionId: null,
+      diffToVersionId: null,
       diffContent: null,
       isDiffLoading: false
     };
@@ -634,6 +662,7 @@ export default {
         const response = await this.$api.post('/content-watch/restore', {
           dirPath: file.dir_path,
           fileKey: file.uid,
+          entryId: entry.entry_id ?? null,
           timestamp: entry.time
         });
 
@@ -652,42 +681,65 @@ export default {
     },
 
     viewDiff(file, entry, entryIndex) {
-      this.diffTarget = {file, entry};
+      this.diffTarget = {file, entry, entryIndex};
+      this.diffVersionOptions = file.history.map((historyEntry, historyIndex) => ({
+        text: 'v' + historyEntry.version + ' / ' + historyEntry.language + ' / ' +
+          this.formatRelative(historyEntry.time) + ' (' +
+          (historyEntry.editor.name || historyEntry.editor.email || 'Unknown') + ')',
+        value: String(historyIndex)
+      }));
 
-      // Create version options with version numbers
-      this.diffVersionOptions = file.history
-        .filter((_, i) => i !== entryIndex) // Remove current version from options
-        .map((entry, i) => ({
-          text: 'v' + entry.version + ' / ' + entry.language + ' / ' +
-            this.formatRelative(entry.time) + ' (' + (entry.editor.name || entry.editor.email || 'Unknown') + ')',
-          value: i < entryIndex ? i : i + 1 // Adjust index based on filtering
-        }));
-
-      // Always default to comparing with the previous version
-      const compareIndex = entryIndex < this.diffVersionOptions.length ? entryIndex + 1 : null;
-      this.diffCompareVersionId = compareIndex;
+      this.diffToVersionId = String(entryIndex);
+      this.diffFromVersionId = entryIndex + 1 < file.history.length
+        ? String(entryIndex + 1)
+        : null;
 
       this.$refs.diffDialog.open();
-
-      // Load the initial diff if we have a valid compare version
-      this.loadDiff(compareIndex);
+      this.loadDiff();
     },
 
     closeDiff() {
       this.diffTarget = null;
       this.diffVersionOptions = [];
-      this.diffCompareVersionId = null;
+      this.diffFromVersionId = null;
+      this.diffToVersionId = null;
       this.diffContent = null;
     },
 
-    changeCompareVersion(versionId) {
-      this.diffCompareVersionId = versionId;
-      this.loadDiff(versionId);
+    changeFromVersion(versionId) {
+      this.diffFromVersionId = this.normalizeDiffVersionId(versionId);
+      this.loadDiff();
     },
 
-    loadDiff(versionId) {
+    changeToVersion(versionId) {
+      this.diffToVersionId = this.normalizeDiffVersionId(versionId);
+      this.loadDiff();
+    },
 
-      if (versionId === null) {
+    canShiftDiffWindow(delta) {
+      if (this.diffFromVersionId === null || this.diffToVersionId === null) {
+        return false;
+      }
+
+      const fromIndex = parseInt(this.diffFromVersionId, 10) + delta;
+      const toIndex = parseInt(this.diffToVersionId, 10) + delta;
+      const historyLength = this.diffTarget?.file?.history?.length ?? 0;
+
+      return fromIndex >= 0 && toIndex >= 0 && fromIndex < historyLength && toIndex < historyLength;
+    },
+
+    shiftDiffWindow(delta) {
+      if (!this.canShiftDiffWindow(delta)) {
+        return;
+      }
+
+      this.diffFromVersionId = String(parseInt(this.diffFromVersionId, 10) + delta);
+      this.diffToVersionId = String(parseInt(this.diffToVersionId, 10) + delta);
+      this.loadDiff();
+    },
+
+    loadDiff() {
+      if (this.diffFromVersionId === null || this.diffToVersionId === null) {
         this.diffContent = null;
         return;
       }
@@ -696,14 +748,16 @@ export default {
       this.diffContent = null;
 
       const file = this.diffTarget.file;
-      const entry = this.diffTarget.entry;
-      const compareEntry = file.history[versionId];
+      const fromEntry = file.history[parseInt(this.diffFromVersionId, 10)];
+      const toEntry = file.history[parseInt(this.diffToVersionId, 10)];
 
       this.$api.post('/content-watch/diff', {
         dirPath: file.dir_path,
         fileKey: file.uid,
-        fromTimestamp: compareEntry.time,
-        toTimestamp: entry.time
+        fromEntryId: fromEntry?.entry_id ?? null,
+        toEntryId: toEntry?.entry_id ?? null,
+        fromTimestamp: fromEntry?.time ?? null,
+        toTimestamp: toEntry?.time ?? null
       })
         .then(response => {
           this.diffContent = response.diff;
@@ -716,10 +770,28 @@ export default {
         });
     },
 
-    getVersionNumber(versionId) {
+    getDiffSelectionLabel(versionId) {
+      if (versionId === null) {
+        return 'None';
+      }
+
       const file = this.diffTarget.file;
-      const entry = file.history[versionId];
-      return entry.version;
+      const entry = file.history[parseInt(versionId, 10)];
+
+      if (!entry) {
+        return 'Unknown version';
+      }
+
+      return 'v' + entry.version + ' / ' + entry.language + ' / ' +
+        entry.time_formatted + ' (' + (entry.editor.name || entry.editor.email || 'Unknown') + ')';
+    },
+
+    normalizeDiffVersionId(versionId) {
+      if (versionId && typeof versionId === 'object') {
+        return versionId.value !== undefined ? String(versionId.value) : null;
+      }
+
+      return versionId === null || versionId === undefined ? null : String(versionId);
     }
   }
 };
@@ -1045,7 +1117,7 @@ export default {
 
   .k-content-watch-diff-current-version {
     font-size: 0.875rem;
-    margin-top: 0.25rem;
+    margin-top: 0.75rem;
   }
 
   .k-content-watch-diff-editor {
@@ -1057,9 +1129,30 @@ export default {
     margin-top: 1rem;
   }
 
+  .k-content-watch-diff-nav {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.75rem;
+  }
+
+  .k-content-watch-diff-compare-versions {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+  }
+
   .k-content-watch-diff-compare-version {
+    display: flex;
+    justify-content: start;
+    align-items: center;
     font-size: 0.875rem;
-    margin-bottom: 0.5rem;
+    margin-block: 0.5rem;
+    gap: 0.5rem;
+    flex: 1;
+
+    div {
+      flex: 1;
+    }
   }
 
   .k-content-watch-diff-content {
@@ -1113,5 +1206,10 @@ export default {
       }
     }
   }
+}
+
+.k-content-watch-restore-dialog .k-dialog-body {
+  display: grid;
+  gap: 1rem;
 }
 </style>

@@ -3,6 +3,7 @@
 namespace TearoomOne\ContentWatch\Tests\Unit;
 
 use TearoomOne\ContentWatch\DiffGenerator;
+use TearoomOne\ContentWatch\SnapshotSerializer;
 use TearoomOne\ContentWatch\Tests\TestCase;
 
 class DiffGeneratorTest extends TestCase
@@ -65,14 +66,70 @@ class DiffGeneratorTest extends TestCase
 
     public function testPathChangeAppearsInDiff(): void
     {
-        $old = "Path: archive/test-page\n----\nSlug: test-page\n----\nTitle: Hello";
-        $new = "Path: section/test-page\n----\nSlug: test-page\n----\nTitle: Hello";
+        $old = "Path: archive\n----\nSlug: test-page\n----\nTitle: Hello";
+        $new = "Path: section\n----\nSlug: test-page\n----\nTitle: Hello";
 
         $result = DiffGenerator::generate($old, $new);
 
         $this->assertNotSame('No changes found', $result);
-        $this->assertStringContainsString('archive/test-page', $result);
-        $this->assertStringContainsString('section/test-page', $result);
+        $this->assertStringContainsString('archive', $result);
+        $this->assertStringContainsString('section', $result);
+    }
+
+    public function testStatusChangeAppearsInDiff(): void
+    {
+        $old = "Path: test-page\n----\nSlug: test-page\n----\nStatus: draft\n----\nTemplate: article\n----\nTitle: Hello";
+        $new = "Path: test-page\n----\nSlug: test-page\n----\nStatus: listed\n----\nTemplate: article\n----\nTitle: Hello";
+
+        $result = DiffGenerator::generate($old, $new);
+
+        $this->assertNotSame('No changes found', $result);
+        $this->assertStringContainsStringIgnoringCase('status', $result);
+        $this->assertStringContainsString('draft', $result);
+        $this->assertStringContainsString('listed', $result);
+    }
+
+    public function testTemplateChangeAppearsInDiff(): void
+    {
+        $old = "Path: test-page\n----\nSlug: test-page\n----\nStatus: listed\n----\nTemplate: article\n----\nTitle: Hello";
+        $new = "Path: test-page\n----\nSlug: test-page\n----\nStatus: listed\n----\nTemplate: case-study\n----\nTitle: Hello";
+
+        $result = DiffGenerator::generate($old, $new);
+
+        $this->assertNotSame('No changes found', $result);
+        $this->assertStringContainsStringIgnoringCase('template', $result);
+        $this->assertStringContainsString('article', $result);
+        $this->assertStringContainsString('case-study', $result);
+    }
+
+    public function testComposedMetaOnlyChangeNeverReturnsEmptyDiff(): void
+    {
+        $old = SnapshotSerializer::compose(
+            "Title: Hello\n----\nText: Same body\n",
+            [
+                'path'     => '',
+                'slug'     => 'test-page',
+                'status'   => 'draft',
+                'template' => 'article',
+            ]
+        );
+        $new = SnapshotSerializer::compose(
+            "Title: Hello\n----\nText: Same body\n",
+            [
+                'path'     => '',
+                'slug'     => 'test-page',
+                'status'   => 'listed',
+                'template' => 'article',
+            ]
+        );
+
+        $result = DiffGenerator::generate($old, $new);
+
+        $this->assertNotSame('', $result);
+        $this->assertNotSame('No changes found', $result);
+        $this->assertStringContainsStringIgnoringCase('status', $result);
+        $this->assertStringContainsString('draft', $result);
+        $this->assertStringContainsString('listed', $result);
     }
 
     // -------------------------------------------------------------------------

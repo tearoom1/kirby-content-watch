@@ -16,6 +16,7 @@ class ChangeTrackerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        ChangeTracker::resetRequestTrackedEntries();
 
         $this->pageDir = $this->contentDir . '/1_test-page';
         $this->writeContent($this->pageDir . '/article.txt', "Title: Test Page\n----\nText: Hello\n");
@@ -43,6 +44,7 @@ class ChangeTrackerTest extends TestCase
         $this->assertArrayHasKey($this->templateKey, $history);
 
         $entry = $history[$this->templateKey][0];
+        $this->assertArrayHasKey('uuid', $entry);
         $this->assertArrayHasKey('editor_id', $entry);
         $this->assertArrayHasKey('time', $entry);
         $this->assertArrayHasKey('version', $entry);
@@ -105,7 +107,7 @@ class ChangeTrackerTest extends TestCase
         $this->assertNotEmpty($history[$this->templateKey][0]['content']);
     }
 
-    public function testContentSnapshotIncludesSlugField(): void
+    public function testContentSnapshotStoresActualFileContentOnly(): void
     {
         $this->kirby = $this->makeApp([
             'options' => ['tearoom1.kirby-content-watch.enableRestore' => true],
@@ -117,11 +119,11 @@ class ChangeTrackerTest extends TestCase
         $history  = $this->readHistory($this->pageDir);
         $snapshot = $history[$this->templateKey][0]['content'];
 
-        // Slug is prepended as a synthetic field so slug renames show in diffs
-        $this->assertStringContainsString('Slug: test-page', $snapshot);
+        $this->assertStringContainsString("Title: Test Page\n----\nText: Hello\n", $snapshot);
+        $this->assertStringNotContainsString('Slug: test-page', $snapshot);
     }
 
-    public function testContentSnapshotIncludesPathField(): void
+    public function testContentSnapshotStoresPathInMeta(): void
     {
         $this->kirby = $this->makeApp([
             'options' => ['tearoom1.kirby-content-watch.enableRestore' => true],
@@ -130,10 +132,55 @@ class ChangeTrackerTest extends TestCase
 
         (new ChangeTracker())->trackContentChange(kirby()->page('test-page'));
 
-        $history  = $this->readHistory($this->pageDir);
-        $snapshot = $history[$this->templateKey][0]['content'];
+        $history = $this->readHistory($this->pageDir);
+        $meta    = $history[$this->templateKey][0]['meta'];
 
-        $this->assertStringContainsString('Path: test-page', $snapshot);
+        $this->assertSame('', $meta['path'] ?? null);
+    }
+
+    public function testContentSnapshotStoresSlugInMeta(): void
+    {
+        $this->kirby = $this->makeApp([
+            'options' => ['tearoom1.kirby-content-watch.enableRestore' => true],
+        ]);
+        $this->kirby->impersonate('kirby');
+
+        (new ChangeTracker())->trackContentChange(kirby()->page('test-page'));
+
+        $history = $this->readHistory($this->pageDir);
+        $meta    = $history[$this->templateKey][0]['meta'];
+
+        $this->assertSame('test-page', $meta['slug'] ?? null);
+    }
+
+    public function testContentSnapshotStoresStatusInMeta(): void
+    {
+        $this->kirby = $this->makeApp([
+            'options' => ['tearoom1.kirby-content-watch.enableRestore' => true],
+        ]);
+        $this->kirby->impersonate('kirby');
+
+        (new ChangeTracker())->trackContentChange(kirby()->page('test-page'));
+
+        $history = $this->readHistory($this->pageDir);
+        $meta    = $history[$this->templateKey][0]['meta'];
+
+        $this->assertSame('listed', $meta['status'] ?? null);
+    }
+
+    public function testContentSnapshotStoresTemplateInMeta(): void
+    {
+        $this->kirby = $this->makeApp([
+            'options' => ['tearoom1.kirby-content-watch.enableRestore' => true],
+        ]);
+        $this->kirby->impersonate('kirby');
+
+        (new ChangeTracker())->trackContentChange(kirby()->page('test-page'));
+
+        $history = $this->readHistory($this->pageDir);
+        $meta    = $history[$this->templateKey][0]['meta'];
+
+        $this->assertSame('article', $meta['template'] ?? null);
     }
 
     public function testPageMoveMetadataIsRecorded(): void
@@ -152,6 +199,59 @@ class ChangeTrackerTest extends TestCase
 
         $this->assertSame('moved', $entry['action']);
         $this->assertArrayNotHasKey('move', $entry);
+    }
+
+    public function testPreviousFileKeyIsMigratedToCurrentKey(): void
+    {
+        $this->writeHistory($this->pageDir, [
+            'old-template' => [[
+                'editor_id' => 'kirby',
+                'time'      => time() - 60,
+                'version'   => 1,
+                'type'      => 'page',
+            ]],
+        ]);
+
+        (new ChangeTracker())->trackContentChange(kirby()->page('test-page'), [
+            'previous_file_key' => 'old-template',
+        ]);
+
+        $history = $this->readHistory($this->pageDir);
+
+        $this->assertArrayNotHasKey('old-template', $history);
+        $this->assertArrayHasKey($this->templateKey, $history);
+        $this->assertCount(2, $history[$this->templateKey]);
+    }
+
+    public function testSameRequestTracksTitleAndSlugAsSingleVersion(): void
+    {
+        $this->kirby = $this->makeApp([
+            'options' => ['tearoom1.kirby-content-watch.enableRestore' => true],
+        ]);
+        $this->kirby->impersonate('kirby');
+
+        $tracker = new ChangeTracker();
+        $page    = kirby()->page('test-page');
+
+        $tracker->trackContentChange($page, [
+            'coalesce_group' => 'page-title-slug',
+        ]);
+
+        $this->writeContent(
+            $this->pageDir . '/article.txt',
+            "Title: Updated Title\n----\nText: Hello\n"
+        );
+
+        $tracker->trackContentChange($page, [
+            'coalesce_group' => 'page-title-slug',
+        ]);
+
+        $history = $this->readHistory($this->pageDir);
+
+        $this->assertCount(1, $history[$this->templateKey]);
+        $this->assertSame(1, $history[$this->templateKey][0]['version']);
+        $this->assertArrayHasKey('uuid', $history[$this->templateKey][0]);
+        $this->assertStringContainsString('Updated Title', $history[$this->templateKey][0]['content']);
     }
 
     public function testNoContentSnapshotWhenRestoreDisabled(): void

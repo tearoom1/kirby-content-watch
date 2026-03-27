@@ -40,6 +40,7 @@ class ContentRestoreTest extends TestCase
         $this->writeHistory($this->pageDir, [
             'article' => [[
                 'editor_id' => 'kirby',
+                'uuid'      => 'restore-entry',
                 'time'      => 1000000,
                 'version'   => 1,
                 'type'      => 'page',
@@ -49,7 +50,7 @@ class ContentRestoreTest extends TestCase
         ]);
 
         $restore = new ContentRestore();
-        $result  = $restore->restoreContent($this->pageDir, 'article', 1000000);
+        $result  = $restore->restoreContent($this->pageDir, 'article', 'restore-entry', 1000000);
 
         $this->assertFalse($result);
         // File should be unchanged
@@ -76,6 +77,7 @@ class ContentRestoreTest extends TestCase
         $this->writeHistory($this->pageDir, [
             'article' => [[
                 'editor_id' => 'kirby',
+                'uuid'      => 'restore-entry',
                 'time'      => 1000000,
                 'version'   => 1,
                 'type'      => 'page',
@@ -121,6 +123,7 @@ class ContentRestoreTest extends TestCase
         $this->writeHistory($this->pageDir, [
             'article' => [[
                 'editor_id' => 'kirby',
+                'uuid'      => 'restore-entry',
                 'time'      => 1000000,
                 'version'   => 1,
                 'type'      => 'page',
@@ -130,7 +133,7 @@ class ContentRestoreTest extends TestCase
         ]);
 
         $restore = new ContentRestore();
-        $result  = $restore->restoreContent($this->pageDir, 'article', 1000000);
+        $result  = $restore->restoreContent($this->pageDir, 'article', 'restore-entry', 1000000);
 
         $this->assertTrue($result);
         $this->assertStringContainsString('Old Title', file_get_contents($this->contentFile));
@@ -142,6 +145,7 @@ class ContentRestoreTest extends TestCase
         $this->writeHistory($this->pageDir, [
             'article' => [[
                 'editor_id' => 'kirby',
+                'uuid'      => 'restore-entry',
                 'time'      => 1000000,
                 'version'   => 1,
                 'type'      => 'page',
@@ -151,13 +155,15 @@ class ContentRestoreTest extends TestCase
         ]);
 
         $restore = new ContentRestore();
-        $restore->restoreContent($this->pageDir, 'article', 1000000);
+        $restore->restoreContent($this->pageDir, 'article', 'restore-entry', 1000000);
 
         $history    = $this->readHistory($this->pageDir);
         $newEntry   = $history['article'][0];
 
         $this->assertSame(1000000, $newEntry['restored_from']);
+        $this->assertSame('restore-entry', $newEntry['restored_from_id']);
         $this->assertNotEmpty($newEntry['editor_id']);
+        $this->assertArrayHasKey('uuid', $newEntry);
         $this->assertGreaterThanOrEqual(time() - 5, $newEntry['time']);
     }
 
@@ -168,6 +174,7 @@ class ContentRestoreTest extends TestCase
             'article' => [
                 [
                     'editor_id' => 'kirby',
+                    'uuid'      => 'restore-current',
                     'time'      => 2000000,
                     'version'   => 2,
                     'type'      => 'page',
@@ -176,6 +183,7 @@ class ContentRestoreTest extends TestCase
                 ],
                 [
                     'editor_id' => 'kirby',
+                    'uuid'      => 'restore-old',
                     'time'      => 1000000,
                     'version'   => 1,
                     'type'      => 'page',
@@ -186,7 +194,7 @@ class ContentRestoreTest extends TestCase
         ]);
 
         $restore = new ContentRestore();
-        $restore->restoreContent($this->pageDir, 'article', 1000000);
+        $restore->restoreContent($this->pageDir, 'article', 'restore-old', 1000000);
 
         $history  = $this->readHistory($this->pageDir);
         $versions = array_column($history['article'], 'version');
@@ -209,6 +217,7 @@ class ContentRestoreTest extends TestCase
         $this->writeHistory($this->pageDir, [
             'article' => [[
                 'editor_id' => 'kirby',
+                'uuid'      => 'restore-lang',
                 'time'      => 1000000,
                 'version'   => 1,
                 'type'      => 'page',
@@ -218,9 +227,113 @@ class ContentRestoreTest extends TestCase
         ]);
 
         $restore = new ContentRestore();
-        $result  = $restore->restoreContent($this->pageDir, 'article', 1000000);
+        $result  = $restore->restoreContent($this->pageDir, 'article', 'restore-lang', 1000000);
 
         $this->assertTrue($result);
         $this->assertStringContainsString('English Old', file_get_contents($langFile));
+    }
+
+    public function testRestoreRestoresSlugTemplateAndTitle(): void
+    {
+        $this->seedHistory();
+        $snapshot = "Title: Restored Title\n----\nText: Old body\n";
+
+        $this->writeHistory($this->pageDir, [
+            'article' => [[
+                'editor_id' => 'kirby',
+                'uuid'      => 'restore-structured',
+                'time'      => 1000000,
+                'version'   => 1,
+                'type'      => 'page',
+                'language'  => '',
+                'content'   => $snapshot,
+                'meta'      => [
+                    'path'     => 'restored-page',
+                    'slug'     => 'restored-page',
+                    'status'   => 'listed',
+                    'template' => 'note',
+                ],
+            ]],
+        ]);
+
+        $restore = new ContentRestore();
+        $result  = $restore->restoreContent($this->pageDir, 'article', 'restore-structured', 1000000);
+
+        $this->assertTrue($result);
+        $restoredFile = $this->contentDir . '/1_restored-page/note.txt';
+        $this->assertFileExists($restoredFile);
+        $this->assertFileDoesNotExist($this->pageDir . '/article.txt');
+        $this->assertStringContainsString('Title: Restored Title', file_get_contents($restoredFile));
+        $this->assertStringNotContainsString('Status:', file_get_contents($restoredFile));
+
+        $history = $this->readHistory(dirname($restoredFile));
+        $this->assertArrayHasKey('note', $history);
+        $this->assertArrayNotHasKey('article', $history);
+    }
+
+    public function testRestoreRestoresDraftStatus(): void
+    {
+        $this->seedHistory();
+        $snapshot = "Title: Draft Title\n----\nText: Draft body\n";
+
+        $this->writeHistory($this->pageDir, [
+            'article' => [[
+                'editor_id' => 'kirby',
+                'uuid'      => 'restore-draft',
+                'time'      => 1000000,
+                'version'   => 1,
+                'type'      => 'page',
+                'language'  => '',
+                'content'   => $snapshot,
+                'meta'      => [
+                    'path'     => 'test-page',
+                    'slug'     => 'test-page',
+                    'status'   => 'draft',
+                    'template' => 'article',
+                ],
+            ]],
+        ]);
+
+        $restore = new ContentRestore();
+        $result  = $restore->restoreContent($this->pageDir, 'article', 'restore-draft', 1000000);
+
+        $this->assertTrue($result);
+        $draftFile = $this->contentDir . '/_drafts/test-page/article.txt';
+        $this->assertFileExists($draftFile);
+        $this->assertFileDoesNotExist($this->pageDir . '/article.txt');
+        $this->assertStringContainsString('Draft Title', file_get_contents($draftFile));
+    }
+
+    public function testRestoreSupportsLegacyInlineSnapshotMetadata(): void
+    {
+        $this->seedHistory();
+        $legacySnapshot = implode('', [
+            "Path: restored-page\n----\n",
+            "Slug: restored-page\n----\n",
+            "Status: listed\n----\n",
+            "Template: note\n----\n",
+            "Title: Restored Title\n----\n",
+            "Text: Old body\n",
+        ]);
+
+        $this->writeHistory($this->pageDir, [
+            'article' => [[
+                'editor_id' => 'kirby',
+                'time'      => 1000000,
+                'version'   => 1,
+                'type'      => 'page',
+                'language'  => '',
+                'content'   => $legacySnapshot,
+            ]],
+        ]);
+
+        $restore = new ContentRestore();
+        $result  = $restore->restoreContent($this->pageDir, 'article', null, 1000000);
+
+        $this->assertTrue($result);
+        $restoredFile = $this->contentDir . '/1_restored-page/note.txt';
+        $this->assertFileExists($restoredFile);
+        $this->assertStringContainsString('Title: Restored Title', file_get_contents($restoredFile));
+        $this->assertStringNotContainsString('Path:', file_get_contents($restoredFile));
     }
 }

@@ -8,13 +8,15 @@ load([
     'TearoomOne\\ContentWatch\\ChangeTracker'          => 'src/ChangeTracker.php',
     'TearoomOne\\ContentWatch\\LockedPages'            => 'src/LockedPages.php',
     'TearoomOne\\ContentWatch\\DiffGenerator'          => 'src/DiffGenerator.php',
+    'TearoomOne\\ContentWatch\\SnapshotSerializer'     => 'src/SnapshotSerializer.php',
+    'TearoomOne\\ContentWatch\\ContentDiffResolver'    => 'src/ContentDiffResolver.php',
 ], __DIR__);
 
 use Kirby\Filesystem\F;
 use Kirby\Http\Response;
 use TearoomOne\ContentWatch\ChangeTracker;
+use TearoomOne\ContentWatch\ContentDiffResolver;
 use TearoomOne\ContentWatch\ContentRestore;
-use TearoomOne\ContentWatch\DiffGenerator;
 
 // Don't load plugin if disabled in config
 if (option('tearoom1.kirby-content-watch.disable', false)) {
@@ -30,15 +32,32 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             (new ChangeTracker())->trackContentChange($newPage);
         },
         'page.changeTitle:after' => function ($newPage, $oldPage) {
-            (new ChangeTracker())->trackContentChange($newPage);
+            (new ChangeTracker())->trackContentChange($newPage, [
+                'coalesce_group' => 'page-title-slug',
+                'coalesce_key'   => $oldPage->root(),
+            ]);
         },
         'page.changeSlug:after' => function ($newPage, $oldPage) {
+            (new ChangeTracker())->trackContentChange($newPage, [
+                'coalesce_group' => 'page-title-slug',
+                'coalesce_key'   => $oldPage->root(),
+            ]);
+        },
+        'page.changeStatus:after' => function ($newPage, $oldPage) {
             (new ChangeTracker())->trackContentChange($newPage);
+        },
+        'page.changeTemplate:after' => function ($newPage, $oldPage) {
+            (new ChangeTracker())->trackContentChange($newPage, [
+                'previous_file_key' => $oldPage->intendedTemplate()->name(),
+            ]);
         },
         'page.move:after' => function ($newPage, $oldPage) {
             (new ChangeTracker())->trackContentChange($newPage, [
                 'action' => 'moved',
             ]);
+        },
+        'page.duplicate:after' => function ($duplicatePage, $originalPage) {
+            // do nothing as change title will already track the change
         },
         'page.delete:before' => function ($page) {
             F::remove($page->root() . '/.content-watch.json');
@@ -50,6 +69,22 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             (new ChangeTracker())->trackContentChange($file);
         },
         'file.update:after' => function ($newFile, $oldFile) {
+            (new ChangeTracker())->trackContentChange($newFile);
+        },
+        'file.changeName:after' => function ($newFile, $oldFile) {
+            (new ChangeTracker())->trackContentChange($newFile, [
+                'previous_file_key' => $oldFile->filename(),
+            ]);
+        },
+        'file.changeSort:after' => function ($newFile, $oldFile) {
+            (new ChangeTracker())->trackContentChange($newFile);
+        },
+        'file.changeTemplate:after' => function ($newFile, $oldFile) {
+            (new ChangeTracker())->trackContentChange($newFile, [
+                'previous_file_key' => $oldFile->filename(),
+            ]);
+        },
+        'file.replace:after' => function ($newFile, $oldFile) {
             (new ChangeTracker())->trackContentChange($newFile);
         },
     ],
@@ -99,13 +134,19 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                     $request   = kirby()->request();
                     $dirPath   = $request->get('dirPath');
                     $fileKey   = $request->get('fileKey');
+                    $entryId   = $request->get('entryId');
                     $timestamp = (int)$request->get('timestamp');
 
-                    if (!$dirPath || !$fileKey || !$timestamp) {
+                    if (!$dirPath || !$fileKey || (!$entryId && !$timestamp)) {
                         return Response::json(['status' => 'error', 'message' => 'Missing required parameters'], 400);
                     }
 
-                    $success = (new ContentRestore())->restoreContent($dirPath, $fileKey, $timestamp);
+                    $success = (new ContentRestore())->restoreContent(
+                        $dirPath,
+                        $fileKey,
+                        is_string($entryId) ? $entryId : null,
+                        $timestamp ?: null
+                    );
 
                     return $success
                         ? Response::json(['status' => 'success', 'message' => 'Content restored successfully'])
@@ -123,54 +164,42 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                     $request       = kirby()->request();
                     $dirPath       = $request->get('dirPath');
                     $fileKey       = $request->get('fileKey');
+                    $fromEntryId   = $request->get('fromEntryId');
+                    $toEntryId     = $request->get('toEntryId');
                     $fromTimestamp = (int)$request->get('fromTimestamp');
                     $toTimestamp   = (int)$request->get('toTimestamp');
 
-                    if (!$dirPath || !$fileKey || !$fromTimestamp || !$toTimestamp) {
+                    if (
+                        !$dirPath ||
+                        !$fileKey ||
+                        (!$fromEntryId && !$fromTimestamp) ||
+                        (!$toEntryId && !$toTimestamp)
+                    ) {
                         return Response::json(['status' => 'error', 'message' => 'Missing required parameters'], 400);
                     }
 
                     try {
-                        $historyFile = $dirPath . '/.content-watch.json';
-                        if (!F::exists($historyFile)) {
-                            return Response::json(['status' => 'error', 'message' => 'History file not found'], 404);
-                        }
-
-                        $history = json_decode(F::read($historyFile), true) ?: [];
-                        if (!isset($history[$fileKey])) {
-                            return Response::json(['status' => 'error', 'message' => 'No history found for this file'], 404);
-                        }
-
-                        $fromVersion = null;
-                        $toVersion   = null;
-                        foreach ($history[$fileKey] as $entry) {
-                            if ($entry['time'] === $fromTimestamp) {
-                                $fromVersion = $entry;
-                            }
-                            if ($entry['time'] === $toTimestamp) {
-                                $toVersion = $entry;
-                            }
-                        }
-
-                        if (!$fromVersion || !$toVersion) {
-                            return Response::json(['status' => 'error', 'message' => 'One or both versions not found'], 404);
-                        }
-
-                        $fromContent = $fromVersion['content'] ?? null;
-                        $toContent   = $toVersion['content'] ?? null;
-
-                        if ($fromContent === null || $toContent === null) {
-                            return Response::json(['status' => 'error', 'message' => 'One or both versions have no content'], 404);
-                        }
-
-                        $diff = DiffGenerator::generate($fromContent, $toContent);
+                        $diff = (new ContentDiffResolver())->generate(
+                            $dirPath,
+                            $fileKey,
+                            is_string($fromEntryId) ? $fromEntryId : null,
+                            is_string($toEntryId) ? $toEntryId : null,
+                            $fromTimestamp ?: null,
+                            $toTimestamp ?: null
+                        );
 
                         return Response::json([
                             'status' => 'success',
                             'diff'   => $diff,
                         ]);
                     } catch (\Exception $e) {
-                        return Response::json(['status' => 'error', 'message' => 'Error generating diff: ' . $e->getMessage()], 500);
+                        $code = $e->getCode();
+                        $status = is_int($code) && $code >= 400 && $code < 600 ? $code : 500;
+                        $message = $status === 500
+                            ? 'Error generating diff: ' . $e->getMessage()
+                            : $e->getMessage();
+
+                        return Response::json(['status' => 'error', 'message' => $message], $status);
                     }
                 },
             ],

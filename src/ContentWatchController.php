@@ -127,11 +127,13 @@ class ContentWatchController
             }
 
             $historyEntriesBuilt[] = [
+                'entry_id'       => $entry['uuid'] ?? null,
                 'editor'         => $this->getEditor($entry),
                 'time'           => $entry['time'] ?? 0,
                 'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0),
                 'has_snapshot'   => !empty($entry['content']),
                 'restored_from'  => $entry['restored_from'] ?? null,
+                'restored_from_id' => $entry['restored_from_id'] ?? null,
                 'action'         => $entry['action'] ?? null,
                 'version'        => $entry['version'] ?? 1,
                 'language'       => $entry['language'] ?? '',

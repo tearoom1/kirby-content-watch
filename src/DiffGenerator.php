@@ -48,6 +48,13 @@ class DiffGenerator
             }
         }
 
+        // Fallback: if structured TXT decoding produced no field deltas but the composed
+        // snapshots still differ, diff the raw lines so meta-only changes stay visible.
+        if ($oldValues === [] && $newValues === [] && trim($oldContent) !== trim($newContent)) {
+            $oldValues = preg_split('/\R/', trim($oldContent)) ?: [];
+            $newValues = preg_split('/\R/', trim($newContent)) ?: [];
+        }
+
         if (!$useAdvancedDiff) {
             return self::diffStringsSimple($oldValues, $newValues);
         }
@@ -217,7 +224,9 @@ class DiffGenerator
                     $fields[$key . $id] = $key . " - " . $content;
                 }
             } else {
-                $fields[$key] = $key . ": \n" . $field;
+                $fields[$key] = is_string($field) && str_contains($field, "\n")
+                    ? $key . ":\n" . $field
+                    : $key . ': ' . $field;
             }
         }
         return $fields;
