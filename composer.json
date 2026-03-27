@@ -38,6 +38,9 @@
       "TearoomOne\\ContentWatch\\": "src/"
     }
   },
+  "scripts": {
+    "test": "phpunit --configuration phpunit.xml --testdox"
+  },
   "config": {
     "optimize-autoloader": true,
     "allow-plugins": {

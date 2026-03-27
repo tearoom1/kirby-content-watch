@@ -10,9 +10,16 @@ abstract class TestCase extends BaseTestCase
     protected string $tempDir;
     protected string $contentDir;
     protected App $kirby;
+    protected $initialErrorHandler = null;
+    protected $initialExceptionHandler = null;
 
     protected function setUp(): void
     {
+        parent::setUp();
+
+        $this->initialErrorHandler     = get_error_handler();
+        $this->initialExceptionHandler = get_exception_handler();
+
         // Use realpath to get the canonical path (avoids macOS /var → /private/var symlink issues)
         $this->tempDir    = realpath(sys_get_temp_dir()) . '/kirby-cw-test-' . uniqid();
         $this->contentDir = $this->tempDir . '/content';
@@ -29,6 +36,8 @@ abstract class TestCase extends BaseTestCase
     protected function tearDown(): void
     {
         $this->removeDir($this->tempDir);
+        $this->restorePhpHandlers();
+        parent::tearDown();
     }
 
     /**
@@ -100,5 +109,16 @@ abstract class TestCase extends BaseTestCase
             return [];
         }
         return json_decode(file_get_contents($file), true) ?? [];
+    }
+
+    protected function restorePhpHandlers(): void
+    {
+        while (get_error_handler() !== $this->initialErrorHandler) {
+            restore_error_handler();
+        }
+
+        while (get_exception_handler() !== $this->initialExceptionHandler) {
+            restore_exception_handler();
+        }
     }
 }
