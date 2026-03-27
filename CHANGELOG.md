@@ -1,3 +1,10 @@
+## [3.3.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.0...v3.3.1) (2026-03-27)
+
+
+### Bug Fixes
+
+* improved filters ([927670b](https://github.com/tearoom1/kirby-content-watch/commit/927670bf24038783891eea76cf6668735dadf329))
+
 ## [3.3.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.2.1...v3.3.0) (2026-03-27)
 
 
@@ -38,11 +45,4 @@
 ### Bug Fixes
 
 * add id to prevent errors with filtering table ([50e5890](https://github.com/tearoom1/kirby-content-watch/commit/50e5890886834a7a53f6fd30c52fa533d7fb5a9c))
-
-## [3.1.2](https://github.com/tearoom1/kirby-content-watch/compare/v3.1.1...v3.1.2) (2026-03-12)
-
-
-### Bug Fixes
-
-* add id to prevent errors with filtering table ([4d39136](https://github.com/tearoom1/kirby-content-watch/commit/4d39136f3335619dc5dbba9bff07ac04c2a3e791))
 
