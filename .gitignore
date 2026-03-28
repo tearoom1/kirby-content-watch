@@ -7,3 +7,9 @@
 # Composer files
 /vendor
 /kirby
+
+# PHPUnit
+.phpunit.result.cache
+
+# Claude
+.claude
