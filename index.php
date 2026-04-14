@@ -92,7 +92,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         'content-watch' => require __DIR__ . '/src/areas/content-watch.php',
     ],
     'pageMethods' => [
-        'contentHistory' => function (string $language = null) {
+        'contentHistory' => function (?string $language = null) {
             $historyFile = $this->root() . '/.content-watch.json';
             if (!F::exists($historyFile)) {
                 return [];
