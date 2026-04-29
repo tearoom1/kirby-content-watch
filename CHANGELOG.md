@@ -1,3 +1,10 @@
+## [3.3.2](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.1...v3.3.2) (2026-04-29)
+
+
+### Bug Fixes
+
+* composer updates ([6036f9b](https://github.com/tearoom1/kirby-content-watch/commit/6036f9b45e688e56163fc19527ac68304cf92f72))
+
 ## [3.3.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.0...v3.3.1) (2026-03-27)
 
 
@@ -38,11 +45,4 @@
 
 * improve Kirby API usage, fix bugs, add title/slug tracking ([476af17](https://github.com/tearoom1/kirby-content-watch/commit/476af170beecc5dffab0281846dfce98e31368d2))
 * show diff option for current version ([4e5393e](https://github.com/tearoom1/kirby-content-watch/commit/4e5393ef1db1354bae1026f64faeb495cbc99d7d))
-
-## [3.1.3](https://github.com/tearoom1/kirby-content-watch/compare/v3.1.2...v3.1.3) (2026-03-12)
-
-
-### Bug Fixes
-
-* add id to prevent errors with filtering table ([50e5890](https://github.com/tearoom1/kirby-content-watch/commit/50e5890886834a7a53f6fd30c52fa533d7fb5a9c))
 
