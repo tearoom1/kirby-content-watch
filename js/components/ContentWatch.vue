@@ -17,6 +17,9 @@
           ref="sponsorDropdown"
           align-x="end"
         >
+          <div class="k-content-watch-sponsor-text">
+            {{ sponsorText }}
+          </div>
           <k-dropdown-item
             icon="heart"
             link="https://github.com/sponsors/tearoom1"
@@ -529,6 +532,16 @@ export default {
   },
 
   computed: {
+    sponsorText() {
+      const language = this.panelLanguage();
+
+      if (language.startsWith('de')) {
+        return 'Dieses Plugin entsteht mit viel Liebe und laufendem Aufwand. Wenn es dir Zeit spart, hilft eine kleine Spende, Wartung und Weiterentwicklung möglich zu machen.';
+      }
+
+      return 'This plugin is built with care and ongoing effort. If it saves you time, a small donation helps keep maintenance and future improvements going.';
+    },
+
     totalPages() {
       return Math.max(1, Math.ceil(this.filteredFiles.length / (this.pageSize || 10)));
     },
@@ -627,6 +640,15 @@ export default {
   },
 
   methods: {
+    panelLanguage() {
+      const panel = window.panel || {};
+      const panelLanguage = panel.language && panel.language.code;
+      const viewLanguage = panel.view && panel.view.props && panel.view.props.language;
+      const browserLanguage = window.navigator && window.navigator.language;
+
+      return String(viewLanguage || panelLanguage || browserLanguage || 'en').toLowerCase();
+    },
+
     refresh() {
       this.isLoading = true;
       window.location.reload();
@@ -995,6 +1017,15 @@ export default {
   .k-content-watch-sponsor-button:hover {
     --button-color-icon: #b81d4d;
     color: #b81d4d;
+  }
+
+  .k-content-watch-sponsor-text {
+    max-width: 17rem;
+    padding: .75rem .75rem .5rem;
+    color: var(--color-text-dimmed);
+    font-size: .8rem;
+    font-weight: 400;
+    line-height: 1.35;
   }
 
   .k-content-watch-section, .k-content-watch-locked {
