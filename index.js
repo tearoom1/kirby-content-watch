@@ -1096,7 +1096,9 @@
   var _sfc_render = function render() {
     var _a, _b, _c2, _d, _e;
     var _vm = this, _c = _vm._self._c;
-    return _c("k-panel-inside", { staticClass: "k-content-watch-view" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("div", { staticClass: "k-content-watch-tabs" }, [_c("k-button-group", [_c("k-button", { class: { "k-button-active": _vm.tab === "content" }, attrs: { "icon": "edit-line" }, on: { "click": function($event) {
+    return _c("k-panel-inside", { staticClass: "k-content-watch-view" }, [_c("k-header", { staticClass: "k-section-header" }, [_c("div", { staticClass: "k-content-watch-sponsor" }, [_c("k-button", { staticClass: "k-content-watch-sponsor-button", attrs: { "icon": "heart", "variant": "filled", "size": "sm", "theme": "empty", "title": "Support Content Watch", "aria-label": "Support Content Watch" }, on: { "click": function($event) {
+      return _vm.$refs.sponsorDropdown.toggle();
+    } } }), _c("k-dropdown-content", { ref: "sponsorDropdown", attrs: { "align-x": "end" } }, [_c("k-dropdown-item", { attrs: { "icon": "heart", "link": "https://github.com/sponsors/tearoom1", "target": "_blank" } }, [_vm._v(" Sponsor on GitHub ")]), _c("k-dropdown-item", { attrs: { "icon": "heart", "link": "https://buymeacoffee.com/tearoom1", "target": "_blank" } }, [_vm._v(" Buy Me a Coffee ")])], 1)], 1), _c("div", { staticClass: "k-content-watch-tabs" }, [_c("k-button-group", [_c("k-button", { class: { "k-button-active": _vm.tab === "content" }, attrs: { "icon": "edit-line" }, on: { "click": function($event) {
       _vm.tab = "content";
     } } }, [_vm._v(" Content Changes ")]), _c("k-button", { class: { "k-button-active": _vm.tab === "locked" }, attrs: { "icon": "lock" }, on: { "click": function($event) {
       _vm.tab = "locked";

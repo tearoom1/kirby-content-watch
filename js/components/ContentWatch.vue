@@ -1,6 +1,38 @@
 <template>
   <k-panel-inside class="k-content-watch-view">
+
     <k-header class="k-section-header">
+      <div class="k-content-watch-sponsor">
+        <k-button
+          class="k-content-watch-sponsor-button"
+          icon="heart"
+          variant="filled"
+          size="sm"
+          theme="empty"
+          title="Support Content Watch"
+          aria-label="Support Content Watch"
+          @click="$refs.sponsorDropdown.toggle()"
+        />
+        <k-dropdown-content
+          ref="sponsorDropdown"
+          align-x="end"
+        >
+          <k-dropdown-item
+            icon="heart"
+            link="https://github.com/sponsors/tearoom1"
+            target="_blank"
+          >
+            Sponsor on GitHub
+          </k-dropdown-item>
+          <k-dropdown-item
+            icon="heart"
+            link="https://buymeacoffee.com/tearoom1"
+            target="_blank"
+          >
+            Buy Me a Coffee
+          </k-dropdown-item>
+        </k-dropdown-content>
+      </div>
       <!-- Tab navigation -->
       <div class="k-content-watch-tabs">
         <k-button-group>
@@ -946,6 +978,25 @@ export default {
 
 <style>
 .k-content-watch-view {
+  position: relative;
+
+  .k-content-watch-sponsor {
+    float: right;
+    font-size: 14px;
+    font-weight: unset;
+    line-height: unset;
+  }
+
+  .k-content-watch-sponsor-button {
+    --button-color-icon: #e0245e;
+    color: #e0245e;
+  }
+
+  .k-content-watch-sponsor-button:hover {
+    --button-color-icon: #b81d4d;
+    color: #b81d4d;
+  }
+
   .k-content-watch-section, .k-content-watch-locked {
     margin-top: 1rem;
   }
@@ -956,6 +1007,12 @@ export default {
     margin-bottom: 0.5rem;
     overflow: hidden;
     transition: all 0.3s ease;
+  }
+
+  .k-content-watch-tabs .k-button {
+    font-size: 1.5rem;
+    padding: 1.1rem;
+    margin-inline: 0;
   }
 
   .k-content-watch-buttons .k-button-group {
@@ -1084,10 +1141,6 @@ export default {
   .k-button-disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-
-  .k-button-group .k-button {
-    margin-inline: 0.5rem;
   }
 
   .k-content-watch-file-timeline {
