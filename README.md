@@ -64,6 +64,7 @@ You can configure the plugin in your `config.php`:
 ```php
 return [
     'tearoom1.kirby-content-watch' => [
+        'allowedRoles'     => [],
         'retentionDays'    => 30,
         'retentionCount'   => 10,
         'defaultPageSize'  => 10,
@@ -78,6 +79,7 @@ return [
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
+| `allowedRoles` | array | `[]` | Additional Kirby roles allowed to use the plugin. Admins always have access (see Access Control) |
 | `retentionDays` | `int` | `30` | Number of days to keep history entries before they are pruned |
 | `retentionCount` | `int` | `10` | Maximum number of history entries to keep per file |
 | `defaultPageSize` | `int` | `10` | Default number of items per page in the panel view. Possible values: `10`, `20`, `50` |
@@ -86,6 +88,23 @@ return [
 | `enableRestore` | `bool` | `false` | Enable content restore functionality. When enabled, full content snapshots are saved — increases disk usage |
 | `enableDiff` | `bool` | `false` | Enable content diff view. Requires `enableRestore` to be `true` |
 | `disable` | `bool` | `false` | Completely disable the plugin without uninstalling it |
+
+### Access Control
+
+By default, **only users with the `admin` role** can access the plugin — that includes the Content Watch panel area, the menu entry, the diff API, and the restore API. Non-admins will not see the menu item, and any direct API call returns `403 Forbidden`.
+
+To grant access to additional Kirby roles, list them in `allowedRoles`:
+
+```php
+'tearoom1.kirby-content-watch' => [
+    'allowedRoles' => ['editor'],
+]
+```
+
+Notes:
+- Admins are **always** allowed; you do not need to include `'admin'` in the list.
+- The `allowedRoles` check gates *access to the plugin*. Restoring content additionally requires the user to have Kirby's update permission on the target page/file — so a role allowed by `allowedRoles` cannot use restore to overwrite content they are not normally allowed to edit.
+- Only grant `allowedRoles` to roles you trust to read every page's modification history, including drafts.
 
 ## How It Works
 
