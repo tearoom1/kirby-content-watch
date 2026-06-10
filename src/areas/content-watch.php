@@ -5,12 +5,16 @@ namespace TearoomOne\ContentWatch;
 return [
     'label' => 'Content Watch',
     'icon' => 'text-justify',
-    'menu' => true,
+    'menu' => fn () => ContentWatchController::canAccess(),
     'link' => 'content-watch',
     'views' => [
         [
             'pattern' => 'content-watch',
             'action' => function () {
+                if (!ContentWatchController::canAccess()) {
+                    throw new \Kirby\Exception\PermissionException('You are not allowed to access Content Watch');
+                }
+
                 // Get content files
                 $contentWatchController = new ContentWatchController();
                 $files = $contentWatchController->getContentFiles();

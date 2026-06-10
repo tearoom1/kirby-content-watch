@@ -57,6 +57,13 @@ class ContentRestore
             $targetFileKey = $fileKey;
 
             $page = $this->findContentModelByRoot($dirPath);
+
+            // Enforce per-model write permissions so a user allowed to access the
+            // plugin can still only restore content for models they can update.
+            if ($page !== null && !$page->permissions()->can('update')) {
+                return false;
+            }
+
             if ($page instanceof Page) {
                 $targetDirPath = $this->restorePageStructure($page, $dirPath, $snapshotMeta);
                 $targetFileKey = $snapshotMeta['template'] ?? $fileKey;
@@ -161,7 +168,7 @@ class ContentRestore
         if ($targetDirPath !== $dirPath) {
             $targetParent = dirname($targetDirPath);
             if (is_dir($targetParent) === false) {
-                mkdir($targetParent, 0777, true);
+                mkdir($targetParent, 0755, true);
             }
             F::move($dirPath, $targetDirPath);
         }

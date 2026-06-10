@@ -17,6 +17,7 @@ use Kirby\Http\Response;
 use TearoomOne\ContentWatch\ChangeTracker;
 use TearoomOne\ContentWatch\ContentDiffResolver;
 use TearoomOne\ContentWatch\ContentRestore;
+use TearoomOne\ContentWatch\ContentWatchController;
 
 // Don't load plugin if disabled in config
 if (option('tearoom1.kirby-content-watch.disable', false)) {
@@ -109,6 +110,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         },
     ],
     'options' => [
+        'allowedRoles'       => [], // Additional Kirby roles allowed to use the plugin (admins always allowed). Example: ['editor', 'client']
         'retentionDays'      => 30,
         'retentionCount'     => 10,
         'enableLockedPages'  => true,
@@ -123,8 +125,8 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                 'pattern' => '/content-watch/restore',
                 'method'  => 'POST',
                 'action'  => function () {
-                    if (!kirby()->user()) {
-                        return Response::json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+                    if (!ContentWatchController::canAccess()) {
+                        return Response::json(['status' => 'error', 'message' => 'Forbidden'], 403);
                     }
 
                     if (option('tearoom1.kirby-content-watch.enableRestore') !== true) {
@@ -157,8 +159,8 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                 'pattern' => '/content-watch/diff',
                 'method'  => 'POST',
                 'action'  => function () {
-                    if (!kirby()->user()) {
-                        return Response::json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+                    if (!ContentWatchController::canAccess()) {
+                        return Response::json(['status' => 'error', 'message' => 'Forbidden'], 403);
                     }
 
                     $request       = kirby()->request();

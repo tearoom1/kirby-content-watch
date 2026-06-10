@@ -12,6 +12,27 @@ class ContentWatchController
     use ResolvesContentModels;
 
     /**
+     * Check whether the current user may access the plugin
+     * (view content history, run diffs, restore). Admins always pass.
+     * Additional roles can be granted via the `allowedRoles` option.
+     */
+    public static function canAccess(): bool
+    {
+        $user = kirby()->user();
+        if (!$user) {
+            return false;
+        }
+        if ($user->isAdmin()) {
+            return true;
+        }
+        $allowed = option('tearoom1.kirby-content-watch.allowedRoles', []);
+        if (!is_array($allowed) || empty($allowed)) {
+            return false;
+        }
+        return in_array($user->role()->name(), $allowed, true);
+    }
+
+    /**
      * @return array[]
      */
     public function getContentFiles(): array
