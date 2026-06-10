@@ -124,6 +124,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             [
                 'pattern' => '/content-watch/restore',
                 'method'  => 'POST',
+                'auth'    => true,
                 'action'  => function () {
                     if (!ContentWatchController::canAccess()) {
                         return Response::json(['status' => 'error', 'message' => 'Forbidden'], 403);
@@ -158,6 +159,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             [
                 'pattern' => '/content-watch/diff',
                 'method'  => 'POST',
+                'auth'    => true,
                 'action'  => function () {
                     if (!ContentWatchController::canAccess()) {
                         return Response::json(['status' => 'error', 'message' => 'Forbidden'], 403);

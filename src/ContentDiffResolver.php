@@ -30,6 +30,11 @@ class ContentDiffResolver
 
     protected function loadHistory(string $dirPath, string $fileKey): array
     {
+        $dirPath = $this->resolveContentDirectory($dirPath);
+        if ($dirPath === null || $this->isSafeFileKey($fileKey) === false) {
+            throw new RuntimeException('History file not found', 404);
+        }
+
         $historyFile = $dirPath . '/.content-watch.json';
         if (F::exists($historyFile) !== true) {
             throw new RuntimeException('History file not found', 404);
@@ -72,5 +77,28 @@ class ContentDiffResolver
         }
 
         return null;
+    }
+
+    protected function resolveContentDirectory(string $dirPath): ?string
+    {
+        $realDir = realpath($dirPath);
+        $contentRoot = realpath(kirby()->root('content'));
+
+        if ($realDir === false || $contentRoot === false) {
+            return null;
+        }
+
+        $contentRoot = rtrim($contentRoot, DIRECTORY_SEPARATOR);
+        if ($realDir !== $contentRoot && !str_starts_with($realDir, $contentRoot . DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return $realDir;
+    }
+
+    protected function isSafeFileKey(string $fileKey): bool
+    {
+        return preg_match('/\A[A-Za-z0-9._-]+\z/', $fileKey) === 1
+            && str_contains($fileKey, '..') === false;
     }
 }

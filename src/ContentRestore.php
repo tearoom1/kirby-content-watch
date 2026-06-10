@@ -28,6 +28,11 @@ class ContentRestore
             return false;
         }
 
+        $dirPath = $this->resolveContentDirectory($dirPath);
+        if ($dirPath === null || $this->isSafeFileKey($fileKey) === false) {
+            return false;
+        }
+
         $editorFile = $dirPath . '/.content-watch.json';
 
         if (!F::exists($editorFile)) {
@@ -52,6 +57,14 @@ class ContentRestore
                 $entryToRestore['meta'] ?? null
             );
             $snapshotMeta  = $snapshot['meta'] ?? [];
+            if ($this->isSafeSnapshotMeta($snapshotMeta) === false) {
+                return false;
+            }
+
+            if (!empty($entryToRestore['language']) && preg_match('/\A[A-Za-z0-9_-]+\z/', (string)$entryToRestore['language']) !== 1) {
+                return false;
+            }
+
             $languagePart  = empty($entryToRestore['language']) ? '' : '.' . $entryToRestore['language'];
             $targetDirPath = $dirPath;
             $targetFileKey = $fileKey;
@@ -189,5 +202,48 @@ class ContentRestore
             $suffix   = substr($basename, strlen($currentTemplate));
             F::move($file, $dirPath . '/' . $targetTemplate . $suffix);
         }
+    }
+
+    protected function resolveContentDirectory(string $dirPath): ?string
+    {
+        $realDir = realpath($dirPath);
+        $contentRoot = realpath(kirby()->root('content'));
+
+        if ($realDir === false || $contentRoot === false) {
+            return null;
+        }
+
+        $contentRoot = rtrim($contentRoot, DIRECTORY_SEPARATOR);
+        if ($realDir !== $contentRoot && !str_starts_with($realDir, $contentRoot . DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return $realDir;
+    }
+
+    protected function isSafeFileKey(string $fileKey): bool
+    {
+        return preg_match('/\A[A-Za-z0-9._-]+\z/', $fileKey) === 1
+            && str_contains($fileKey, '..') === false;
+    }
+
+    protected function isSafeSnapshotMeta(array $meta): bool
+    {
+        $slug = $meta['slug'] ?? null;
+        if ($slug !== null && preg_match('/\A[[:alnum:]][[:alnum:]._~-]*\z/u', $slug) !== 1) {
+            return false;
+        }
+
+        $status = $meta['status'] ?? null;
+        if ($status !== null && !in_array($status, ['draft', 'listed', 'unlisted'], true)) {
+            return false;
+        }
+
+        $template = $meta['template'] ?? null;
+        if ($template !== null && $this->isSafeFileKey($template) === false) {
+            return false;
+        }
+
+        return true;
     }
 }

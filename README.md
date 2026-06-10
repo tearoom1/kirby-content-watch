@@ -104,6 +104,7 @@ To grant access to additional Kirby roles, list them in `allowedRoles`:
 Notes:
 - Admins are **always** allowed; you do not need to include `'admin'` in the list.
 - The `allowedRoles` check gates *access to the plugin*. Restoring content additionally requires the user to have Kirby's update permission on the target page/file — so a role allowed by `allowedRoles` cannot use restore to overwrite content they are not normally allowed to edit.
+- Restore and diff API requests are authenticated and only resolve history files inside Kirby's configured content root.
 - Only grant `allowedRoles` to roles you trust to read every page's modification history, including drafts.
 
 ## How It Works
