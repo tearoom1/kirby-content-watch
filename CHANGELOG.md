@@ -1,3 +1,11 @@
+## [3.3.4](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.3...v3.3.4) (2026-06-10)
+
+
+### Bug Fixes
+
+* added sponsor heart and css updates ([b578510](https://github.com/tearoom1/kirby-content-watch/commit/b57851025862cc256422f17f7eccbca652e4031a))
+* gate restore, diff, and area with role-based access control ([2281020](https://github.com/tearoom1/kirby-content-watch/commit/2281020dcb5482677fdabec4f36f541a58154c45))
+
 ## [3.3.3](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.2...v3.3.3) (2026-06-02)
 
 
@@ -30,11 +38,4 @@
 ### Bug Fixes
 
 * updated composer ([d137502](https://github.com/tearoom1/kirby-content-watch/commit/d13750200a9583c239993133ab7d71a9c182d9e3))
-
-## [3.2.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.2.0...v3.2.1) (2026-03-27)
-
-
-### Bug Fixes
-
-* minor css fix ([9306f08](https://github.com/tearoom1/kirby-content-watch/commit/9306f081aa60b750a0752f75091ad015f34f1937))
 
