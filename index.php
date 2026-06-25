@@ -4,6 +4,7 @@
 
 load([
     'TearoomOne\\ContentWatch\\ContentWatchController' => 'src/ContentWatchController.php',
+    'TearoomOne\\ContentWatch\\ResolvesContentModels'  => 'src/ResolvesContentModels.php',
     'TearoomOne\\ContentWatch\\ContentRestore'         => 'src/ContentRestore.php',
     'TearoomOne\\ContentWatch\\ChangeTracker'          => 'src/ChangeTracker.php',
     'TearoomOne\\ContentWatch\\LockedPages'            => 'src/LockedPages.php',
