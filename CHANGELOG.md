@@ -1,9 +1,10 @@
-## [3.3.6](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.5...v3.3.6) (2026-06-25)
+## [3.3.7](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.5...v3.3.7) (2026-09-02)
 
 
 ### Bug Fixes
 
-* register content model resolver trait ([7ece01e](https://github.com/tearoom1/kirby-content-watch/commit/7ece01ea2dd0c45cbe764b3f2efc4d532df997be))
+* register content model resolver trait ([ca122ce](https://github.com/tearoom1/kirby-content-watch/commit/ca122ce394ca6e8d1879634705242a57e260b2da)), closes [#12](https://github.com/tearoom1/kirby-content-watch/issues/12)
+* updated composer, bumped Kirby version to 5.5.3 ([88f731d](https://github.com/tearoom1/kirby-content-watch/commit/88f731d135b245838356990fdef40a21af839bbd))
 
 ## [3.3.5](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.4...v3.3.5) (2026-06-10)
 
