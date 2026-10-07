@@ -6,6 +6,6 @@
     "lint": "npx standard js/**/*.js"
   },
   "dependencies": {
-    "date-fns": "^2.30.0"
+    "date-fns": "^4.4.0"
   }
 }
