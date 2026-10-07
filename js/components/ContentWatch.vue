@@ -515,7 +515,7 @@ export default {
     },
     layoutStyle: {
       type: String,
-      default: 'default'
+      default: 'compact'
     },
     initialSearch: {
       type: String,
@@ -1442,7 +1442,7 @@ export default {
 
   /* compact: tighter rows, relative and absolute time on one line */
   .k-timeline-list-compact .k-timeline-item {
-    padding-block: 0.4rem;
+    padding-block: 0.475rem;
   }
 
   .k-timeline-list-compact .k-timeline-item-when-absolute {
