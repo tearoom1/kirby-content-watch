@@ -74,7 +74,7 @@ return [
         'retentionCount'   => 10,
         'defaultPageSize'  => 20,
         'layoutStyle'      => 'compact',
-        'enableLockedPages' => true,
+        'enableLockedPages' => null,
         'enableRestore'    => false,
         'enableDiff'       => true,
         'notify'           => null,
@@ -90,7 +90,7 @@ return [
 | `retentionCount` | `int` | `10` | Maximum number of history entries to keep per file and language |
 | `defaultPageSize` | `int` | `20` | Default number of items per page in the panel view. Possible values: `10`, `20`, `50` |
 | `layoutStyle` | `string` | `'compact'` | Layout density of the list. Set to `'default'` for a roomier layout |
-| `enableLockedPages` | `bool` | `true` | Whether to show the locked pages view in the panel |
+| `enableLockedPages` | `bool\|null` | `null` | Whether to show the locked pages view. `null` shows it on Kirby 4 only, since Kirby 5 has its own "Changes" overview |
 | `enableRestore` | `bool` | `false` | Enable content restore functionality. When enabled, full content snapshots are saved — increases disk usage |
 | `enableDiff` | `bool` | `true` | Enable content diff view. Requires `enableRestore` to be `true` |
 | `notify` | `string\|Closure\|null` | `null` | Webhook URL (JSON `POST`) or closure called after every tracked change. See Notifications |

@@ -12,6 +12,20 @@ class LockedPages
 {
     use ResolvesContentModels;
 
+    /**
+     * Kirby 5 ships its own "Changes" overview, so the tab is only shown
+     * there when explicitly enabled.
+     */
+    public static function isEnabled(): bool
+    {
+        $option = option('tearoom1.kirby-content-watch.enableLockedPages');
+        if ($option !== null) {
+            return (bool)$option;
+        }
+
+        return version_compare(kirby()->version(), '5.0.0', '<');
+    }
+
     public function getLockedPages(): array
     {
         // Resolve canonical path to avoid /var vs /private/var mismatches on macOS

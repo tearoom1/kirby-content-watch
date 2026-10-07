@@ -134,4 +134,20 @@ class LockedPagesTest extends TestCase
         $results = (new LockedPages())->getLockedPagesV5($this->contentDir, []);
         $this->assertSame([], $results);
     }
+
+    public function testIsEnabledFollowsExplicitOption(): void
+    {
+        $this->kirby = $this->makeApp(['options' => ['tearoom1.kirby-content-watch.enableLockedPages' => false]]);
+        $this->assertFalse(LockedPages::isEnabled());
+
+        $this->kirby = $this->makeApp(['options' => ['tearoom1.kirby-content-watch.enableLockedPages' => true]]);
+        $this->assertTrue(LockedPages::isEnabled());
+    }
+
+    public function testIsEnabledDefaultsToKirbyVersion(): void
+    {
+        $this->kirby = $this->makeApp(['options' => ['tearoom1.kirby-content-watch.enableLockedPages' => null]]);
+
+        $this->assertSame(version_compare(kirby()->version(), '5.0.0', '<'), LockedPages::isEnabled());
+    }
 }

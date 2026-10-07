@@ -158,7 +158,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         'allowedRoles'       => [], // Additional Kirby roles allowed to use the plugin (admins always allowed). Example: ['editor', 'client']
         'retentionDays'      => 30,
         'retentionCount'     => 10,
-        'enableLockedPages'  => true,
+        'enableLockedPages'  => null, // null = auto: on for Kirby 4, off for Kirby 5 (which has its own "Changes" view)
         'enableRestore'      => false,
         'enableDiff'         => true,
         'defaultPageSize'    => 20,
