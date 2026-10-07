@@ -40,13 +40,13 @@
       <div v-if="enableLockedPages" class="k-content-watch-tabs">
         <k-button-group>
           <k-button
-            :class="{'k-button-active': tab === 'content'}"
+            :class="{'k-button-active': tab === 'content'}" :variant="(tab === 'content') ? 'filled' : null"
             @click="tab = 'content'"
             icon="edit-line">
             Content Changes
           </k-button>
           <k-button
-            :class="{'k-button-active': tab === 'locked'}"
+            :class="{'k-button-active': tab === 'locked'}" :variant="(tab === 'locked') ? 'filled' : null"
             @click="tab = 'locked'"
             icon="lock">
             Locked Pages
@@ -71,12 +71,12 @@
         </k-column>
         <k-column width="1/2" class="k-content-watch-buttons">
           <k-button-group>
-            <k-button :class="{'k-button-active': showOnlyPages}" @click="toggleShowOnlyPages" icon="page">Pages only
+            <k-button :class="{'k-button-active': showOnlyPages}" :variant="(showOnlyPages) ? 'filled' : null" @click="toggleShowOnlyPages" icon="page">Pages only
             </k-button>
-            <k-button :class="{'k-button-active': !showOnlyPages}" @click="toggleShowAll" icon="file-document">All
+            <k-button :class="{'k-button-active': !showOnlyPages}" :variant="(!showOnlyPages) ? 'filled' : null" @click="toggleShowAll" icon="file-document">All
               files
             </k-button>
-            <k-button :class="{'k-button-active': showFilters || hasActiveFilters}" @click="toggleFilters" icon="filter">
+            <k-button :class="{'k-button-active': showFilters || hasActiveFilters}" :variant="(showFilters || hasActiveFilters) ? 'filled' : null" @click="toggleFilters" icon="filter">
               Filters
             </k-button>
             <k-button
@@ -303,10 +303,10 @@
         </k-column>
         <k-column width="1/2" class="k-content-watch-buttons">
           <k-button-group>
-            <k-button :class="{'k-button-active': lockedShowOnlyPages}" @click="toggleLockedShowOnlyPages" icon="page">
+            <k-button :class="{'k-button-active': lockedShowOnlyPages}" :variant="(lockedShowOnlyPages) ? 'filled' : null" @click="toggleLockedShowOnlyPages" icon="page">
               Pages only
             </k-button>
-            <k-button :class="{'k-button-active': !lockedShowOnlyPages}" @click="toggleLockedShowAll"
+            <k-button :class="{'k-button-active': !lockedShowOnlyPages}" :variant="(!lockedShowOnlyPages) ? 'filled' : null" @click="toggleLockedShowAll"
                       icon="file-document">All
               files
             </k-button>
@@ -1492,18 +1492,6 @@ export default {
 
   .k-content-watch-locked .k-item-content .k-item-info {
     text-align: right;
-  }
-
-  .k-button-active {
-    background-color: var(--color-gray-200);
-    color: var(--color-black);
-    font-weight: 500;
-  }
-
-  /* Custom tab styles */
-
-  .k-content-watch-view .k-button-active {
-    border-bottom: 2px solid var(--color-gray-500);
   }
 
   .k-content-watch-files {
