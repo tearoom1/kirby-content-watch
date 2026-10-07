@@ -37,7 +37,7 @@
         </k-dropdown-content>
       </div>
       <!-- Tab navigation -->
-      <div class="k-content-watch-tabs">
+      <div v-if="enableLockedPages" class="k-content-watch-tabs">
         <k-button-group>
           <k-button
             :class="{'k-button-active': tab === 'content'}"
@@ -53,6 +53,7 @@
           </k-button>
         </k-button-group>
       </div>
+      <span v-else>Content Changes</span>
     </k-header>
 
     <!-- Content Watch Tab -->
@@ -265,7 +266,7 @@
     </section>
 
     <!-- Locked Pages Tab -->
-    <section v-if="tab === 'locked'" class="k-content-watch-section">
+    <section v-if="enableLockedPages && tab === 'locked'" class="k-content-watch-section">
       <k-grid v-if="lockedPages.length">
         <k-column width="1/2">
           <k-input
@@ -472,6 +473,10 @@ export default {
     lockedPages: {
       type: Array,
       default: () => []
+    },
+    enableLockedPages: {
+      type: Boolean,
+      default: true
     },
     enableRestore: {
       type: Boolean,

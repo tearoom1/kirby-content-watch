@@ -19,8 +19,8 @@ return [
                 $contentWatchController = new ContentWatchController();
                 $files = $contentWatchController->getContentFiles();
 
-                $lockedPages = (bool)option('tearoom1.kirby-content-watch.enableLockedPages', true) ?
-                    (new LockedPages())->getLockedPages() : [];
+                $enableLockedPages = (bool)option('tearoom1.kirby-content-watch.enableLockedPages', true);
+                $lockedPages = $enableLockedPages ? (new LockedPages())->getLockedPages() : [];
                 $retentionDays = (int)option('tearoom1.kirby-content-watch.retentionDays', 30);
                 $retentionCount = (int)option('tearoom1.kirby-content-watch.retentionCount', 10);
 
@@ -32,6 +32,7 @@ return [
                     'title' => 'Content Watch',
                     'props' => [
                         'lockedPages' => $lockedPages,
+                        'enableLockedPages' => $enableLockedPages,
                         'files' => $files,
                         'retentionDays' => $retentionDays,
                         'retentionCount' => $retentionCount,
