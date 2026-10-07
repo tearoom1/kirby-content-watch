@@ -162,7 +162,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         'enableRestore'      => false,
         'enableDiff'         => true,
         'defaultPageSize'    => 20,
-        'layoutStyle'        => 'compact',
+        'layoutStyle'        => 'compact', // 'compact' or 'relaxed' ('default' still works as alias for 'relaxed')
         'notify'             => null, // Webhook URL (JSON POST) or callable receiving the change payload
     ],
     'api' => [

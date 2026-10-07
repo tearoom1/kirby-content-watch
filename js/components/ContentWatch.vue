@@ -140,7 +140,7 @@
           class="k-content-watch-file"
           :class="{'k-content-watch-file-open': expandedFiles.includes(file.id)}"
         >
-          <div v-if="layoutStyle === 'default'" class="k-content-watch-file-header" @click="toggleFileExpand(file.id)">
+          <div v-if="layoutStyle === 'relaxed'" class="k-content-watch-file-header" @click="toggleFileExpand(file.id)">
             <div class="k-content-watch-file-info">
               <span class="k-content-watch-file-path">
                 <span class="k-content-watch-file-title-row">
@@ -321,7 +321,7 @@
           :key="lock.id + '-' + lock.time"
           class="k-content-watch-file"
         >
-          <div v-if="layoutStyle === 'default'" class="k-content-watch-file-header" @click="openLockedPage(lock)">
+          <div v-if="layoutStyle === 'relaxed'" class="k-content-watch-file-header" @click="openLockedPage(lock)">
             <div class="k-content-watch-file-info">
               <span class="k-content-watch-file-path">
                 <span class="k-content-watch-file-title-row">

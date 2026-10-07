@@ -39,7 +39,7 @@ return [
                         'enableRestore' => $enableRestore,
                         'enableDiff' => $enableRestore && $enabledDiff,
                         'defaultPageSize' => option('tearoom1.kirby-content-watch.defaultPageSize', 10),
-                        'layoutStyle' => option('tearoom1.kirby-content-watch.layoutStyle', 'compact'),
+                        'layoutStyle' => ContentWatchController::layoutStyle(),
                         'initialSearch' => (string)get('search', ''),
                         'initialShowAll' => (bool)get('all', false),
                     ],

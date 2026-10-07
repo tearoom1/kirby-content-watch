@@ -313,4 +313,19 @@ class ContentWatchControllerTest extends TestCase
 
         $this->assertSame(['news'], array_column($files, 'id'));
     }
+
+    public function testLayoutStyleSupportsRelaxedAndLegacyDefault(): void
+    {
+        $cases = [
+            'compact'     => 'compact',
+            'relaxed'     => 'relaxed',
+            'default'     => 'relaxed', // legacy name
+            'unknown'     => 'compact',
+        ];
+
+        foreach ($cases as $option => $expected) {
+            $this->kirby = $this->makeApp(['options' => ['tearoom1.kirby-content-watch.layoutStyle' => $option]]);
+            $this->assertSame($expected, ContentWatchController::layoutStyle(), $option);
+        }
+    }
 }

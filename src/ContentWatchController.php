@@ -35,6 +35,20 @@ class ContentWatchController
     }
 
     /**
+     * Layout density of the panel list: `compact` (default) or `relaxed`.
+     * `default` is the former name of `relaxed` and stays supported.
+     */
+    public static function layoutStyle(): string
+    {
+        $style = option('tearoom1.kirby-content-watch.layoutStyle', 'compact');
+
+        return match ($style) {
+            'relaxed', 'default' => 'relaxed',
+            default                  => 'compact',
+        };
+    }
+
+    /**
      * @return array[]
      */
     public function getContentFiles(): array
