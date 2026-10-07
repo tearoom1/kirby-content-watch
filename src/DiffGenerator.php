@@ -74,9 +74,10 @@ class DiffGenerator
         $output = '';
         $changes = false;
 
-        for ($i = 0; $i < count($oldLines); $i++) {
-            $oldLine = $oldLines[$i];
-            $newLine = $newLines[$i];
+        $lineCount = max(count($oldLines), count($newLines));
+        for ($i = 0; $i < $lineCount; $i++) {
+            $oldLine = $oldLines[$i] ?? '';
+            $newLine = $newLines[$i] ?? '';
 
             $oldLine = htmlentities($oldLine);
             $newLine = htmlentities($newLine);
@@ -218,18 +219,34 @@ class DiffGenerator
                     $object = json_decode($field, true, 512, JSON_UNESCAPED_UNICODE);
                 }
                 
-                // find array value for key 'content'
+                // Not valid JSON (e.g. a text starting with a Markdown link): treat as plain text
+                if (!is_array($object)) {
+                    $fields[$key] = self::formatField($key, $field);
+                    continue;
+                }
+
+                // find array value for key 'content' (blocks/layouts)
                 $contents = self::array_value_recursive('content', $object);
+                if ($contents === []) {
+                    // JSON without blocks: show the whole pretty-printed value
+                    $fields[$key] = $key . ":\n" . self::jsonEncodeFormatted($object);
+                    continue;
+                }
                 foreach ($contents as $id => $content) {
                     $fields[$key . $id] = $key . " - " . $content;
                 }
             } else {
-                $fields[$key] = is_string($field) && str_contains($field, "\n")
-                    ? $key . ":\n" . $field
-                    : $key . ': ' . $field;
+                $fields[$key] = self::formatField($key, $field);
             }
         }
         return $fields;
+    }
+
+    private static function formatField(string $key, mixed $field): string
+    {
+        return is_string($field) && str_contains($field, "\n")
+            ? $key . ":\n" . $field
+            : $key . ': ' . $field;
     }
 
     private static function array_value_recursive($key, array $arr): array
@@ -238,7 +255,8 @@ class DiffGenerator
         foreach ($arr as $k => $v) {
             if ($k === $key) {
                 // Use JSON_PRETTY_PRINT and JSON_UNESCAPED_UNICODE for proper UTF-8 output
-                $val[$arr['id']] = $arr['type'] . ': ' . self::jsonEncodeFormatted($v);
+                $id = $arr['id'] ?? md5(self::jsonEncodeFormatted($arr));
+                $val[$id] = ($arr['type'] ?? $key) . ': ' . self::jsonEncodeFormatted($v);
             } elseif (is_array($v)) {
                 $val = array_merge($val, self::array_value_recursive($key, $v));
             }

@@ -59,7 +59,12 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             ]);
         },
         'page.duplicate:after' => function ($duplicatePage, $originalPage) {
-            // do nothing as change title will already track the change
+            // Kirby copies the original's history files along, start fresh instead
+            $tracker = new ChangeTracker();
+            $tracker->resetHistory($duplicatePage);
+            $tracker->trackContentChange($duplicatePage, [
+                'action' => 'duplicated',
+            ]);
         },
         'page.delete:before' => function ($page) {
             F::remove($page->root() . '/.content-watch.json');
@@ -72,6 +77,9 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         },
         'file.update:after' => function ($newFile, $oldFile) {
             (new ChangeTracker())->trackContentChange($newFile);
+        },
+        'file.delete:after' => function ($status, $file) {
+            (new ChangeTracker())->forgetFile($file);
         },
         'file.changeName:after' => function ($newFile, $oldFile) {
             (new ChangeTracker())->trackContentChange($newFile, [

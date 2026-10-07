@@ -2,6 +2,7 @@
 
 namespace TearoomOne\ContentWatch;
 
+use Kirby\Cms\File;
 use Kirby\Cms\ModelWithContent;
 use Kirby\Data\Data;
 use Kirby\Filesystem\F;
@@ -47,7 +48,7 @@ class ChangeTracker
                 $language     = $kirbyLanguage ? $kirbyLanguage->code() : '';
                 $languagePart = $language !== '' ? '.' . $language : '';
                 $contentFile  = $dirPath . '/' . $fileKey . $languagePart . '.txt';
-                $fileContent  = F::read($contentFile) ?? '';
+                $fileContent  = F::read($contentFile) ?: '';
 
                 $record['content']  = $fileContent;
                 $record['language'] = $language;
@@ -133,6 +134,38 @@ class ChangeTracker
         }
 
         $this->saveTheUpdatedHistory($editorFile, $history);
+    }
+
+    /**
+     * Remove the history of a deleted file so it doesn't linger as an orphan.
+     */
+    public function forgetFile(File $file): void
+    {
+        $editorFile = dirname($file->root()) . '/.content-watch.json';
+        if (!F::exists($editorFile)) {
+            return;
+        }
+
+        $history = Data::read($editorFile, 'json') ?: [];
+        if (!array_key_exists($file->filename(), $history)) {
+            return;
+        }
+
+        unset($history[$file->filename()]);
+        $this->saveTheUpdatedHistory($editorFile, $history);
+    }
+
+    /**
+     * Drop the history of a page and all its descendants, e.g. after
+     * duplicating, where Kirby copies the original's history files along.
+     */
+    public function resetHistory(Page $page): void
+    {
+        F::remove($page->root() . '/.content-watch.json');
+
+        foreach ($page->index(true) as $child) {
+            F::remove($child->root() . '/.content-watch.json');
+        }
     }
 
     public function saveTheUpdatedHistory(string $editorFile, mixed $history): void

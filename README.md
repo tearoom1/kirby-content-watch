@@ -67,11 +67,11 @@ return [
         'allowedRoles'     => [],
         'retentionDays'    => 30,
         'retentionCount'   => 10,
-        'defaultPageSize'  => 10,
-        'layoutStyle'      => 'default',
+        'defaultPageSize'  => 20,
+        'layoutStyle'      => 'compact',
         'enableLockedPages' => true,
         'enableRestore'    => false,
-        'enableDiff'       => false,
+        'enableDiff'       => true,
         'disable'          => false,
     ]
 ];
@@ -82,11 +82,11 @@ return [
 | `allowedRoles` | array | `[]` | Additional Kirby roles allowed to use the plugin. Admins always have access (see Access Control) |
 | `retentionDays` | `int` | `30` | Number of days to keep history entries before they are pruned |
 | `retentionCount` | `int` | `10` | Maximum number of history entries to keep per file |
-| `defaultPageSize` | `int` | `10` | Default number of items per page in the panel view. Possible values: `10`, `20`, `50` |
-| `layoutStyle` | `string` | `'default'` | Layout density of the list. Set to `'compact'` for a tighter layout |
+| `defaultPageSize` | `int` | `20` | Default number of items per page in the panel view. Possible values: `10`, `20`, `50` |
+| `layoutStyle` | `string` | `'compact'` | Layout density of the list. Set to `'default'` for a roomier layout |
 | `enableLockedPages` | `bool` | `true` | Whether to show the locked pages view in the panel |
 | `enableRestore` | `bool` | `false` | Enable content restore functionality. When enabled, full content snapshots are saved — increases disk usage |
-| `enableDiff` | `bool` | `false` | Enable content diff view. Requires `enableRestore` to be `true` |
+| `enableDiff` | `bool` | `true` | Enable content diff view. Requires `enableRestore` to be `true` |
 | `disable` | `bool` | `false` | Completely disable the plugin without uninstalling it |
 
 ### Access Control

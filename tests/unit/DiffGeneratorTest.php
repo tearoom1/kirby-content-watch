@@ -182,4 +182,25 @@ class DiffGeneratorTest extends TestCase
 
         $this->assertNotSame('No changes found', $result);
     }
+
+    public function testTextStartingWithBracketIsNotTreatedAsJson(): void
+    {
+        $diff = DiffGenerator::generate(
+            "Text: [Link](https://example.com) old\n",
+            "Text: [Link](https://example.com) new\n"
+        );
+
+        $this->assertStringContainsString('old', $diff);
+        $this->assertStringContainsString('new', $diff);
+    }
+
+    public function testJsonWithoutBlocksIsStillDiffed(): void
+    {
+        $diff = DiffGenerator::generate(
+            "Tags: [\"red\",\"blue\"]\n",
+            "Tags: [\"red\",\"green\"]\n"
+        );
+
+        $this->assertStringContainsString('green', $diff);
+    }
 }

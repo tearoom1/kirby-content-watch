@@ -837,6 +837,10 @@ export default {
         return 'moved by';
       }
 
+      if (entry?.action === 'duplicated') {
+        return 'duplicated by';
+      }
+
       return 'edited by';
     },
 

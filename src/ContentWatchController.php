@@ -206,7 +206,7 @@ class ContentWatchController
     {
         if (kirby()->multilang()) {
             return (bool)preg_match(
-                '/' . kirby()->defaultLanguage()->code() . '\.txt$/',
+                '/\.' . preg_quote(kirby()->defaultLanguage()->code(), '/') . '\.txt$/',
                 $file->getBasename()
             );
         }

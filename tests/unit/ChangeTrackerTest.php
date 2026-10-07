@@ -369,4 +369,42 @@ class ChangeTrackerTest extends TestCase
         $this->assertArrayHasKey('site', $history);
         $this->assertSame('page', $history['site'][0]['type']);
     }
+
+    // -------------------------------------------------------------------------
+    // Deletion / duplication
+    // -------------------------------------------------------------------------
+
+    public function testForgetFileRemovesOnlyThatFilesHistory(): void
+    {
+        $this->writeContent($this->pageDir . '/photo.jpg', 'binary');
+        $this->kirby = $this->makeApp();
+        $this->kirby->impersonate('kirby');
+
+        $this->writeHistory($this->pageDir, [
+            'article'   => [['uuid' => 'a', 'time' => time(), 'version' => 1]],
+            'photo.jpg' => [['uuid' => 'b', 'time' => time(), 'version' => 1]],
+        ]);
+
+        (new ChangeTracker())->forgetFile(kirby()->page('test-page')->file('photo.jpg'));
+
+        $history = $this->readHistory($this->pageDir);
+        $this->assertArrayHasKey('article', $history);
+        $this->assertArrayNotHasKey('photo.jpg', $history);
+    }
+
+    public function testResetHistoryRemovesHistoryOfPageAndChildren(): void
+    {
+        $childDir = $this->pageDir . '/child';
+        $this->writeContent($childDir . '/default.txt', "Title: Child\n");
+        $this->kirby = $this->makeApp();
+        $this->kirby->impersonate('kirby');
+
+        $this->writeHistory($this->pageDir, ['article' => [['uuid' => 'a', 'time' => time()]]]);
+        $this->writeHistory($childDir, ['default' => [['uuid' => 'b', 'time' => time()]]]);
+
+        (new ChangeTracker())->resetHistory(kirby()->page('test-page'));
+
+        $this->assertFileDoesNotExist($this->pageDir . '/.content-watch.json');
+        $this->assertFileDoesNotExist($childDir . '/.content-watch.json');
+    }
 }
