@@ -103,6 +103,19 @@
           :options="templateFilterOptions"
           @input="changeTemplateFilter"
         />
+        <k-select-field
+          label="Period"
+          :value="selectedPeriod"
+          :options="periodFilterOptions"
+          @input="changePeriodFilter"
+        />
+        <k-select-field
+          v-if="languageFilterOptions.length"
+          label="Language"
+          :value="selectedLanguage"
+          :options="languageFilterOptions"
+          @input="changeLanguageFilter"
+        />
         <div class="k-content-watch-filters-reset">
           <k-button
             icon="cancel"
@@ -506,6 +519,8 @@ export default {
       selectedAuthor: '',
       selectedStatus: '',
       selectedTemplate: '',
+      selectedPeriod: '',
+      selectedLanguage: '',
       showFilters: false,
       lockedShowOnlyPages: true,
       expandedFiles: [],
@@ -618,8 +633,39 @@ export default {
       ];
     },
 
+    periodFilterOptions() {
+      return [
+        {text: 'Today', value: 'today'},
+        {text: 'Last 7 days', value: '7'},
+        {text: 'Last 30 days', value: '30'}
+      ];
+    },
+
+    languageFilterOptions() {
+      const languages = new Set();
+
+      this.files.forEach(file => {
+        (file.history || []).forEach(entry => {
+          if (entry.language) {
+            languages.add(entry.language);
+          }
+        });
+      });
+
+      return [...languages].sort().map(language => ({
+        text: language.toUpperCase(),
+        value: language
+      }));
+    },
+
     hasActiveFilters() {
-      return Boolean(this.selectedAuthor || this.selectedStatus || this.selectedTemplate);
+      return Boolean(
+        this.selectedAuthor ||
+        this.selectedStatus ||
+        this.selectedTemplate ||
+        this.selectedPeriod ||
+        this.selectedLanguage
+      );
     },
 
     items() {
@@ -705,6 +751,15 @@ export default {
 
       if (this.selectedTemplate) {
         filtered = filtered.filter(file => file.page_template === this.selectedTemplate);
+      }
+
+      if (this.selectedPeriod) {
+        const since = this.periodStart(this.selectedPeriod);
+        filtered = filtered.filter(file => file.modified >= since);
+      }
+
+      if (this.selectedLanguage) {
+        filtered = filtered.filter(file => (file.history || []).some(entry => entry.language === this.selectedLanguage));
       }
 
       // Then apply search filter
@@ -808,10 +863,33 @@ export default {
       this.filterFiles();
     },
 
+    changePeriodFilter(value) {
+      this.selectedPeriod = this.normalizeFilterValue(value);
+      this.filterFiles();
+    },
+
+    changeLanguageFilter(value) {
+      this.selectedLanguage = this.normalizeFilterValue(value);
+      this.filterFiles();
+    },
+
+    periodStart(period) {
+      const now = new Date();
+
+      if (period === 'today') {
+        now.setHours(0, 0, 0, 0);
+        return Math.floor(now.getTime() / 1000);
+      }
+
+      return Math.floor(now.getTime() / 1000) - parseInt(period, 10) * 86400;
+    },
+
     resetFilters() {
       this.selectedAuthor = '';
       this.selectedStatus = '';
       this.selectedTemplate = '';
+      this.selectedPeriod = '';
+      this.selectedLanguage = '';
       this.filterFiles();
     },
 
@@ -1306,7 +1384,7 @@ export default {
 
   .k-content-watch-filters {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
     gap: 0.75rem;
     margin-top: 0.75rem;
     align-items: end;

@@ -16,7 +16,7 @@ Additionally it provides a view to see which pages are currently locked and by w
 - **Editor Attribution**: Records which editor made each change with timestamp
 - **History Timeline**: Lists all content files across your Kirby site, sorted by modification date
 - **Locked Pages View**: Shows which pages are currently being edited and by whom
-- **Search Functionality**: Quickly find specific content files
+- **Search & Filters**: Find content by title or path and filter by author, status, template, period and language
 - **Direct Panel Links**: One-click access to edit content in the Panel
 - **Customizable Retention**: Configure how long history is kept
 - **Version Restore**: Restore previous versions of content with a single click (optional)
