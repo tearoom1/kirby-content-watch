@@ -299,4 +299,18 @@ class ContentWatchControllerTest extends TestCase
 
         $this->assertSame([], (new ContentWatchController())->getModelHistory(kirby()->page('home')));
     }
+
+    public function testGetContentFilesSkipsFoldersWithoutContentModel(): void
+    {
+        $this->writeContent($this->contentDir . '/1_news/news.txt', "Title: News\n");
+        // Snapshot folder as created by thomhines/kirby-revisions
+        $this->writeContent($this->contentDir . '/1_news/_versions/2026-10-07T194256Z-gx5dar/news.txt', "Title: News\n");
+
+        $this->kirby = $this->makeApp();
+        $this->kirby->impersonate('kirby');
+
+        $files = (new ContentWatchController())->getContentFiles();
+
+        $this->assertSame(['news'], array_column($files, 'id'));
+    }
 }

@@ -95,6 +95,12 @@ class ContentWatchController
         $dirPath      = dirname($filePath);
         $relativePath = str_replace($contentDir . '/', '', $filePath);
         $owner       = $this->findContentModelByRoot($dirPath);
+
+        // Skip folders that are no Kirby model, e.g. snapshots other plugins
+        // keep inside the content folder (kirby-revisions' _versions)
+        if ($owner === null) {
+            return;
+        }
         $fallbackId  = $this->fallbackModelId(dirname($relativePath));
         $fileId      = $owner instanceof Site ? 'site' : ($owner?->id() ?? $fallbackId);
         $pathShort   = $fileId;
