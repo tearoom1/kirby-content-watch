@@ -49,7 +49,7 @@ class LockedPagesTest extends TestCase
 
         $results = (new LockedPages())->getLockedPagesV4($this->contentDir, []);
 
-        $this->assertSame('nonexistent-user-xyz', $results[0]['user']);
+        $this->assertSame('Unknown user (nonexistent-user-xyz)', $results[0]['user']);
     }
 
     public function testV4NoLockFilesReturnsEmptyArray(): void
@@ -126,7 +126,7 @@ class LockedPagesTest extends TestCase
         file_put_contents($changesDir . '/article.txt', "Lock: ghost-user-id\n");
 
         $results = (new LockedPages())->getLockedPagesV5($this->contentDir, []);
-        $this->assertSame('ghost-user-id', $results[0]['user']);
+        $this->assertSame('Unknown user (ghost-user-id)', $results[0]['user']);
     }
 
     public function testV5NoChangesFilesReturnsEmptyArray(): void

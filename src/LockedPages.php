@@ -5,6 +5,7 @@ namespace TearoomOne\ContentWatch;
 use Kirby\Cms\ModelWithContent;
 use Kirby\Cms\Page;
 use Kirby\Cms\Site;
+use Kirby\Cms\User;
 use Kirby\Filesystem\Dir;
 
 class LockedPages
@@ -32,7 +33,7 @@ class LockedPages
 
             $date       = date('Y-m-d H:i:s', $time);
             $user       = kirby()->user($userId);
-            $userString = $user ? (string)$user->name()->or($user->email()) : $userId;
+            $userString = $this->userLabel($user, $userId);
 
             $fileDir = preg_replace('%' . preg_quote($contentRoot, '%') . '/|/.lock$%', '', $file);
             $model   = $this->findContentModelByRoot(dirname($file));
@@ -78,7 +79,7 @@ class LockedPages
 
             $date       = date('Y-m-d H:i:s', $time);
             $user       = kirby()->user($userId);
-            $userString = $user ? (string)$user->name()->or($user->email()) : $userId;
+            $userString = $this->userLabel($user, $userId);
 
             $fileDir = preg_replace('%' . preg_quote($contentRoot, '%') . '/|/.lock$%', '', $file);
             $model   = $this->findContentModelByRoot(dirname(dirname($file)));
@@ -121,6 +122,16 @@ class LockedPages
         $id = preg_replace('%_?drafts/%', '', $id);
 
         return preg_replace('%\d+_%', '', $id);
+    }
+
+    protected function userLabel(?User $user, ?string $userId): string
+    {
+        if ($user) {
+            return (string)$user->name()->or($user->email());
+        }
+
+        // Locks of deleted or foreign users only carry a raw id
+        return $userId ? 'Unknown user (' . $userId . ')' : 'Unknown user';
     }
 
     protected function modelTitle(ModelWithContent|null $model): string
