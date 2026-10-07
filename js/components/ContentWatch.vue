@@ -1208,9 +1208,15 @@ export default {
     transition: all 0.3s ease;
   }
 
+  .k-content-watch-tabs .k-button-group {
+    gap: 0.25rem;
+  }
+
   .k-content-watch-tabs .k-button {
-    font-size: 1.5rem;
-    padding: 1.1rem;
+    --button-height: var(--height-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-normal);
+    padding-inline: 0.75rem;
     margin-inline: 0;
   }
 
@@ -1618,6 +1624,78 @@ export default {
         position: absolute;
         transform: translateX(-15px);
       }
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .k-content-watch-buttons .k-button-group {
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+
+    /* File rows: stack title, path and editor instead of squeezing columns */
+    .k-content-watch-file-header {
+      align-items: flex-start;
+      padding-inline: 0.75rem;
+    }
+
+    .k-content-watch-file-info {
+      flex-direction: column;
+      gap: 0.25rem;
+      min-width: 0;
+    }
+
+    .k-content-watch-file-header-compact .k-content-watch-file-path {
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    .k-content-watch-file-path,
+    .k-content-watch-file-subpath {
+      overflow-wrap: anywhere;
+    }
+
+    .k-content-watch-file-editor {
+      text-align: left;
+      margin-top: 0;
+    }
+
+    .k-content-watch-file-actions {
+      gap: 0;
+      flex-shrink: 0;
+    }
+
+    /* Timeline: version, language, time and actions in one row, editor below */
+    .k-timeline-list {
+      grid-template-columns: auto auto 1fr auto;
+      /* actions come after the editor in the DOM, pull them up into the first row */
+      grid-auto-flow: row dense;
+      padding-inline: 0;
+    }
+
+    .k-timeline-item > :not(:last-child) {
+      padding: 0.4rem 0.35rem;
+    }
+
+    .k-timeline-item-version { grid-column: 1; }
+    .k-timeline-item-language { grid-column: 2; }
+    .k-timeline-item-time { grid-column: 3; }
+    .k-timeline-item-actions { grid-column: 4; }
+
+    .k-timeline-item-time-rel,
+    .k-timeline-item-editor-label {
+      display: none;
+    }
+
+    .k-timeline-item-editor {
+      grid-column: 1 / -1;
+      grid-row-start: auto;
+      text-align: left;
+      padding-top: 0 !important;
+    }
+
+    .k-timeline-item-line {
+      grid-column: 1 / -1;
     }
   }
 
