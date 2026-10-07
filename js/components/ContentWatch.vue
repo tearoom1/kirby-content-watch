@@ -85,7 +85,7 @@
               :disabled="!filteredFiles.length"
               @click="exportCsv"
             />
-            <k-button icon="refresh" @click="refresh"/>
+            <k-button icon="refresh" title="Reload" @click="refresh"/>
           </k-button-group>
         </k-column>
       </k-grid>
@@ -167,8 +167,9 @@
             </div>
             <div class="k-content-watch-file-actions">
               <k-button icon="angle-down"
+                        :title="expandedFiles.includes(file.id) ? 'Hide history' : 'Show history'"
                         :class="{'k-button-rotated': expandedFiles.includes(file.id), 'k-button-disabled': !file.history || file.history.length === 0}"/>
-              <k-button @click.stop="openFile(file)" icon="edit"/>
+              <k-button @click.stop="openFile(file)" icon="edit" title="Edit in panel"/>
             </div>
           </div>
 
@@ -195,8 +196,9 @@
             </div>
             <div class="k-content-watch-file-actions">
               <k-button icon="angle-down"
+                        :title="expandedFiles.includes(file.id) ? 'Hide history' : 'Show history'"
                         :class="{'k-button-rotated': expandedFiles.includes(file.id), 'k-button-disabled': !file.history || file.history.length === 0}"/>
-              <k-button @click.stop="openFile(file)" icon="edit"/>
+              <k-button @click.stop="openFile(file)" icon="edit" title="Edit in panel"/>
             </div>
           </div>
 
@@ -274,6 +276,7 @@
           <k-select-field
             :value="pageSize"
             :options="pageSizeOptions"
+            :required="true"
             @input="changePageSize"/>
         </div>
       </div>
@@ -306,7 +309,7 @@
                       icon="file-document">All
               files
             </k-button>
-            <k-button icon="refresh" @click="refresh"/>
+            <k-button icon="refresh" title="Reload" @click="refresh"/>
           </k-button-group>
         </k-column>
       </k-grid>
@@ -342,7 +345,7 @@
               </span>
             </div>
             <div class="k-content-watch-file-actions">
-              <k-button @click.stop="openLockedPage(lock)" icon="edit"/>
+              <k-button @click.stop="openLockedPage(lock)" icon="edit" title="Edit in panel"/>
             </div>
           </div>
 
@@ -368,7 +371,7 @@
               </span>
             </div>
             <div class="k-content-watch-file-actions">
-              <k-button @click.stop="openLockedPage(lock)" icon="edit"/>
+              <k-button @click.stop="openLockedPage(lock)" icon="edit" title="Edit in panel"/>
             </div>
           </div>
         </div>
