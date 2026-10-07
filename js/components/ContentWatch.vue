@@ -203,7 +203,11 @@
           </div>
 
           <div v-if="expandedFiles.includes(file.id)" class="k-content-watch-file-timeline">
-            <div v-if="file.history && file.history.length > 0" class="k-timeline-list">
+            <div
+              v-if="file.history && file.history.length > 0"
+              class="k-timeline-list"
+              :class="{'k-timeline-list-compact': layoutStyle === 'compact'}"
+            >
               <div
                 v-for="(entry, entryIndex) in file.history"
                 :key="entry.entry_id || entryIndex"
@@ -1434,6 +1438,19 @@ export default {
   .k-timeline-item-when-absolute {
     display: block;
     opacity: 0.7;
+  }
+
+  /* compact: tighter rows, relative and absolute time on one line */
+  .k-timeline-list-compact .k-timeline-item {
+    padding-block: 0.4rem;
+  }
+
+  .k-timeline-list-compact .k-timeline-item-when-absolute {
+    display: inline;
+  }
+
+  .k-timeline-list-compact .k-timeline-item-when-absolute::before {
+    content: " · ";
   }
 
   /* Fixed width keeps the time column aligned when the diff button is missing */
