@@ -2,6 +2,8 @@
 
 namespace TearoomOne\ContentWatch;
 
+use Kirby\Cms\File;
+use Kirby\Cms\ModelWithContent;
 use Kirby\Cms\Page;
 use Kirby\Cms\Site;
 use Kirby\Data\Data;
@@ -141,25 +143,7 @@ class ContentWatchController
         $modified = $record !== null ? $record['time'] : $file->getMTime();
         $editor   = $this->getEditor($record);
 
-        $historyEntriesBuilt = [];
-        foreach ($historyEntries as $entry) {
-            if (!is_array($entry)) {
-                continue;
-            }
-
-            $historyEntriesBuilt[] = [
-                'entry_id'       => $entry['uuid'] ?? null,
-                'editor'         => $this->getEditor($entry),
-                'time'           => $entry['time'] ?? 0,
-                'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0),
-                'has_snapshot'   => !empty($entry['content']),
-                'restored_from'  => $entry['restored_from'] ?? null,
-                'restored_from_id' => $entry['restored_from_id'] ?? null,
-                'action'         => $entry['action'] ?? null,
-                'version'        => $entry['version'] ?? 1,
-                'language'       => $entry['language'] ?? '',
-            ];
-        }
+        $historyEntriesBuilt = $this->buildHistoryEntries($historyEntries);
 
         $pathParts = explode('/', $relativePath);
 
@@ -180,6 +164,59 @@ class ContentWatchController
             'is_media_file'      => $isMediaFile,
             'history'            => $historyEntriesBuilt,
         ];
+    }
+
+    /**
+     * Prepare raw history entries for the panel.
+     */
+    public function buildHistoryEntries(array $entries): array
+    {
+        $built = [];
+        foreach ($entries as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+
+            $built[] = [
+                'entry_id'       => $entry['uuid'] ?? null,
+                'editor'         => $this->getEditor($entry),
+                'time'           => $entry['time'] ?? 0,
+                'time_formatted' => date('Y-m-d H:i:s', $entry['time'] ?? 0),
+                'has_snapshot'   => !empty($entry['content']),
+                'restored_from'  => $entry['restored_from'] ?? null,
+                'restored_from_id' => $entry['restored_from_id'] ?? null,
+                'action'         => $entry['action'] ?? null,
+                'version'        => $entry['version'] ?? 1,
+                'language'       => $entry['language'] ?? '',
+            ];
+        }
+
+        return $built;
+    }
+
+    /**
+     * History of a single page, site or file, newest first.
+     */
+    public function getModelHistory(ModelWithContent $model): array
+    {
+        [$dirPath, $fileKey] = match (true) {
+            $model instanceof Site => [$model->root(), 'site'],
+            $model instanceof Page => [$model->root(), $model->intendedTemplate()->name()],
+            $model instanceof File => [dirname($model->root()), $model->filename()],
+            default                => [null, null],
+        };
+
+        if ($dirPath === null || !F::exists($dirPath . '/.content-watch.json')) {
+            return [];
+        }
+
+        try {
+            $history = Data::read($dirPath . '/.content-watch.json', 'json') ?: [];
+        } catch (\Exception) {
+            return [];
+        }
+
+        return $this->buildHistoryEntries($this->applyRetention($history[$fileKey] ?? []));
     }
 
     /**

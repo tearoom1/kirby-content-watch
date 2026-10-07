@@ -264,4 +264,39 @@ class ContentWatchControllerTest extends TestCase
 
         $this->assertSame(['a', 'b'], array_column($result, 'uuid'));
     }
+
+    public function testGetModelHistoryReturnsPageHistory(): void
+    {
+        $pageDir = $this->contentDir . '/1_home';
+        $this->writeContent($pageDir . '/home.txt', "Title: Home\n");
+        $this->writeContent($pageDir . '/photo.jpg', 'binary');
+        $this->writeHistory($pageDir, [
+            'home'      => [
+                ['uuid' => 'b', 'time' => time(), 'version' => 2, 'action' => 'moved'],
+                ['uuid' => 'a', 'time' => time() - 60, 'version' => 1],
+            ],
+            'photo.jpg' => [['uuid' => 'f', 'time' => time(), 'version' => 1]],
+        ]);
+
+        $this->kirby = $this->makeApp();
+        $this->kirby->impersonate('kirby');
+
+        $controller = new ContentWatchController();
+        $page       = kirby()->page('home');
+
+        $history = $controller->getModelHistory($page);
+        $this->assertSame(['b', 'a'], array_column($history, 'entry_id'));
+        $this->assertSame('moved', $history[0]['action']);
+
+        $fileHistory = $controller->getModelHistory($page->file('photo.jpg'));
+        $this->assertSame(['f'], array_column($fileHistory, 'entry_id'));
+    }
+
+    public function testGetModelHistoryReturnsEmptyArrayWithoutHistoryFile(): void
+    {
+        $this->writeContent($this->contentDir . '/1_home/home.txt', "Title: Home\n");
+        $this->kirby = $this->makeApp();
+
+        $this->assertSame([], (new ContentWatchController())->getModelHistory(kirby()->page('home')));
+    }
 }

@@ -510,15 +510,23 @@ export default {
       default: 10
     },
     layoutStyle: {
-      type: Text,
+      type: String,
       default: 'default'
+    },
+    initialSearch: {
+      type: String,
+      default: ''
+    },
+    initialShowAll: {
+      type: Boolean,
+      default: false
     }
   },
 
   data() {
     return {
       isLoading: false,
-      search: '',
+      search: this.initialSearch,
       lockedSearch: '',
       filteredFiles: [],
       filteredLockedPages: [],
@@ -531,7 +539,7 @@ export default {
       lockedShowOnlyPages: true,
       expandedFiles: [],
       restoreTarget: null,
-      showOnlyPages: true,
+      showOnlyPages: !this.initialShowAll,
       currentPage: 1,
       layoutStyle: this.layoutStyle,
       pageSize: this.defaultPageSize,
@@ -555,6 +563,11 @@ export default {
     this.filteredLockedPages = this.lockedPages || [];
     this.filterFiles();
     this.filterLockedPages();
+
+    // Coming from a section link: open the history of the matching page right away
+    if (this.initialSearch && this.filteredFiles.length === 1) {
+      this.expandedFiles.push(this.filteredFiles[0].id);
+    }
   },
 
   computed: {

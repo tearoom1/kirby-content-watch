@@ -40,6 +40,8 @@ return [
                         'enableDiff' => $enableRestore && $enabledDiff,
                         'defaultPageSize' => option('tearoom1.kirby-content-watch.defaultPageSize', 10),
                         'layoutStyle' => option('tearoom1.kirby-content-watch.layoutStyle', 'default'),
+                        'initialSearch' => (string)get('search', ''),
+                        'initialShowAll' => (bool)get('all', false),
                     ],
                 ];
             }
