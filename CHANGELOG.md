@@ -1,3 +1,15 @@
+## [3.5.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.4.0...v3.5.0) (2026-10-07)
+
+
+### Features
+
+* align history section with the new timeline design ([7e441c7](https://github.com/tearoom1/kirby-content-watch/commit/7e441c799e95d96c110fcd25af755588edfbe833))
+
+
+### Bug Fixes
+
+* make active tabs and toggles visible in light mode ([82dc67f](https://github.com/tearoom1/kirby-content-watch/commit/82dc67f76cc3daaf8f5d1fbac8c5857ca8c33a44))
+
 ## [3.4.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.7...v3.4.0) (2026-10-07)
 
 
@@ -51,11 +63,4 @@
 
 * added sponsor heart and css updates ([b578510](https://github.com/tearoom1/kirby-content-watch/commit/b57851025862cc256422f17f7eccbca652e4031a))
 * gate restore, diff, and area with role-based access control ([2281020](https://github.com/tearoom1/kirby-content-watch/commit/2281020dcb5482677fdabec4f36f541a58154c45))
-
-## [3.3.3](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.2...v3.3.3) (2026-06-02)
-
-
-### Bug Fixes
-
-* upgraded composer dependencies ([89a0d44](https://github.com/tearoom1/kirby-content-watch/commit/89a0d4465543b797bc05a0d9ff5ade6192412d72))
 
