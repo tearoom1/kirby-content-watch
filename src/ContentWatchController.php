@@ -132,7 +132,7 @@ class ContentWatchController
         }
 
         // Resolve history for this file
-        $historyEntries = $historyFiles[$dirPath][$fileKey] ?? [];
+        $historyEntries = $this->applyRetention($historyFiles[$dirPath][$fileKey] ?? []);
 
         if (!empty($historyEntries) && is_array($historyEntries) && isset($historyEntries[0])) {
             $record = $historyEntries[0];
@@ -180,6 +180,28 @@ class ContentWatchController
             'is_media_file'      => $isMediaFile,
             'history'            => $historyEntriesBuilt,
         ];
+    }
+
+    /**
+     * Hide entries outside the retention window. Stored history is only pruned
+     * on the next change, so expired entries would otherwise stay visible.
+     */
+    public function applyRetention(mixed $entries): array
+    {
+        if (!is_array($entries)) {
+            return [];
+        }
+
+        $retentionDays  = (int)option('tearoom1.kirby-content-watch.retentionDays', 30);
+        $retentionCount = (int)option('tearoom1.kirby-content-watch.retentionCount', 10);
+        $cutoffTime     = time() - ($retentionDays * 86400);
+
+        $entries = array_values(array_filter(
+            $entries,
+            fn($entry) => is_array($entry) && ($entry['time'] ?? 0) >= $cutoffTime
+        ));
+
+        return array_slice($entries, 0, max(0, $retentionCount));
     }
 
     public function getEditor(mixed $record): array

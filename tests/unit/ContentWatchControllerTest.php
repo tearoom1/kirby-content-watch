@@ -243,4 +243,25 @@ class ContentWatchControllerTest extends TestCase
         $this->assertSame('moved', $files[0]['history'][0]['action']);
         $this->assertArrayNotHasKey('move', $files[0]['history'][0]);
     }
+
+    public function testApplyRetentionHidesExpiredAndSurplusEntries(): void
+    {
+        $this->kirby = $this->makeApp([
+            'options' => [
+                'tearoom1.kirby-content-watch.retentionDays'  => 1,
+                'tearoom1.kirby-content-watch.retentionCount' => 2,
+            ],
+        ]);
+
+        $entries = [
+            ['uuid' => 'a', 'time' => time()],
+            ['uuid' => 'b', 'time' => time() - 60],
+            ['uuid' => 'c', 'time' => time() - 120],
+            ['uuid' => 'd', 'time' => time() - 3 * 86400],
+        ];
+
+        $result = (new ContentWatchController())->applyRetention($entries);
+
+        $this->assertSame(['a', 'b'], array_column($result, 'uuid'));
+    }
 }
