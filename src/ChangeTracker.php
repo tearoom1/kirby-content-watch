@@ -133,10 +133,8 @@ class ChangeTracker
             fn($entry) => isset($entry['time']) && $entry['time'] >= $cutoffTime
         ));
 
-        // Limit to retention count
-        if (count($history[$fileKey]) > $retentionCount) {
-            $history[$fileKey] = array_slice($history[$fileKey], 0, $retentionCount);
-        }
+        // Limit to retention count, per language
+        $history[$fileKey] = self::limitPerLanguage($history[$fileKey], $retentionCount);
 
         $this->saveTheUpdatedHistory($editorFile, $history);
 
@@ -188,6 +186,22 @@ class ChangeTracker
         } catch (\Throwable) {
             // A failing notification must never break saving content
         }
+    }
+
+    /**
+     * Keep the newest $count entries of each language, so frequent edits in
+     * one language don't push the history of the others out.
+     */
+    public static function limitPerLanguage(array $entries, int $count): array
+    {
+        $kept = [];
+
+        return array_values(array_filter($entries, function ($entry) use (&$kept, $count) {
+            $language = is_array($entry) ? (string)($entry['language'] ?? '') : '';
+            $kept[$language] = ($kept[$language] ?? 0) + 1;
+
+            return $kept[$language] <= $count;
+        }));
     }
 
     /**

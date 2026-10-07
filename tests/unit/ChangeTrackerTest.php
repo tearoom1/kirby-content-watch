@@ -284,6 +284,21 @@ class ChangeTrackerTest extends TestCase
         $this->assertCount(3, $history[$this->templateKey]);
     }
 
+    public function testRetentionCountIsAppliedPerLanguage(): void
+    {
+        $entries = [
+            ['uuid' => 'en3', 'language' => 'en'],
+            ['uuid' => 'en2', 'language' => 'en'],
+            ['uuid' => 'en1', 'language' => 'en'],
+            ['uuid' => 'de2', 'language' => 'de'],
+            ['uuid' => 'de1', 'language' => 'de'],
+        ];
+
+        $result = ChangeTracker::limitPerLanguage($entries, 2);
+
+        $this->assertSame(['en3', 'en2', 'de2', 'de1'], array_column($result, 'uuid'));
+    }
+
     // -------------------------------------------------------------------------
     // Retention days (regression for the $cutoffTime bug)
     // -------------------------------------------------------------------------

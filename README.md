@@ -87,7 +87,7 @@ return [
 |--------|------|---------|-------------|
 | `allowedRoles` | array | `[]` | Additional Kirby roles allowed to use the plugin. Admins always have access (see Access Control) |
 | `retentionDays` | `int` | `30` | Number of days to keep history entries before they are pruned |
-| `retentionCount` | `int` | `10` | Maximum number of history entries to keep per file |
+| `retentionCount` | `int` | `10` | Maximum number of history entries to keep per file and language |
 | `defaultPageSize` | `int` | `20` | Default number of items per page in the panel view. Possible values: `10`, `20`, `50` |
 | `layoutStyle` | `string` | `'compact'` | Layout density of the list. Set to `'default'` for a roomier layout |
 | `enableLockedPages` | `bool` | `true` | Whether to show the locked pages view in the panel |

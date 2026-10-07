@@ -244,7 +244,7 @@ class ContentWatchController
             fn($entry) => is_array($entry) && ($entry['time'] ?? 0) >= $cutoffTime
         ));
 
-        return array_slice($entries, 0, max(0, $retentionCount));
+        return ChangeTracker::limitPerLanguage($entries, max(0, $retentionCount));
     }
 
     public function getEditor(mixed $record): array

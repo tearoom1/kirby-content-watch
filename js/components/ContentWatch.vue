@@ -251,7 +251,7 @@
             </div>
             <k-empty v-else icon="clock" text="No history entries found"/>
             <div class="k-timeline-footer">
-              <span>Showing changes for the last {{ retentionDays }} days (max {{ retentionCount }})</span>
+              <span>Showing changes for the last {{ retentionDays }} days (max {{ retentionCount }} per language)</span>
             </div>
           </div>
         </div>
