@@ -203,26 +203,49 @@
           </div>
 
           <div v-if="expandedFiles.includes(file.id)" class="k-content-watch-file-timeline">
-            <div v-if="file.history && file.history.length > 0" class="k-timeline-list">
-              <div v-for="(entry, entryIndex) in file.history" :key="entry.entry_id || entryIndex" class="k-timeline-item">
-                <div class="k-timeline-item-version">
-                  v{{ entry.version }}
-                </div>
-                <div class="k-timeline-item-language">
-                  {{ entry.language }}
-                </div>
-                <div class="k-timeline-item-time">
-                  {{ entry.time_formatted }}
-                </div>
-                <div class="k-timeline-item-time-rel">
-                  {{ formatRelative(entry.time) }}
-                </div>
-                <span class="k-timeline-item-editor-label">
-                    {{ getEntryLabel(entry) }}
+            <div
+              v-if="file.history && file.history.length > 0"
+              class="k-timeline-list"
+              :class="'k-timeline-list-' + layoutStyle"
+            >
+              <div
+                v-for="(entry, entryIndex) in file.history"
+                :key="entry.entry_id || entryIndex"
+                class="k-timeline-item"
+                :class="{'k-timeline-item-current': entryIndex === 0}"
+              >
+                <!-- compact: one line, reads like a log -->
+                <template v-if="layoutStyle === 'compact'">
+                  <span class="k-timeline-item-version">v{{ entry.version }}</span>
+                  <span v-if="entry.language" class="k-timeline-item-language">{{ entry.language }}</span>
+                  <span class="k-timeline-item-text">
+                    <strong>{{ entryEditor(entry) }}</strong>
+                    {{ entryAction(entry) }}
+                    <span class="k-timeline-item-dimmed">{{ formatRelative(entry.time) }}</span>
+                    <span class="k-timeline-item-faint">&nbsp;· {{ formatAbsolute(entry.time) }}</span>
                   </span>
-                <span class="k-timeline-item-editor">
-                    {{ entry.editor.name || entry.editor.email || 'Unknown' }}
+                </template>
+
+                <!-- default: version badge, who/what above, when/language below -->
+                <template v-else>
+                  <span class="k-timeline-item-badge">v{{ entry.version }}</span>
+                  <span class="k-timeline-item-main">
+                    <span class="k-timeline-item-headline">
+                      <span class="k-timeline-item-dimmed">{{ getEntryLabel(entry, true) }}</span>
+                      {{ entryEditor(entry) }}
+                    </span>
+                    <span class="k-timeline-item-meta">
+                      {{ formatRelative(entry.time) }}
+                      <span class="k-timeline-item-faint">·</span>
+                      {{ formatAbsolute(entry.time) }}
+                      <template v-if="entry.language">
+                        <span class="k-timeline-item-faint">·</span>
+                        <span class="k-timeline-item-language">{{ entry.language }}</span>
+                      </template>
+                    </span>
                   </span>
+                </template>
+
                 <div class="k-timeline-item-actions">
                   <k-button
                     v-if="enableDiff && entry.has_snapshot && entryIndex < file.history.length - 1"
@@ -246,7 +269,6 @@
                     title="Current version"
                   />
                 </div>
-                <div class="k-timeline-item-line"></div>
               </div>
             </div>
             <k-empty v-else icon="clock" text="No history entries found"/>
@@ -910,7 +932,7 @@ export default {
             file.path_short,
             entry.version ? 'v' + entry.version : '',
             entry.language || '',
-            entry.version ? this.getEntryLabel(entry).replace(/ by$/, '') : '',
+            entry.version ? this.entryAction(entry) : '',
             entry.editor?.name || '',
             entry.editor?.email || '',
             entry.time_formatted || ''
@@ -992,20 +1014,33 @@ export default {
       this.$refs.restoreDialog.open();
     },
 
-    getEntryLabel(entry) {
-      if (entry?.restored_from) {
-        return 'restored by';
+    entryAction(entry) {
+      if (entry?.restored_from || entry?.restored_from_id) {
+        return 'restored';
       }
 
-      if (entry?.action === 'moved') {
-        return 'moved by';
+      if (entry?.action === 'moved' || entry?.action === 'duplicated') {
+        return entry.action;
       }
 
-      if (entry?.action === 'duplicated') {
-        return 'duplicated by';
-      }
+      return 'edited';
+    },
 
-      return 'edited by';
+    getEntryLabel(entry, capitalize = false) {
+      const label = this.entryAction(entry) + ' by';
+
+      return capitalize ? label.charAt(0).toUpperCase() + label.slice(1) : label;
+    },
+
+    entryEditor(entry) {
+      return entry?.editor?.name || entry?.editor?.email || 'Unknown';
+    },
+
+    formatAbsolute(time) {
+      return new Date(time * 1000).toLocaleString(this.panelLanguage(), {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      });
     },
 
     async restoreContent() {
@@ -1354,71 +1389,109 @@ export default {
   }
 
   .k-timeline-list {
-    --colums: 20;
-    display: grid;
-    align-items: center;
-    grid-template-columns: repeat(var(--colums), minmax(0, 1fr));
     margin: 0;
-    padding: 0.75rem 0.5rem;
-    font-size: .875rem;
-    opacity: 0.7;
+    padding: 0.25rem 0;
+    font-size: var(--text-sm);
   }
 
   .k-timeline-item {
-    display: contents;
-  }
-
-  .k-timeline-item > :not(:last-child) {
-    padding: 0.6rem 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--color-border);
   }
 
   .k-timeline-item:last-child {
     border-bottom: none;
   }
 
+  .k-timeline-item-dimmed {
+    color: var(--color-text-dimmed);
+  }
+
+  .k-timeline-item-faint {
+    color: var(--color-text-dimmed);
+    opacity: 0.7;
+  }
+
   .k-timeline-item-version {
-    font-size: 0.8rem;
-    grid-column: span 1;
+    flex: 0 0 2.5rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-text-dimmed);
   }
 
   .k-timeline-item-language {
-    font-size: 0.8rem;
-    grid-column: span 1;
+    flex: 0 0 auto;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    line-height: 1.1rem;
+    padding-inline: 0.3rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--rounded-sm);
+    color: var(--color-text-dimmed);
+    text-transform: uppercase;
   }
 
-  .k-timeline-item-time {
-    font-size: 0.8rem;
-    grid-column: span 4;
+  /* compact (B) */
+  .k-timeline-item-text {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .k-timeline-item-time-rel {
-    font-size: 0.7rem;
-    grid-column: span 4;
+  .k-timeline-item-text strong {
+    font-weight: var(--font-semi);
   }
 
-  .k-timeline-item-editor-label {
-    font-size: 0.7rem;
-    text-align: right;
-    grid-column: span 3;
+  /* default (C) */
+  .k-timeline-list-default .k-timeline-item {
+    padding-block: 0.65rem;
   }
 
-  .k-timeline-item-editor {
-    text-align: right;
-    grid-column: span 5;
+  .k-timeline-item-badge {
+    flex: 0 0 3rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    text-align: center;
+    padding-block: 0.25rem;
+    border-radius: var(--rounded);
+    background: color-mix(in srgb, currentColor 10%, transparent);
+    color: var(--color-text);
+  }
+
+  .k-timeline-item-current .k-timeline-item-badge {
+    background: color-mix(in srgb, var(--color-positive) 25%, transparent);
+    color: var(--color-positive-light);
+    font-weight: var(--font-semi);
+  }
+
+  .k-timeline-item-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .k-timeline-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: var(--text-xs);
+    color: var(--color-text-dimmed);
   }
 
   .k-timeline-item-actions {
-    text-align: right;
+    flex: 0 0 auto;
     display: inline-flex;
     justify-content: end;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-    grid-column: span 2;
-  }
-
-  .k-timeline-item-line {
-    grid-column: span var(--colums);
-    border-bottom: 1px solid var(--color-border);
+    gap: 0.25rem;
+    margin-left: auto;
   }
 
   .k-restore-button {
@@ -1436,7 +1509,7 @@ export default {
   .k-timeline-footer {
     padding: 0.5rem 1rem 0;
     font-size: 0.75rem;
-    color: var(--color-gray-800);
+    color: var(--color-text-dimmed);
     text-align: right;
   }
 
@@ -1665,37 +1738,13 @@ export default {
       flex-shrink: 0;
     }
 
-    /* Timeline: version, language, time and actions in one row, editor below */
-    .k-timeline-list {
-      grid-template-columns: auto auto 1fr auto;
-      /* actions come after the editor in the DOM, pull them up into the first row */
-      grid-auto-flow: row dense;
-      padding-inline: 0;
+    /* Timeline: let the compact line wrap instead of cutting names */
+    .k-timeline-item-text {
+      white-space: normal;
     }
 
-    .k-timeline-item > :not(:last-child) {
-      padding: 0.4rem 0.35rem;
-    }
-
-    .k-timeline-item-version { grid-column: 1; }
-    .k-timeline-item-language { grid-column: 2; }
-    .k-timeline-item-time { grid-column: 3; }
-    .k-timeline-item-actions { grid-column: 4; }
-
-    .k-timeline-item-time-rel,
-    .k-timeline-item-editor-label {
+    .k-timeline-item-text .k-timeline-item-faint {
       display: none;
-    }
-
-    .k-timeline-item-editor {
-      grid-column: 1 / -1;
-      grid-row-start: auto;
-      text-align: left;
-      padding-top: 0 !important;
-    }
-
-    .k-timeline-item-line {
-      grid-column: 1 / -1;
     }
   }
 
