@@ -164,6 +164,8 @@ When restore functionality is disabled:
 
 Show the recent changes of a page, the site or a file right where editors work by adding the `contentwatch` section to its blueprint:
 
+<img src="screenshot-section.jpg" alt="History section in a page sidebar" width="468">
+
 ```yaml
 sections:
   history:
