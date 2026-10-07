@@ -203,52 +203,24 @@
           </div>
 
           <div v-if="expandedFiles.includes(file.id)" class="k-content-watch-file-timeline">
-            <div
-              v-if="file.history && file.history.length > 0"
-              class="k-timeline-list"
-              :class="'k-timeline-list-' + layoutStyle"
-            >
+            <div v-if="file.history && file.history.length > 0" class="k-timeline-list">
               <div
                 v-for="(entry, entryIndex) in file.history"
                 :key="entry.entry_id || entryIndex"
                 class="k-timeline-item"
                 :class="{'k-timeline-item-current': entryIndex === 0}"
               >
-                <!-- compact: one row with action tag, editor and time column -->
-                <template v-if="layoutStyle === 'compact'">
-                  <span class="k-timeline-item-version">v{{ entry.version }}</span>
-                  <span v-if="entry.language" class="k-timeline-item-language">{{ entry.language }}</span>
-                  <span
-                    class="k-timeline-item-tag"
-                    :class="'k-timeline-item-tag-' + entryAction(entry)"
-                  >{{ entryAction(entry) }}</span>
-                  <span class="k-timeline-item-editor">{{ entryEditor(entry) }}</span>
-                  <span class="k-timeline-item-when">
-                    {{ formatRelative(entry.time) }}
-                    <span class="k-timeline-item-when-absolute">{{ formatAbsolute(entry.time) }}</span>
-                  </span>
-                </template>
-
-                <!-- default: version badge, who/what above, when/language below -->
-                <template v-else>
-                  <span class="k-timeline-item-badge">v{{ entry.version }}</span>
-                  <span class="k-timeline-item-main">
-                    <span class="k-timeline-item-headline">
-                      <span class="k-timeline-item-dimmed">{{ getEntryLabel(entry, true) }}</span>
-                      {{ entryEditor(entry) }}
-                    </span>
-                    <span class="k-timeline-item-meta">
-                      {{ formatRelative(entry.time) }}
-                      <span class="k-timeline-item-faint">·</span>
-                      {{ formatAbsolute(entry.time) }}
-                      <template v-if="entry.language">
-                        <span class="k-timeline-item-faint">·</span>
-                        <span class="k-timeline-item-language">{{ entry.language }}</span>
-                      </template>
-                    </span>
-                  </span>
-                </template>
-
+                <span class="k-timeline-item-version">v{{ entry.version }}</span>
+                <span v-if="entry.language" class="k-timeline-item-language">{{ entry.language }}</span>
+                <span
+                  class="k-timeline-item-tag"
+                  :class="'k-timeline-item-tag-' + entryAction(entry)"
+                >{{ entryAction(entry) }}</span>
+                <span class="k-timeline-item-editor">{{ entryEditor(entry) }}</span>
+                <span class="k-timeline-item-when">
+                  {{ formatRelative(entry.time) }}
+                  <span class="k-timeline-item-when-absolute">{{ formatAbsolute(entry.time) }}</span>
+                </span>
                 <div class="k-timeline-item-actions">
                   <k-button
                     v-if="enableDiff && entry.has_snapshot && entryIndex < file.history.length - 1"
@@ -1029,12 +1001,6 @@ export default {
       return 'edited';
     },
 
-    getEntryLabel(entry, capitalize = false) {
-      const label = this.entryAction(entry) + ' by';
-
-      return capitalize ? label.charAt(0).toUpperCase() + label.slice(1) : label;
-    },
-
     entryEditor(entry) {
       return entry?.editor?.name || entry?.editor?.email || 'Unknown';
     },
@@ -1400,8 +1366,8 @@ export default {
   .k-timeline-item {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 0;
+    gap: 0.875rem;
+    padding: 0.6rem 0;
     border-bottom: 1px solid var(--color-border);
   }
 
@@ -1409,20 +1375,15 @@ export default {
     border-bottom: none;
   }
 
-  .k-timeline-item-dimmed {
-    color: var(--color-text-dimmed);
-  }
-
-  .k-timeline-item-faint {
-    color: var(--color-text-dimmed);
-    opacity: 0.7;
-  }
-
   .k-timeline-item-version {
     flex: 0 0 2.5rem;
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     color: var(--color-text-dimmed);
+  }
+
+  .k-timeline-item-current .k-timeline-item-version {
+    color: var(--color-positive);
   }
 
   .k-timeline-item-language {
@@ -1435,12 +1396,6 @@ export default {
     border-radius: var(--rounded-sm);
     color: var(--color-text-dimmed);
     text-transform: uppercase;
-  }
-
-  /* compact (B2) */
-  .k-timeline-list-compact .k-timeline-item {
-    gap: 0.875rem;
-    padding-block: 0.6rem;
   }
 
   .k-timeline-item-tag {
@@ -1479,45 +1434,6 @@ export default {
   .k-timeline-item-when-absolute {
     display: block;
     opacity: 0.7;
-  }
-
-  /* default (C) */
-  .k-timeline-list-default .k-timeline-item {
-    padding-block: 0.65rem;
-  }
-
-  .k-timeline-item-badge {
-    flex: 0 0 3rem;
-    font-family: var(--font-mono);
-    font-size: var(--text-xs);
-    text-align: center;
-    padding-block: 0.25rem;
-    border-radius: var(--rounded);
-    background: color-mix(in srgb, currentColor 10%, transparent);
-    color: var(--color-text);
-  }
-
-  .k-timeline-item-current .k-timeline-item-badge {
-    background: color-mix(in srgb, var(--color-positive) 25%, transparent);
-    color: var(--color-positive-light);
-    font-weight: var(--font-semi);
-  }
-
-  .k-timeline-item-main {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-  }
-
-  .k-timeline-item-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: var(--text-xs);
-    color: var(--color-text-dimmed);
   }
 
   /* Fixed width keeps the time column aligned when the diff button is missing */
@@ -1773,45 +1689,45 @@ export default {
       flex-shrink: 0;
     }
 
-    /* Timeline: compact moves the time below the editor */
-    .k-timeline-list-compact .k-timeline-item {
+    /* Timeline: time moves below the editor */
+    .k-timeline-list .k-timeline-item {
       flex-wrap: wrap;
       row-gap: 0.25rem;
       column-gap: 0.5rem;
     }
 
-    .k-timeline-list-compact .k-timeline-item-tag {
+    .k-timeline-list .k-timeline-item-tag {
       flex-basis: 4.75rem;
     }
 
     /* first row: version, language, tag, actions – second row: editor · time */
-    .k-timeline-list-compact .k-timeline-item-actions {
+    .k-timeline-list .k-timeline-item-actions {
       order: 4;
     }
 
-    .k-timeline-list-compact .k-timeline-item::after {
+    .k-timeline-list .k-timeline-item::after {
       content: "";
       order: 5;
       flex-basis: 100%;
     }
 
-    .k-timeline-list-compact .k-timeline-item-editor {
+    .k-timeline-list .k-timeline-item-editor {
       order: 6;
       flex: 0 1 auto;
       padding-left: 3rem;
     }
 
-    .k-timeline-list-compact .k-timeline-item-when {
+    .k-timeline-list .k-timeline-item-when {
       order: 7;
       text-align: left;
       font-size: var(--text-sm);
     }
 
-    .k-timeline-list-compact .k-timeline-item-when::before {
+    .k-timeline-list .k-timeline-item-when::before {
       content: "· ";
     }
 
-    .k-timeline-list-compact .k-timeline-item-when-absolute {
+    .k-timeline-list .k-timeline-item-when-absolute {
       display: none;
     }
   }
