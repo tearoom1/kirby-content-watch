@@ -73,7 +73,8 @@ class ContentRestore
 
             // Enforce per-model write permissions so a user allowed to access the
             // plugin can still only restore content for models they can update.
-            if ($page !== null && !$page->permissions()->can('update')) {
+            // Directories without a resolvable model are rejected.
+            if ($page === null || !$page->permissions()->can('update')) {
                 return false;
             }
 

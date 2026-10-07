@@ -116,6 +116,27 @@ class ContentRestoreTest extends TestCase
     // Successful restore
     // -------------------------------------------------------------------------
 
+    public function testReturnsFalseForDirectoryWithoutContentModel(): void
+    {
+        $this->seedHistory();
+        // _drafts itself is a container, not a page
+        $orphanDir = $this->contentDir . '/_drafts';
+        $this->writeContent($orphanDir . '/test-draft/article.txt', "Title: Draft\n");
+        $this->writeHistory($orphanDir, [
+            'article' => [[
+                'uuid'    => 'orphan-entry',
+                'time'    => 1000000,
+                'version' => 1,
+                'content' => "Title: Injected\n",
+            ]],
+        ]);
+
+        $result = (new ContentRestore())->restoreContent($orphanDir, 'article', 'orphan-entry');
+
+        $this->assertFalse($result);
+        $this->assertFileDoesNotExist($orphanDir . '/article.txt');
+    }
+
     public function testSuccessfulRestoreWritesOldContentToFile(): void
     {
         $this->seedHistory();
