@@ -17,6 +17,7 @@ Additionally it provides a view to see which pages are currently locked and by w
 - **History Timeline**: Lists all content files across your Kirby site, sorted by modification date
 - **Locked Pages View**: Shows which pages are currently being edited and by whom
 - **Search & Filters**: Find content by title or path and filter by author, status, template, period and language
+- **CSV Export**: Export the currently filtered change history as a CSV file for audits
 - **Direct Panel Links**: One-click access to edit content in the Panel
 - **Customizable Retention**: Configure how long history is kept
 - **Version Restore**: Restore previous versions of content with a single click (optional)

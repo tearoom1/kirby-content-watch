@@ -79,6 +79,12 @@
             <k-button :class="{'k-button-active': showFilters || hasActiveFilters}" @click="toggleFilters" icon="filter">
               Filters
             </k-button>
+            <k-button
+              icon="download"
+              title="Export filtered changes as CSV"
+              :disabled="!filteredFiles.length"
+              @click="exportCsv"
+            />
             <k-button icon="refresh" @click="refresh"/>
           </k-button-group>
         </k-column>
@@ -861,6 +867,57 @@ export default {
     changeTemplateFilter(value) {
       this.selectedTemplate = this.normalizeFilterValue(value);
       this.filterFiles();
+    },
+
+    exportCsv() {
+      const header = ['Title', 'Path', 'Version', 'Language', 'Action', 'Editor', 'Email', 'Time'];
+      const rows = [];
+
+      this.filteredFiles.forEach(file => {
+        const entries = file.history && file.history.length ? file.history : [{
+          editor: file.editor,
+          time: file.modified,
+          time_formatted: file.modified_formatted
+        }];
+
+        entries.forEach(entry => {
+          rows.push([
+            file.title,
+            file.path_short,
+            entry.version ? 'v' + entry.version : '',
+            entry.language || '',
+            entry.version ? this.getEntryLabel(entry).replace(/ by$/, '') : '',
+            entry.editor?.name || '',
+            entry.editor?.email || '',
+            entry.time_formatted || ''
+          ]);
+        });
+      });
+
+      const csv = [header, ...rows]
+        .map(row => row.map(value => this.csvValue(value)).join(','))
+        .join('\r\n');
+
+      const blob = new Blob(['\ufeff' + csv], {type: 'text/csv;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'content-watch-' + new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    },
+
+    csvValue(value) {
+      let text = String(value ?? '');
+
+      // Prevent spreadsheet formula injection
+      if (/^[=+\-@\t\r]/.test(text)) {
+        text = "'" + text;
+      }
+
+      return '"' + text.replace(/"/g, '""') + '"';
     },
 
     changePeriodFilter(value) {
