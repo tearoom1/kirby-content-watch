@@ -214,15 +214,18 @@
                 class="k-timeline-item"
                 :class="{'k-timeline-item-current': entryIndex === 0}"
               >
-                <!-- compact: one line, reads like a log -->
+                <!-- compact: one row with action tag, editor and time column -->
                 <template v-if="layoutStyle === 'compact'">
                   <span class="k-timeline-item-version">v{{ entry.version }}</span>
                   <span v-if="entry.language" class="k-timeline-item-language">{{ entry.language }}</span>
-                  <span class="k-timeline-item-text">
-                    <strong>{{ entryEditor(entry) }}</strong>
-                    {{ entryAction(entry) }}
-                    <span class="k-timeline-item-dimmed">{{ formatRelative(entry.time) }}</span>
-                    <span class="k-timeline-item-faint">&nbsp;· {{ formatAbsolute(entry.time) }}</span>
+                  <span
+                    class="k-timeline-item-tag"
+                    :class="'k-timeline-item-tag-' + entryAction(entry)"
+                  >{{ entryAction(entry) }}</span>
+                  <span class="k-timeline-item-editor">{{ entryEditor(entry) }}</span>
+                  <span class="k-timeline-item-when">
+                    {{ formatRelative(entry.time) }}
+                    <span class="k-timeline-item-when-absolute">{{ formatAbsolute(entry.time) }}</span>
                   </span>
                 </template>
 
@@ -1434,17 +1437,48 @@ export default {
     text-transform: uppercase;
   }
 
-  /* compact (B) */
-  .k-timeline-item-text {
+  /* compact (B2) */
+  .k-timeline-list-compact .k-timeline-item {
+    gap: 0.875rem;
+    padding-block: 0.6rem;
+  }
+
+  .k-timeline-item-tag {
+    --tag-color: var(--color-text-dimmed);
+    flex: 0 0 5.5rem;
+    font-size: var(--text-xs);
+    font-weight: var(--font-semi);
+    line-height: 1.25rem;
+    text-align: center;
+    border-radius: 999px;
+    color: var(--tag-color);
+    background: color-mix(in srgb, var(--tag-color) 14%, transparent);
+  }
+
+  .k-timeline-item-tag-restored { --tag-color: var(--color-orange-500); }
+  .k-timeline-item-tag-moved { --tag-color: var(--color-blue-500); }
+  .k-timeline-item-tag-duplicated { --tag-color: var(--color-purple-500); }
+
+  .k-timeline-item-editor {
     flex: 1;
     min-width: 0;
+    font-weight: var(--font-semi);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .k-timeline-item-text strong {
-    font-weight: var(--font-semi);
+  .k-timeline-item-when {
+    flex: 0 0 auto;
+    text-align: right;
+    font-size: var(--text-xs);
+    line-height: 1.3;
+    color: var(--color-text-dimmed);
+  }
+
+  .k-timeline-item-when-absolute {
+    display: block;
+    opacity: 0.7;
   }
 
   /* default (C) */
@@ -1486,10 +1520,11 @@ export default {
     color: var(--color-text-dimmed);
   }
 
+  /* Fixed width keeps the time column aligned when the diff button is missing */
   .k-timeline-item-actions {
-    flex: 0 0 auto;
+    flex: 0 0 4.5rem;
     display: inline-flex;
-    justify-content: end;
+    justify-content: flex-end;
     gap: 0.25rem;
     margin-left: auto;
   }
@@ -1738,12 +1773,45 @@ export default {
       flex-shrink: 0;
     }
 
-    /* Timeline: let the compact line wrap instead of cutting names */
-    .k-timeline-item-text {
-      white-space: normal;
+    /* Timeline: compact moves the time below the editor */
+    .k-timeline-list-compact .k-timeline-item {
+      flex-wrap: wrap;
+      row-gap: 0.25rem;
+      column-gap: 0.5rem;
     }
 
-    .k-timeline-item-text .k-timeline-item-faint {
+    .k-timeline-list-compact .k-timeline-item-tag {
+      flex-basis: 4.75rem;
+    }
+
+    /* first row: version, language, tag, actions – second row: editor · time */
+    .k-timeline-list-compact .k-timeline-item-actions {
+      order: 4;
+    }
+
+    .k-timeline-list-compact .k-timeline-item::after {
+      content: "";
+      order: 5;
+      flex-basis: 100%;
+    }
+
+    .k-timeline-list-compact .k-timeline-item-editor {
+      order: 6;
+      flex: 0 1 auto;
+      padding-left: 3rem;
+    }
+
+    .k-timeline-list-compact .k-timeline-item-when {
+      order: 7;
+      text-align: left;
+      font-size: var(--text-sm);
+    }
+
+    .k-timeline-list-compact .k-timeline-item-when::before {
+      content: "· ";
+    }
+
+    .k-timeline-list-compact .k-timeline-item-when-absolute {
       display: none;
     }
   }
