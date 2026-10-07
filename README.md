@@ -32,6 +32,8 @@ This may be a problem for sites with a large number of files.
 The restore feature also has some limitations
 - binary files are not supported
 - when restoring a page, its files are not restored
+- the snapshot is written directly to the content file, bypassing Kirby's update hooks, blueprint validation and caches
+- only pages and the site can be restored; directories without a Kirby model (e.g. `_drafts`) are rejected
 
 > Beware the restore feature is BETA and may have bugs. Use at your own risk!
 
