@@ -247,7 +247,7 @@
                 <div class="k-timeline-item-line"></div>
               </div>
             </div>
-            <k-empty v-else icon="history" text="No history entries found"/>
+            <k-empty v-else icon="clock" text="No history entries found"/>
             <div class="k-timeline-footer">
               <span>Showing changes for the last {{ retentionDays }} days (max {{ retentionCount }})</span>
             </div>

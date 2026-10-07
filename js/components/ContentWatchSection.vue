@@ -10,7 +10,7 @@
       :items="items"
       layout="list"
     />
-    <k-empty v-else icon="history" text="No changes recorded yet"/>
+    <k-empty v-else icon="clock" text="No changes recorded yet"/>
   </k-section>
 </template>
 
@@ -30,9 +30,9 @@ export default {
   computed: {
     buttons() {
       return [{
-        icon: 'history',
+        icon: 'clock',
         text: 'All changes',
-        link: this.areaUrl
+        click: this.openArea
       }];
     },
 
@@ -51,10 +51,9 @@ export default {
           info: info.join(' · '),
           image: {
             icon: this.actionIcon(entry),
-            back: 'var(--color-gray-200)',
-            color: 'var(--color-gray-700)'
-          },
-          link: this.areaUrl
+            back: 'transparent',
+            color: 'var(--color-text-dimmed)'
+          }
         };
       });
     }
@@ -69,6 +68,11 @@ export default {
   },
 
   methods: {
+    openArea() {
+      // Navigate inside the panel instead of a full page reload
+      this.$go(this.areaUrl);
+    },
+
     actionLabel(entry) {
       if (entry.restored_from || entry.restored_from_id) {
         return 'restored by';

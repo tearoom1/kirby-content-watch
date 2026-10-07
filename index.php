@@ -129,7 +129,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                         default                => $model->title()->value(),
                     };
 
-                    return kirby()->url('panel') . '/content-watch?' . http_build_query([
+                    return 'content-watch?' . http_build_query([
                         'search' => $search,
                         'all'    => $model instanceof File ? 1 : null,
                     ]);
