@@ -886,12 +886,20 @@ export default {
       const header = ['Title', 'Path', 'Version', 'Language', 'Action', 'Editor', 'Email', 'Time'];
       const rows = [];
 
+      const since = this.selectedPeriod ? this.periodStart(this.selectedPeriod) : 0;
+
       this.filteredFiles.forEach(file => {
-        const entries = file.history && file.history.length ? file.history : [{
+        let entries = file.history && file.history.length ? file.history : [{
           editor: file.editor,
           time: file.modified,
           time_formatted: file.modified_formatted
         }];
+
+        // Apply period and language filters to the single entries, not only to the files
+        entries = entries.filter(entry =>
+          entry.time >= since &&
+          (!this.selectedLanguage || entry.language === this.selectedLanguage)
+        );
 
         entries.forEach(entry => {
           rows.push([
