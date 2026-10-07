@@ -4,6 +4,9 @@ namespace TearoomOne\ContentWatch;
 
 use Kirby\Cms\File;
 use Kirby\Cms\ModelWithContent;
+use Kirby\Cms\Site;
+use Kirby\Cms\User;
+use Kirby\Http\Remote;
 use Kirby\Data\Data;
 use Kirby\Filesystem\F;
 use Kirby\Cms\Page;
@@ -112,7 +115,9 @@ class ChangeTracker
         $cutoffTime     = time() - ($retentionDays * 86400);
         $requestKey     = $this->requestTrackedKey($editorFile, $fileKey, $record, $meta);
 
-        if ($this->shouldCoalesceWithinRequest($requestKey, $history[$fileKey], $record, $meta)) {
+        $coalesced      = $this->shouldCoalesceWithinRequest($requestKey, $history[$fileKey], $record, $meta);
+
+        if ($coalesced) {
             $record['uuid'] = $history[$fileKey][0]['uuid'] ?? $record['uuid'];
             $record['version'] = $history[$fileKey][0]['version'] ?? $record['version'];
             $history[$fileKey][0] = $record;
@@ -134,6 +139,55 @@ class ChangeTracker
         }
 
         $this->saveTheUpdatedHistory($editorFile, $history);
+
+        // Notify once per change, not again for coalesced follow-ups in the same request
+        if (!$coalesced) {
+            $this->notify($content, $record, $user);
+        }
+    }
+
+    /**
+     * Send a change notification to the configured `notify` target:
+     * a URL (JSON POST webhook) or a callable receiving the payload.
+     */
+    protected function notify(ModelWithContent $content, array $record, User $user): void
+    {
+        $target = option('tearoom1.kirby-content-watch.notify');
+        if (empty($target)) {
+            return;
+        }
+
+        $payload = [
+            'event'     => 'content-watch.change',
+            'type'      => $record['type'] ?? null,
+            'action'    => $record['action'] ?? 'edited',
+            'id'        => $content instanceof Site ? 'site' : $content->id(),
+            'title'     => $content instanceof File ? $content->filename() : $content->title()->value(),
+            'version'   => $record['version'],
+            'language'  => $record['language'] ?? null,
+            'time'      => $record['time'],
+            'editor'    => [
+                'id'    => $user->id(),
+                'name'  => $user->name()->value(),
+                'email' => $user->email(),
+            ],
+            'panel_url' => $content->panel()->url(),
+        ];
+
+        try {
+            if ($target instanceof \Closure) {
+                $target($payload);
+            } elseif (is_string($target)) {
+                Remote::request($target, [
+                    'method'  => 'POST',
+                    'headers' => ['Content-Type' => 'application/json'],
+                    'data'    => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'timeout' => 3,
+                ]);
+            }
+        } catch (\Throwable) {
+            // A failing notification must never break saving content
+        }
     }
 
     /**

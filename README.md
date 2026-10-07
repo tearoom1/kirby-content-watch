@@ -17,6 +17,7 @@ Additionally it provides a view to see which pages are currently locked and by w
 - **History Timeline**: Lists all content files across your Kirby site, sorted by modification date
 - **Locked Pages View**: Shows which pages are currently being edited and by whom
 - **Search & Filters**: Find content by title or path and filter by author, status, template, period and language
+- **Notifications**: Call a webhook or closure on every change, e.g. for Slack or mail
 - **CSV Export**: Export the currently filtered change history as a CSV file for audits
 - **Direct Panel Links**: One-click access to edit content in the Panel
 - **Customizable Retention**: Configure how long history is kept
@@ -75,6 +76,7 @@ return [
         'enableLockedPages' => true,
         'enableRestore'    => false,
         'enableDiff'       => true,
+        'notify'           => null,
         'disable'          => false,
     ]
 ];
@@ -90,7 +92,31 @@ return [
 | `enableLockedPages` | `bool` | `true` | Whether to show the locked pages view in the panel |
 | `enableRestore` | `bool` | `false` | Enable content restore functionality. When enabled, full content snapshots are saved — increases disk usage |
 | `enableDiff` | `bool` | `true` | Enable content diff view. Requires `enableRestore` to be `true` |
+| `notify` | `string\|Closure\|null` | `null` | Webhook URL (JSON `POST`) or closure called after every tracked change. See Notifications |
 | `disable` | `bool` | `false` | Completely disable the plugin without uninstalling it |
+
+### Notifications
+
+Get notified whenever content changes, e.g. in Slack, Matrix or by mail. Set `notify` to a webhook URL to receive a JSON `POST`, or to a closure to handle the payload yourself:
+
+```php
+'tearoom1.kirby-content-watch' => [
+    // Webhook
+    'notify' => 'https://hooks.example.com/content-watch',
+
+    // or a closure, e.g. to send a mail
+    'notify' => function (array $change) {
+        kirby()->email([
+            'from'    => 'cms@example.com',
+            'to'      => 'editor-in-chief@example.com',
+            'subject' => $change['title'] . ' was ' . $change['action'] . ' by ' . $change['editor']['name'],
+            'body'    => $change['panel_url'],
+        ]);
+    },
+],
+```
+
+The payload contains `event`, `type` (`page`/`file`), `action` (`edited`, `moved`, `duplicated`), `id`, `title`, `version`, `language`, `time`, `editor` (`id`, `name`, `email`) and `panel_url`. Content snapshots are never sent. Webhook requests time out after 3 seconds, and failing notifications never block saving.
 
 ### Access Control
 

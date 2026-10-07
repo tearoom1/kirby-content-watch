@@ -407,4 +407,67 @@ class ChangeTrackerTest extends TestCase
         $this->assertFileDoesNotExist($this->pageDir . '/.content-watch.json');
         $this->assertFileDoesNotExist($childDir . '/.content-watch.json');
     }
+
+    // -------------------------------------------------------------------------
+    // Notifications
+    // -------------------------------------------------------------------------
+
+    public function testNotifyCallbackReceivesChangePayload(): void
+    {
+        $payloads = [];
+        $this->kirby = $this->makeApp([
+            'options' => [
+                'tearoom1.kirby-content-watch.notify' => function (array $payload) use (&$payloads) {
+                    $payloads[] = $payload;
+                },
+            ],
+        ]);
+        $this->kirby->impersonate('kirby');
+
+        (new ChangeTracker())->trackContentChange(kirby()->page('test-page'));
+
+        $this->assertCount(1, $payloads);
+        $this->assertSame('content-watch.change', $payloads[0]['event']);
+        $this->assertSame('test-page', $payloads[0]['id']);
+        $this->assertSame('Test Page', $payloads[0]['title']);
+        $this->assertSame('edited', $payloads[0]['action']);
+        $this->assertSame(1, $payloads[0]['version']);
+        $this->assertArrayNotHasKey('content', $payloads[0]);
+    }
+
+    public function testNotifyIsSentOnceForCoalescedChanges(): void
+    {
+        $count = 0;
+        $this->kirby = $this->makeApp([
+            'options' => [
+                'tearoom1.kirby-content-watch.notify' => function () use (&$count) {
+                    $count++;
+                },
+            ],
+        ]);
+        $this->kirby->impersonate('kirby');
+
+        $tracker = new ChangeTracker();
+        $page    = kirby()->page('test-page');
+        $tracker->trackContentChange($page, ['coalesce_group' => 'page-title-slug']);
+        $tracker->trackContentChange($page, ['coalesce_group' => 'page-title-slug']);
+
+        $this->assertSame(1, $count);
+    }
+
+    public function testFailingNotifyDoesNotBreakTracking(): void
+    {
+        $this->kirby = $this->makeApp([
+            'options' => [
+                'tearoom1.kirby-content-watch.notify' => function () {
+                    throw new \RuntimeException('webhook down');
+                },
+            ],
+        ]);
+        $this->kirby->impersonate('kirby');
+
+        (new ChangeTracker())->trackContentChange(kirby()->page('test-page'));
+
+        $this->assertArrayHasKey($this->templateKey, $this->readHistory($this->pageDir));
+    }
 }

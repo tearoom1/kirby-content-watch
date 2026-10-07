@@ -127,6 +127,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         'enableDiff'         => true,
         'defaultPageSize'    => 20,
         'layoutStyle'        => 'compact',
+        'notify'             => null, // Webhook URL (JSON POST) or callable receiving the change payload
     ],
     'api' => [
         'routes' => [
