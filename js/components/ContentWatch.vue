@@ -1604,57 +1604,12 @@ export default {
     }
   }
 
-  .k-content-watch-diff-content {
-    padding: 1rem 1rem 0 1rem;
-  }
-
   .k-content-watch-diff-code {
     font-size: 0.875rem;
     font-family: monospace;
     white-space: pre-wrap;
   }
 
-  .k-content-watch-diff-dialog {
-    .k-button-group.k-dialog-buttons {
-      grid-template-columns: 1fr;
-    }
-
-    .k-dialog-button-cancel {
-      display: none;
-    }
-
-    .diff-delete {
-      background-color: var(--color-red-600);
-    }
-
-    .diff-add {
-      background-color: var(--color-green-600);
-    }
-
-    hr {
-      border: 1px solid var(--color-border);
-      margin: 1rem 0;
-    }
-
-    ul {
-
-      li {
-        margin-bottom: 0.5rem;
-      }
-
-      li.removed::before {
-        content: '-';
-        position: absolute;
-        transform: translateX(-15px);
-      }
-
-      li.added::before {
-        content: '+';
-        position: absolute;
-        transform: translateX(-15px);
-      }
-    }
-  }
 
   @media (max-width: 40rem) {
     .k-content-watch-buttons .k-button-group {

@@ -119,7 +119,36 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
 
                     $entries = (new ContentWatchController())->getModelHistory($this->model());
 
+                    // the diff of the last shown entry needs the one before it
+                    foreach ($entries as $index => $entry) {
+                        $previous = $entries[$index + 1] ?? null;
+
+                        $entries[$index]['previous'] = $previous ? [
+                            'entry_id'     => $previous['entry_id'],
+                            'time'         => $previous['time'],
+                            'version'      => $previous['version'],
+                            'has_snapshot' => $previous['has_snapshot'],
+                        ] : null;
+                    }
+
                     return array_slice($entries, 0, max(1, $this->limit));
+                },
+                'history'   => function () {
+                    if (!ContentWatchController::canAccess()) {
+                        return null;
+                    }
+
+                    [$dirPath, $fileKey] = (new ContentWatchController())->modelHistoryLocation($this->model());
+
+                    // same rules as in the Content Watch area: diffs are part of restoring
+                    $enableRestore = option('tearoom1.kirby-content-watch.enableRestore') === true;
+
+                    return [
+                        'dirPath'       => $dirPath,
+                        'fileKey'       => $fileKey,
+                        'enableDiff'    => $enableRestore && option('tearoom1.kirby-content-watch.enableDiff', true) === true,
+                        'enableRestore' => $enableRestore,
+                    ];
                 },
                 'areaUrl'   => function () {
                     $model  = $this->model();

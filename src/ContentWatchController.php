@@ -219,12 +219,7 @@ class ContentWatchController
      */
     public function getModelHistory(ModelWithContent $model): array
     {
-        [$dirPath, $fileKey] = match (true) {
-            $model instanceof Site => [$model->root(), 'site'],
-            $model instanceof Page => [$model->root(), $model->intendedTemplate()->name()],
-            $model instanceof File => [dirname($model->root()), $model->filename()],
-            default                => [null, null],
-        };
+        [$dirPath, $fileKey] = $this->modelHistoryLocation($model);
 
         if ($dirPath === null || !F::exists($dirPath . '/.content-watch.json')) {
             return [];
@@ -237,6 +232,22 @@ class ContentWatchController
         }
 
         return $this->buildHistoryEntries($this->applyRetention($history[$fileKey] ?? []));
+    }
+
+    /**
+     * Directory of the history file and the key of the model's entries in it,
+     * as expected by the diff and restore API.
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    public function modelHistoryLocation(ModelWithContent $model): array
+    {
+        return match (true) {
+            $model instanceof Site => [$model->root(), 'site'],
+            $model instanceof Page => [$model->root(), $model->intendedTemplate()->name()],
+            $model instanceof File => [dirname($model->root()), $model->filename()],
+            default                => [null, null],
+        };
     }
 
     /**

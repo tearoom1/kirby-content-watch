@@ -19,6 +19,22 @@
           class="k-cw-section-tag"
           :class="'k-cw-section-tag-' + entryAction(entry)"
         >{{ entryAction(entry) }}</span>
+        <span v-if="hasActions(entry, index)" class="k-cw-section-actions">
+          <k-button
+            v-if="canDiff(entry)"
+            icon="split"
+            size="xs"
+            title="View changes"
+            @click="openDiff(entry)"
+          />
+          <k-button
+            v-if="canRestore(entry, index)"
+            icon="undo"
+            size="xs"
+            title="Restore this version"
+            @click="confirmRestore(entry)"
+          />
+        </span>
         <span class="k-cw-section-meta">
           <span class="k-cw-section-editor">{{ entryEditor(entry) }}</span>
           <span class="k-cw-section-time" :title="formatAbsolute(entry.time)">
@@ -28,6 +44,57 @@
       </li>
     </ul>
     <k-empty v-else icon="clock" text="No changes recorded yet"/>
+
+    <k-dialog
+      v-if="history?.enableRestore"
+      ref="restoreDialog"
+      :button="$t('restore')"
+      theme="positive"
+      icon="refresh"
+      @submit="restore"
+    >
+      <k-text v-if="restoreTarget">
+        Restore <strong>v{{ restoreTarget.version }}</strong> from
+        {{ formatAbsolute(restoreTarget.time) }} ({{ entryEditor(restoreTarget) }})?
+        This will overwrite the current content.
+      </k-text>
+    </k-dialog>
+
+    <k-dialog
+      v-if="history?.enableDiff"
+      ref="diffDialog"
+      size="huge"
+      cancel-button=""
+      :submit-button="$t('close')"
+      class="k-content-watch-diff-dialog"
+      @submit="$refs.diffDialog.close()"
+      @close="diff = null"
+    >
+      <header v-if="diff" class="k-cw-section-diff-header">
+        <strong>v{{ diff.entry.previous.version }} → v{{ diff.entry.version }}</strong>
+        <span>{{ entryEditor(diff.entry) }} · {{ formatAbsolute(diff.entry.time) }}</span>
+        <k-button-group>
+          <k-button
+            icon="angle-left"
+            size="xs"
+            variant="filled"
+            :disabled="!diffNeighbour(1)"
+            @click="openDiff(diffNeighbour(1))"
+          >Older</k-button>
+          <k-button
+            icon="angle-right"
+            icon-after
+            size="xs"
+            variant="filled"
+            :disabled="!diffNeighbour(-1)"
+            @click="openDiff(diffNeighbour(-1))"
+          >Newer</k-button>
+        </k-button-group>
+      </header>
+      <k-loader v-if="diff?.loading"/>
+      <div v-else-if="diff?.html" class="k-content-watch-diff-content" v-html="diff.html"></div>
+      <k-empty v-else icon="document" text="No diff available"/>
+    </k-dialog>
   </k-section>
 </template>
 
@@ -40,7 +107,10 @@ export default {
       headline: null,
       canAccess: false,
       entries: [],
-      areaUrl: null
+      areaUrl: null,
+      history: null,
+      restoreTarget: null,
+      diff: null
     };
   },
 
@@ -55,14 +125,100 @@ export default {
   },
 
   async created() {
-    const response = await this.load();
-    this.headline = response.headline;
-    this.canAccess = response.canAccess;
-    this.entries = response.entries || [];
-    this.areaUrl = response.areaUrl;
+    await this.fetch();
   },
 
   methods: {
+    async fetch() {
+      const response = await this.load();
+      this.headline = response.headline;
+      this.canAccess = response.canAccess;
+      this.entries = response.entries || [];
+      this.areaUrl = response.areaUrl;
+      this.history = response.history;
+    },
+
+    canDiff(entry) {
+      return this.history?.enableDiff && entry.has_snapshot && entry.previous?.has_snapshot;
+    },
+
+    canRestore(entry, index) {
+      return this.history?.enableRestore && entry.has_snapshot && index > 0;
+    },
+
+    hasActions(entry, index) {
+      return this.canDiff(entry) || this.canRestore(entry, index);
+    },
+
+    confirmRestore(entry) {
+      this.restoreTarget = entry;
+      this.$refs.restoreDialog.open();
+    },
+
+    async restore() {
+      const entry = this.restoreTarget;
+
+      try {
+        const response = await this.$api.post('/content-watch/restore', {
+          dirPath: this.history.dirPath,
+          fileKey: this.history.fileKey,
+          entryId: entry.entry_id ?? null,
+          timestamp: entry.time
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
+        this.$refs.restoreDialog.close();
+        window.panel.notification.success('Version ' + entry.version + ' restored');
+
+        // reload the form with the restored content and the new history entry
+        await window.panel.view.reload();
+        await this.fetch();
+      } catch (error) {
+        window.panel.notification.error('Error restoring content: ' + (error.message || 'Unknown error'));
+      } finally {
+        this.restoreTarget = null;
+      }
+    },
+
+    async openDiff(entry) {
+      const isOpen = this.diff !== null;
+      this.diff = {entry, html: null, loading: true};
+
+      if (!isOpen) {
+        this.$refs.diffDialog.open();
+      }
+
+      try {
+        const response = await this.$api.post('/content-watch/diff', {
+          dirPath: this.history.dirPath,
+          fileKey: this.history.fileKey,
+          fromEntryId: entry.previous.entry_id ?? null,
+          toEntryId: entry.entry_id ?? null,
+          fromTimestamp: entry.previous.time,
+          toTimestamp: entry.time
+        });
+
+        // ignore late answers when the user moved on to another version
+        if (this.diff?.entry === entry) {
+          this.diff = {entry, html: response.diff, loading: false};
+        }
+      } catch (error) {
+        this.diff = {entry, html: null, loading: false};
+        window.panel.notification.error('Error loading diff: ' + (error.message || 'Unknown error'));
+      }
+    },
+
+    // direction 1 = older, -1 = newer
+    diffNeighbour(direction) {
+      const index = this.entries.indexOf(this.diff?.entry) + direction;
+      const entry = this.entries[index];
+
+      return entry && this.canDiff(entry) ? entry : null;
+    },
+
     openArea() {
       // Navigate inside the panel instead of a full page reload
       this.$go(this.areaUrl);
@@ -164,6 +320,38 @@ export default {
 .k-cw-section-tag-restored { --tag-color: var(--color-orange-500); }
 .k-cw-section-tag-moved { --tag-color: var(--color-blue-500); }
 .k-cw-section-tag-duplicated { --tag-color: var(--color-purple-500); }
+
+.k-cw-section-actions {
+  display: flex;
+  margin-inline-start: auto;
+  margin-block: -0.25rem;
+}
+
+.k-cw-section-actions .k-button {
+  --button-color-text: var(--color-text-dimmed);
+}
+
+.k-cw-section-actions .k-button:hover {
+  --button-color-text: var(--color-text);
+}
+
+.k-cw-section-diff-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.k-cw-section-diff-header > span {
+  color: var(--color-text-dimmed);
+  font-size: var(--text-sm);
+}
+
+.k-cw-section-diff-header .k-button-group {
+  margin-inline-start: auto;
+}
 
 .k-cw-section-meta {
   flex-basis: 100%;

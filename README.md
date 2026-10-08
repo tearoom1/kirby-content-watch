@@ -23,7 +23,7 @@ Additionally it provides a view to see which pages are currently locked and by w
 - **Customizable Retention**: Configure how long history is kept
 - **Version Restore**: Restore previous versions of content with a single click (optional)
 - **Dark Mode and Compact Layout**: Supports Kirby 5 dark mode and a compact layout option
-- **History Section**: Show recent changes of a page, the site or a file directly in its blueprint
+- **History Section**: Show recent changes of a page, the site or a file directly in its blueprint, with diff and restore
 - **Page Method**: Access change history programmatically via `$page->contentHistory()`
 
 ## Known Limitations
@@ -174,7 +174,7 @@ sections:
     limit: 5                 # optional, number of entries
 ```
 
-The section lists version, editor, time and language of each change and links to the full history in the Content Watch area. It is only visible to users who may access the plugin (see Access Control).
+The section lists version, editor, time and language of each change and links to the full history in the Content Watch area. With `enableRestore` (and `enableDiff`) turned on, each change can be compared with the version before it and older versions can be restored right from the section. It is only visible to users who may access the plugin (see Access Control).
 
 ### Page Method
 
