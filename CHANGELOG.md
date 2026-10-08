@@ -1,3 +1,15 @@
+## [3.6.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.5.0...v3.6.0) (2026-10-08)
+
+
+### Features
+
+* compare and restore versions from the history section ([e7d61cf](https://github.com/tearoom1/kirby-content-watch/commit/e7d61cfa75971fa290f7512331190c61721d18ba))
+
+
+### Bug Fixes
+
+* refresh the history section after saving ([d215bb3](https://github.com/tearoom1/kirby-content-watch/commit/d215bb3379113830e475f0ddfd79ba925f61f97d))
+
 ## [3.5.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.4.0...v3.5.0) (2026-10-07)
 
 
@@ -55,12 +67,4 @@
 ### Bug Fixes
 
 * harden content watch API access ([1c78295](https://github.com/tearoom1/kirby-content-watch/commit/1c78295f2f4bd59abf296f7908a546af2c7c4413))
-
-## [3.3.4](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.3...v3.3.4) (2026-06-10)
-
-
-### Bug Fixes
-
-* added sponsor heart and css updates ([b578510](https://github.com/tearoom1/kirby-content-watch/commit/b57851025862cc256422f17f7eccbca652e4031a))
-* gate restore, diff, and area with role-based access control ([2281020](https://github.com/tearoom1/kirby-content-watch/commit/2281020dcb5482677fdabec4f36f541a58154c45))
 
