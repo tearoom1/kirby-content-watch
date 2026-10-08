@@ -126,6 +126,12 @@ export default {
 
   async created() {
     await this.fetch();
+    // saving the page adds a new entry
+    this.$events.on('model.update', this.fetch);
+  },
+
+  destroyed() {
+    this.$events.off('model.update', this.fetch);
   },
 
   methods: {
