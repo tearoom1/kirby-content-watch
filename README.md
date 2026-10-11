@@ -259,3 +259,12 @@ This plugin is licensed under the [MIT License](LICENSE)
 - Assisted by Claude (Anthropic)
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://coff.ee/tearoom1)
+
+## Screenshots
+
+Screenshots use fictional Cedar & Leaf sample content at 1600 × 902 pixels. The main image uses the light theme.
+
+| View | Light | Dark |
+| --- | --- | --- |
+| Overview | [Light](screenshot.jpg) | [Dark](screenshot-dark.jpg) |
+| Page history section | [Light](screenshot-section.jpg) | [Dark](screenshot-section-dark.jpg) |
