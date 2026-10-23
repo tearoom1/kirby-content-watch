@@ -81,7 +81,6 @@
           :value="showOnlyPages ? 'pages' : 'all'"
           :options="showFilterOptions"
           :empty="false"
-          :required="true"
           @input="changeShowFilter"
         />
         <k-select-field
@@ -1739,9 +1738,9 @@ export default {
   /* fixed columns: time | title and path | language | action | author | actions */
   .k-content-watch-timeline-row {
     display: grid;
-    grid-template-columns: 4.75rem minmax(0, 1fr) 2.25rem 5.5rem 9rem 4.5rem;
+    grid-template-columns: 4.5rem minmax(0, 1fr) 2rem 5.25rem 7.5rem 4.25rem;
     align-items: center;
-    column-gap: 0.875rem;
+    column-gap: 0.5rem;
     font-size: var(--text-sm);
     cursor: default;
   }
@@ -1781,7 +1780,7 @@ export default {
   /* the path gives way first, then the title */
   .k-content-watch-timeline-title {
     flex: 0 1 auto;
-    min-width: 4rem;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     font-weight: var(--font-semi);
@@ -1792,8 +1791,9 @@ export default {
     text-decoration: underline;
   }
 
+  /* the path only gets the space the title leaves */
   .k-content-watch-timeline-path {
-    flex: 0 1000 auto;
+    flex: 1 1 0;
     min-width: 0;
     color: var(--color-text-dimmed);
     overflow: hidden;
