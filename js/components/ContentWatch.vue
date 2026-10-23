@@ -180,21 +180,14 @@
                 </span>
                 <div class="k-timeline-item-actions">
                   <!-- fixed slots: diff, restore; empty slots keep their width -->
-<span
-                    v-if="enableDiff && isSame(entry, entryIndex)"
-                    class="k-button k-cw-equal"
-                    data-has-icon="true"
-                    data-has-text="false"
-                    :title="$t('tearoom1.content-watch.equal')"
-                    :aria-label="$t('tearoom1.content-watch.equal')"
-                    role="img"
-                  ><span class="k-button-icon"><k-icon type="check"/></span></span>
                   <k-button
-                    v-else-if="enableDiff"
+                    v-if="enableDiff"
                     v-bind="slotAttrs(canDiff(file, entry))"
                     icon="split"
                     class="k-diff-button"
-                    title="View changes"
+                    :class="{'k-cw-diff-same': isSame(entry, entryIndex)}"
+                    :title="isSame(entry, entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
+                    :aria-label="isSame(entry, entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
                     @click.stop="viewDiff(file, entry, entryIndex)"
                   />
                   <k-button
@@ -268,21 +261,14 @@
                       >{{ entryAction(row.entry) }}</span>
                       <span class="k-content-watch-timeline-editor"></span>
                       <span class="k-timeline-item-actions">
-                        <span
-                          v-if="enableDiff && isSame(row.entry, row.entryIndex)"
-                          class="k-button k-cw-equal"
-                          data-has-icon="true"
-                          data-has-text="false"
-                          :title="$t('tearoom1.content-watch.equal')"
-                          :aria-label="$t('tearoom1.content-watch.equal')"
-                          role="img"
-                        ><span class="k-button-icon"><k-icon type="check"/></span></span>
                         <k-button
-                          v-else-if="enableDiff"
+                          v-if="enableDiff"
                           v-bind="slotAttrs(canDiff(row.file, row.entry))"
                           icon="split"
                           class="k-diff-button"
-                          title="View changes"
+                          :class="{'k-cw-diff-same': isSame(row.entry, row.entryIndex)}"
+                          :title="isSame(row.entry, row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
+                          :aria-label="isSame(row.entry, row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
                           @click.stop="viewDiff(row.file, row.entry, row.entryIndex)"
                         />
                         <k-button
@@ -313,21 +299,14 @@
                   >{{ entryAction(item.row.entry) }}</span>
                   <span class="k-content-watch-timeline-editor" :title="editorHelp(item.row.editor) || editorLabel(item.row.editor)">{{ editorLabel(item.row.editor) }}</span>
                   <span class="k-timeline-item-actions">
-                    <span
-                      v-if="enableDiff && isSame(item.row.entry, item.row.entryIndex)"
-                      class="k-button k-cw-equal"
-                      data-has-icon="true"
-                      data-has-text="false"
-                      :title="$t('tearoom1.content-watch.equal')"
-                      :aria-label="$t('tearoom1.content-watch.equal')"
-                      role="img"
-                    ><span class="k-button-icon"><k-icon type="check"/></span></span>
                     <k-button
-                      v-else-if="enableDiff"
+                      v-if="enableDiff"
                       v-bind="slotAttrs(canDiff(item.row.file, item.row.entry))"
                       icon="split"
                       class="k-diff-button"
-                      title="View changes"
+                      :class="{'k-cw-diff-same': isSame(item.row.entry, item.row.entryIndex)}"
+                      :title="isSame(item.row.entry, item.row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
+                      :aria-label="isSame(item.row.entry, item.row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
                       @click.stop="viewDiff(item.row.file, item.row.entry, item.row.entryIndex)"
                     />
                     <k-button
@@ -1702,9 +1681,9 @@ export default {
     visibility: hidden;
   }
 
-  .k-cw-equal {
-    --button-color-icon: var(--color-text-dimmed);
-    cursor: default;
+  /* the version equals the current content: the diff only says "No changes" */
+  .k-diff-button.k-cw-diff-same {
+    color: var(--color-text-dimmed) !important;
   }
 
   .k-restore-button {

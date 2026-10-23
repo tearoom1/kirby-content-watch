@@ -21,22 +21,14 @@
         >{{ entryAction(entry) }}</span>
         <span v-if="history?.enableDiff || history?.enableRestore" class="k-cw-section-actions">
           <!-- fixed slots: diff, restore; empty slots keep their width -->
-          <span
-            v-if="history?.enableDiff && index > 0 && entry.same_as_current"
-            class="k-button k-cw-equal"
-            data-size="xs"
-            data-has-icon="true"
-            data-has-text="false"
-            :title="$t('tearoom1.content-watch.equal')"
-            :aria-label="$t('tearoom1.content-watch.equal')"
-            role="img"
-          ><span class="k-button-icon"><k-icon type="check"/></span></span>
           <k-button
-            v-else-if="history?.enableDiff"
+            v-if="history?.enableDiff"
             v-bind="slotAttrs(canDiff(entry))"
             icon="split"
             size="xs"
-            title="View changes"
+            :class="{'k-cw-diff-same': index > 0 && entry.same_as_current}"
+            :title="index > 0 && entry.same_as_current ? $t('tearoom1.content-watch.equal') : 'View changes'"
+            :aria-label="index > 0 && entry.same_as_current ? $t('tearoom1.content-watch.equal') : 'View changes'"
             @click="openDiff(entry)"
           />
           <k-button
@@ -373,9 +365,11 @@ export default {
   visibility: hidden;
 }
 
-.k-cw-section-actions .k-cw-equal {
+/* the version equals the current content: the diff only says "No changes" */
+.k-cw-section-actions .k-cw-diff-same {
+  --button-color-text: var(--color-text-dimmed);
   --button-color-icon: var(--color-text-dimmed);
-  cursor: default;
+  opacity: 0.6;
 }
 
 .k-cw-section-actions .k-button {
