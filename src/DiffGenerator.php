@@ -11,6 +11,13 @@ use Kirby\Data\Txt;
  */
 class DiffGenerator
 {
+    /** Size limits of the LCS tables (rows × columns) */
+    protected const MAX_LINE_CELLS = 250000;
+    protected const MAX_WORD_CELLS = 250000;
+
+    /** Share of unchanged characters a line pair needs for inline word marks */
+    protected const MIN_WORD_SIMILARITY = 0.3;
+
     /**
      * Generate a visual diff between two content arrays or strings
      *
@@ -108,57 +115,225 @@ class DiffGenerator
     }
 
     /**
-     * Old and new value of a field, the changed words in between marked
+     * Lines of a field value. Changed lines that pair up (one removed, one added)
+     * get the changed words marked, pure additions and removals keep the
+     * full-line style. Unchanged lines show as context next to a change only.
      */
     protected static function renderValueChange(string $old, string $new): string
     {
-        $oldLine = self::escape($old);
-        $newLine = self::escape($new);
+        $oldLines = $old === '' ? [] : explode("\n", $old);
+        $newLines = $new === '' ? [] : explode("\n", $new);
 
-        if ($old === '' || $new === '') {
-            $lines = '';
-            if ($old !== '') {
-                $lines .= '<li class="removed">' . $oldLine . '</li>';
+        $ops    = self::diffSequences($oldLines, $newLines, self::MAX_LINE_CELLS);
+        $count  = count($ops);
+        $output = '';
+        $skipped = false;
+
+        for ($i = 0; $i < $count; $i++) {
+            [$type] = $ops[$i];
+
+            if ($type === '=') {
+                $nearChange = ($ops[$i - 1][0] ?? '=') !== '=' || ($ops[$i + 1][0] ?? '=') !== '=';
+                if ($nearChange) {
+                    $output .= '<li class="context">' . self::escape($ops[$i][1]) . '</li>';
+                    $skipped = false;
+                } elseif (!$skipped) {
+                    $output .= '<li class="skipped">…</li>';
+                    $skipped = true;
+                }
+                continue;
             }
-            if ($new !== '') {
-                $lines .= '<li class="added">' . $newLine . '</li>';
+
+            // collect the whole hunk of removed and added lines
+            $removed = [];
+            $added   = [];
+            while ($i < $count && $ops[$i][0] !== '=') {
+                if ($ops[$i][0] === '-') {
+                    $removed[] = $ops[$i][1];
+                } else {
+                    $added[] = $ops[$i][1];
+                }
+                $i++;
+            }
+            $i--;
+
+            $pairs = min(count($removed), count($added));
+            $removedHtml = [];
+            $addedHtml   = [];
+
+            foreach ($removed as $index => $line) {
+                $words = $index < $pairs ? self::wordDiff($line, $added[$index]) : null;
+                if ($words !== null) {
+                    $removedHtml[] = '<li class="removed inline">' . $words[0] . '</li>';
+                    $addedHtml[$index] = '<li class="added inline">' . $words[1] . '</li>';
+                } else {
+                    $removedHtml[] = '<li class="removed">' . self::escape($line) . '</li>';
+                }
             }
 
-            return $lines;
+            foreach ($added as $index => $line) {
+                $addedHtml[$index] ??= '<li class="added">' . self::escape($line) . '</li>';
+            }
+            ksort($addedHtml);
+
+            $output .= implode('', $removedHtml) . implode('', $addedHtml);
+            $skipped = false;
         }
 
-        // Split lines into words and highlight differences
-        $oldWords = preg_split('/\s+/', $oldLine);
-        $newWords = preg_split('/\s+/', $newLine);
+        return $output;
+    }
 
-        // Find common words at the beginning
-        $startCommon = 0;
-        $minLength = min(count($oldWords), count($newWords));
-        while ($startCommon < $minLength && $oldWords[$startCommon] === $newWords[$startCommon]) {
-            $startCommon++;
+    /**
+     * Word-level diff of two versions of a line
+     *
+     * Returns the escaped old and new line with the changed words wrapped in
+     * `<del>` and `<ins>`, or null when the lines have too little in common
+     * for word marks to help (then both lines are shown as a whole).
+     *
+     * @return array{0: string, 1: string}|null
+     */
+    public static function wordDiff(string $old, string $new): ?array
+    {
+        $oldTokens = self::tokenize($old);
+        $newTokens = self::tokenize($new);
+        $ops       = self::diffSequences($oldTokens, $newTokens, self::MAX_WORD_CELLS);
+
+        // whitespace between two changes belongs to the change, keeps marks in one piece
+        $count = count($ops);
+        for ($i = 1; $i < $count - 1; $i++) {
+            if ($ops[$i][0] === '=' && trim($ops[$i][1]) === '' && $ops[$i - 1][0] !== '=' && $ops[$i + 1][0] !== '=') {
+                $ops[$i] = ['~', $ops[$i][1]];
+            }
         }
 
-        // Find common words at the end
-        $oldEnd = count($oldWords) - 1;
-        $newEnd = count($newWords) - 1;
-        $endCommon = 0;
-        while ($endCommon < $minLength - $startCommon &&
-            $oldEnd - $endCommon >= $startCommon &&
-            $newEnd - $endCommon >= $startCommon &&
-            $oldWords[$oldEnd - $endCommon] === $newWords[$newEnd - $endCommon]) {
-            $endCommon++;
+        $common = 0;
+        foreach ($ops as [$type, $token]) {
+            if ($type === '=' && trim($token) !== '') {
+                $common += mb_strlen($token);
+            }
         }
 
-        $prefix = implode(' ', array_slice($oldWords, 0, $startCommon));
-        $suffix = implode(' ', array_slice($oldWords, $oldEnd - $endCommon + 1));
-        $oldMid = implode(' ', array_slice($oldWords, $startCommon, $oldEnd - $endCommon - $startCommon + 1));
-        $newMid = implode(' ', array_slice($newWords, $startCommon, $newEnd - $endCommon - $startCommon + 1));
+        $longest = max(mb_strlen(preg_replace('/\s+/u', '', $old)), mb_strlen(preg_replace('/\s+/u', '', $new)));
+        if ($longest === 0 || $common / $longest < self::MIN_WORD_SIMILARITY) {
+            return null;
+        }
 
-        $oldLine = trim($prefix . ' ' . ($oldMid !== '' ? '<span class="diff-delete">' . $oldMid . '</span>' : '') . ' ' . $suffix);
-        $newLine = trim($prefix . ' ' . ($newMid !== '' ? '<span class="diff-add">' . $newMid . '</span>' : '') . ' ' . $suffix);
+        $oldHtml = '';
+        $newHtml = '';
+        $oldMark = '';
+        $newMark = '';
 
-        return '<li class="removed">' . $oldLine . '</li>'
-            . '<li class="added">' . $newLine . '</li>';
+        $flush = function () use (&$oldHtml, &$newHtml, &$oldMark, &$newMark) {
+            if ($oldMark !== '') {
+                $oldHtml .= '<del>' . self::escape($oldMark) . '</del>';
+            }
+            if ($newMark !== '') {
+                $newHtml .= '<ins>' . self::escape($newMark) . '</ins>';
+            }
+            $oldMark = $newMark = '';
+        };
+
+        foreach ($ops as [$type, $token]) {
+            switch ($type) {
+                case '=':
+                    $flush();
+                    $oldHtml .= self::escape($token);
+                    $newHtml .= self::escape($token);
+                    break;
+                case '~':
+                    $oldMark .= $token;
+                    $newMark .= $token;
+                    break;
+                case '-':
+                    $oldMark .= $token;
+                    break;
+                case '+':
+                    $newMark .= $token;
+                    break;
+            }
+        }
+        $flush();
+
+        return [$oldHtml, $newHtml];
+    }
+
+    /**
+     * Words, runs of whitespace and single other characters (punctuation)
+     */
+    protected static function tokenize(string $line): array
+    {
+        preg_match_all('/[\p{L}\p{N}_]+|\s+|./us', $line, $matches);
+
+        return $matches[0];
+    }
+
+    /**
+     * Longest common subsequence diff of two lists
+     *
+     * Common head and tail are trimmed first. When the rest is too large for
+     * the LCS table, the middle is reported as removed and added as a whole.
+     *
+     * @return array<int, array{0: string, 1: string}> ['=', item], ['-', item] or ['+', item]
+     */
+    protected static function diffSequences(array $old, array $new, int $maxCells): array
+    {
+        $head = [];
+        while ($old !== [] && $new !== [] && $old[0] === $new[0]) {
+            $head[] = ['=', array_shift($old)];
+            array_shift($new);
+        }
+
+        $tail = [];
+        while ($old !== [] && $new !== [] && end($old) === end($new)) {
+            array_unshift($tail, ['=', array_pop($old)]);
+            array_pop($new);
+        }
+
+        $n = count($old);
+        $m = count($new);
+        $middle = [];
+
+        if ($n * $m > $maxCells) {
+            foreach ($old as $item) {
+                $middle[] = ['-', $item];
+            }
+            foreach ($new as $item) {
+                $middle[] = ['+', $item];
+            }
+
+            return [...$head, ...$middle, ...$tail];
+        }
+
+        // lengths[i][j] = LCS length of old[i..] and new[j..]
+        $lengths = array_fill(0, $n + 1, array_fill(0, $m + 1, 0));
+        for ($i = $n - 1; $i >= 0; $i--) {
+            for ($j = $m - 1; $j >= 0; $j--) {
+                $lengths[$i][$j] = $old[$i] === $new[$j]
+                    ? $lengths[$i + 1][$j + 1] + 1
+                    : max($lengths[$i + 1][$j], $lengths[$i][$j + 1]);
+            }
+        }
+
+        $i = $j = 0;
+        while ($i < $n && $j < $m) {
+            if ($old[$i] === $new[$j]) {
+                $middle[] = ['=', $old[$i]];
+                $i++;
+                $j++;
+            } elseif ($lengths[$i + 1][$j] >= $lengths[$i][$j + 1]) {
+                $middle[] = ['-', $old[$i++]];
+            } else {
+                $middle[] = ['+', $new[$j++]];
+            }
+        }
+        while ($i < $n) {
+            $middle[] = ['-', $old[$i++]];
+        }
+        while ($j < $m) {
+            $middle[] = ['+', $new[$j++]];
+        }
+
+        return [...$head, ...$middle, ...$tail];
     }
 
     /**

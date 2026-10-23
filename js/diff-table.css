@@ -192,10 +192,35 @@
   content: "+";
 }
 
-.k-content-watch-diff-dialog .diff-delete {
-  background-color: color-mix(in srgb, var(--color-red-500) 40%, transparent);
+/* changed line pairs: light line background, the changed words stronger */
+.k-content-watch-diff-dialog .k-cw-diff-lines li.removed.inline {
+  background: color-mix(in srgb, var(--color-red-500) 7%, transparent);
 }
 
-.k-content-watch-diff-dialog .diff-add {
-  background-color: color-mix(in srgb, var(--color-green-500) 40%, transparent);
+.k-content-watch-diff-dialog .k-cw-diff-lines li.added.inline {
+  background: color-mix(in srgb, var(--color-green-500) 7%, transparent);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-lines del,
+.k-content-watch-diff-dialog .k-cw-diff-lines ins {
+  text-decoration: none;
+  border-radius: var(--rounded-sm);
+  padding-inline: 1px;
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-lines del {
+  background: color-mix(in srgb, var(--color-red-500) 32%, transparent);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-lines ins {
+  background: color-mix(in srgb, var(--color-green-500) 32%, transparent);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-lines li.context {
+  color: var(--color-text-dimmed);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-lines li.skipped {
+  color: var(--color-text-dimmed);
+  padding-block: 0;
 }
