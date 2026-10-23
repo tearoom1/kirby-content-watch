@@ -21,8 +21,18 @@
         >{{ entryAction(entry) }}</span>
         <span v-if="history?.enableDiff || history?.enableRestore" class="k-cw-section-actions">
           <!-- fixed slots: diff, restore; empty slots keep their width -->
+          <span
+            v-if="history?.enableDiff && index > 0 && entry.same_as_current"
+            class="k-button k-cw-equal"
+            data-size="xs"
+            data-has-icon="true"
+            data-has-text="false"
+            :title="$t('tearoom1.content-watch.equal')"
+            :aria-label="$t('tearoom1.content-watch.equal')"
+            role="img"
+          ><span class="k-button-icon"><k-icon type="check"/></span></span>
           <k-button
-            v-if="history?.enableDiff"
+            v-else-if="history?.enableDiff"
             v-bind="slotAttrs(canDiff(entry))"
             icon="split"
             size="xs"
@@ -160,7 +170,7 @@ export default {
     },
 
     canRestore(entry, index) {
-      return this.history?.enableRestore && entry.has_snapshot && index > 0;
+      return this.history?.enableRestore && entry.has_snapshot && index > 0 && !entry.same_as_current;
     },
 
     // a button slot that doesn't apply stays in place, invisible and inert
@@ -361,6 +371,11 @@ export default {
 
 .k-cw-section-actions .k-cw-slot-empty {
   visibility: hidden;
+}
+
+.k-cw-section-actions .k-cw-equal {
+  --button-color-icon: var(--color-text-dimmed);
+  cursor: default;
 }
 
 .k-cw-section-actions .k-button {

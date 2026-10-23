@@ -14,6 +14,7 @@ load([
     'TearoomOne\\ContentWatch\\FieldLabels'            => 'src/FieldLabels.php',
     'TearoomOne\\ContentWatch\\StructuredDiff'         => 'src/StructuredDiff.php',
     'TearoomOne\\ContentWatch\\HistoryStore'           => 'src/HistoryStore.php',
+    'TearoomOne\\ContentWatch\\CurrentContent'         => 'src/CurrentContent.php',
     'TearoomOne\\ContentWatch\\RestoreException'       => 'src/RestoreException.php',
 ], __DIR__);
 
@@ -114,6 +115,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             'tearoom1.content-watch.support'        => 'Support this plugin',
             'tearoom1.content-watch.tab.content'    => 'Content Changes',
             'tearoom1.content-watch.filters'        => 'Filters',
+            'tearoom1.content-watch.equal'          => 'Same as the current version',
             'tearoom1.content-watch.export'         => 'Export filtered changes as CSV',
             'tearoom1.content-watch.reload'         => 'Reload',
             'tearoom1.content-watch.filter.show'    => 'Show',
@@ -171,6 +173,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             'tearoom1.content-watch.support'        => 'Plugin unterstützen',
             'tearoom1.content-watch.tab.content'    => 'Inhaltsänderungen',
             'tearoom1.content-watch.filters'        => 'Filter',
+            'tearoom1.content-watch.equal'          => 'Gleich wie die aktuelle Version',
             'tearoom1.content-watch.export'         => 'Gefilterte Änderungen als CSV exportieren',
             'tearoom1.content-watch.reload'         => 'Neu laden',
             'tearoom1.content-watch.filter.show'    => 'Anzeigen',

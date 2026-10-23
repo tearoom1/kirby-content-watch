@@ -180,8 +180,17 @@
                 </span>
                 <div class="k-timeline-item-actions">
                   <!-- fixed slots: diff, restore; empty slots keep their width -->
+<span
+                    v-if="enableDiff && isSame(entry, entryIndex)"
+                    class="k-button k-cw-equal"
+                    data-has-icon="true"
+                    data-has-text="false"
+                    :title="$t('tearoom1.content-watch.equal')"
+                    :aria-label="$t('tearoom1.content-watch.equal')"
+                    role="img"
+                  ><span class="k-button-icon"><k-icon type="check"/></span></span>
                   <k-button
-                    v-if="enableDiff"
+                    v-else-if="enableDiff"
                     v-bind="slotAttrs(canDiff(file, entry))"
                     icon="split"
                     class="k-diff-button"
@@ -259,8 +268,17 @@
                       >{{ entryAction(row.entry) }}</span>
                       <span class="k-content-watch-timeline-editor"></span>
                       <span class="k-timeline-item-actions">
+                        <span
+                          v-if="enableDiff && isSame(row.entry, row.entryIndex)"
+                          class="k-button k-cw-equal"
+                          data-has-icon="true"
+                          data-has-text="false"
+                          :title="$t('tearoom1.content-watch.equal')"
+                          :aria-label="$t('tearoom1.content-watch.equal')"
+                          role="img"
+                        ><span class="k-button-icon"><k-icon type="check"/></span></span>
                         <k-button
-                          v-if="enableDiff"
+                          v-else-if="enableDiff"
                           v-bind="slotAttrs(canDiff(row.file, row.entry))"
                           icon="split"
                           class="k-diff-button"
@@ -295,8 +313,17 @@
                   >{{ entryAction(item.row.entry) }}</span>
                   <span class="k-content-watch-timeline-editor" :title="editorHelp(item.row.editor) || editorLabel(item.row.editor)">{{ editorLabel(item.row.editor) }}</span>
                   <span class="k-timeline-item-actions">
+                    <span
+                      v-if="enableDiff && isSame(item.row.entry, item.row.entryIndex)"
+                      class="k-button k-cw-equal"
+                      data-has-icon="true"
+                      data-has-text="false"
+                      :title="$t('tearoom1.content-watch.equal')"
+                      :aria-label="$t('tearoom1.content-watch.equal')"
+                      role="img"
+                    ><span class="k-button-icon"><k-icon type="check"/></span></span>
                     <k-button
-                      v-if="enableDiff"
+                      v-else-if="enableDiff"
                       v-bind="slotAttrs(canDiff(item.row.file, item.row.entry))"
                       icon="split"
                       class="k-diff-button"
@@ -866,7 +893,12 @@ export default {
     },
 
     canRestoreEntry(entry, entryIndex) {
-      return Boolean(entry?.has_snapshot && entryIndex > 0);
+      return Boolean(entry?.has_snapshot && entryIndex > 0 && !entry.same_as_current);
+    },
+
+    // an older version that equals the current content: nothing to compare or restore
+    isSame(entry, entryIndex) {
+      return Boolean(entryIndex > 0 && entry?.same_as_current);
     },
 
     // a button slot that doesn't apply stays in place, invisible and inert
@@ -1668,6 +1700,11 @@ export default {
 
   .k-cw-slot-empty {
     visibility: hidden;
+  }
+
+  .k-cw-equal {
+    --button-color-icon: var(--color-text-dimmed);
+    cursor: default;
   }
 
   .k-restore-button {

@@ -156,6 +156,7 @@ class ChangeTracker
                 $fileContent  = F::read($contentFile) ?: '';
 
                 $record['content']  = $fileContent;
+                $record['hash']     = CurrentContent::hash($fileContent);
                 $record['language'] = $language;
 
                 if ($content instanceof Page) {

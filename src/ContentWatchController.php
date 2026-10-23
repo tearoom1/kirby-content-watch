@@ -167,7 +167,7 @@ class ContentWatchController
         $modified = $record !== null ? $record['time'] : $file->getMTime();
         $editor   = $this->getEditor($record);
 
-        $historyEntriesBuilt = $this->buildHistoryEntries($historyEntries);
+        $historyEntriesBuilt = $this->buildHistoryEntries($historyEntries, $isMediaFile ? null : $owner, $dirPath, $fileKey);
 
         $pathParts = explode('/', $relativePath);
 
@@ -193,9 +193,14 @@ class ContentWatchController
     /**
      * Prepare raw history entries for the panel.
      */
-    public function buildHistoryEntries(array $entries): array
-    {
-        $built = [];
+    public function buildHistoryEntries(
+        array $entries,
+        ?ModelWithContent $model = null,
+        ?string $dirPath = null,
+        ?string $fileKey = null
+    ): array {
+        $built   = [];
+        $current = new CurrentContent($model, $dirPath, $fileKey);
         foreach ($entries as $entry) {
             if (!is_array($entry)) {
                 continue;
@@ -212,6 +217,8 @@ class ContentWatchController
                 'action'         => $entry['action'] ?? null,
                 'version'        => $entry['version'] ?? 1,
                 'language'       => $entry['language'] ?? '',
+                // the snapshot equals the content as it is now: nothing to compare or restore
+                'same_as_current' => $current->equals($entry),
             ];
         }
 
@@ -235,7 +242,7 @@ class ContentWatchController
             return [];
         }
 
-        return $this->buildHistoryEntries($this->applyRetention($history[$fileKey] ?? []));
+        return $this->buildHistoryEntries($this->applyRetention($history[$fileKey] ?? []), $model, $dirPath, $fileKey);
     }
 
     /**
