@@ -19,16 +19,19 @@
           class="k-cw-section-tag"
           :class="'k-cw-section-tag-' + entryAction(entry)"
         >{{ entryAction(entry) }}</span>
-        <span v-if="hasActions(entry, index)" class="k-cw-section-actions">
+        <span v-if="history?.enableDiff || history?.enableRestore" class="k-cw-section-actions">
+          <!-- fixed slots: diff, restore; empty slots keep their width -->
           <k-button
-            v-if="canDiff(entry)"
+            v-if="history?.enableDiff"
+            v-bind="slotAttrs(canDiff(entry))"
             icon="split"
             size="xs"
             title="View changes"
             @click="openDiff(entry)"
           />
           <k-button
-            v-if="canRestore(entry, index)"
+            v-if="history?.enableRestore"
+            v-bind="slotAttrs(canRestore(entry, index))"
             icon="undo"
             size="xs"
             title="Restore this version"
@@ -160,8 +163,14 @@ export default {
       return this.history?.enableRestore && entry.has_snapshot && index > 0;
     },
 
-    hasActions(entry, index) {
-      return this.canDiff(entry) || this.canRestore(entry, index);
+    // a button slot that doesn't apply stays in place, invisible and inert
+    slotAttrs(applies) {
+      return applies ? {} : {
+        class: 'k-cw-slot-empty',
+        disabled: true,
+        tabindex: -1,
+        'aria-hidden': 'true'
+      };
     },
 
     confirmRestore(entry) {
@@ -348,6 +357,10 @@ export default {
   display: flex;
   margin-inline-start: auto;
   margin-block: -0.25rem;
+}
+
+.k-cw-section-actions .k-cw-slot-empty {
+  visibility: hidden;
 }
 
 .k-cw-section-actions .k-button {

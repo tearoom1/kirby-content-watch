@@ -179,19 +179,14 @@
                   <span class="k-timeline-item-when-absolute">{{ formatAbsolute(entry.time) }}</span>
                 </span>
                 <div class="k-timeline-item-actions">
+                  <!-- fixed slots: diff, restore; empty slots keep their width -->
                   <k-button
-                    v-if="enableDiff && entry.has_snapshot && file.history.length > 1"
-                    @click.stop="viewDiff(file, entry, entryIndex)"
+                    v-if="enableDiff"
+                    v-bind="slotAttrs(canDiff(file, entry))"
                     icon="split"
                     class="k-diff-button"
                     title="View changes"
-                  />
-                  <k-button
-                    v-if="enableRestore && entry.has_snapshot && entryIndex > 0"
-                    @click.stop="confirmRestore(file, entry)"
-                    icon="undo"
-                    class="k-restore-button"
-                    title="Restore this version"
+                    @click.stop="viewDiff(file, entry, entryIndex)"
                   />
                   <k-button
                     v-if="enableRestore && entryIndex === 0"
@@ -199,6 +194,14 @@
                     style="cursor: default"
                     class="k-restore-button"
                     title="Current version"
+                  />
+                  <k-button
+                    v-else-if="enableRestore"
+                    v-bind="slotAttrs(canRestoreEntry(entry, entryIndex))"
+                    icon="undo"
+                    class="k-restore-button"
+                    title="Restore this version"
+                    @click.stop="confirmRestore(file, entry)"
                   />
                 </div>
               </div>
@@ -256,14 +259,16 @@
                       <span class="k-content-watch-timeline-editor"></span>
                       <span class="k-timeline-item-actions">
                         <k-button
-                          v-if="enableDiff && row.entry?.has_snapshot && row.file.history.length > 1"
+                          v-if="enableDiff"
+                          v-bind="slotAttrs(canDiff(row.file, row.entry))"
                           icon="split"
                           class="k-diff-button"
                           title="View changes"
                           @click.stop="viewDiff(row.file, row.entry, row.entryIndex)"
                         />
                         <k-button
-                          v-if="enableRestore && row.entry?.has_snapshot && row.entryIndex > 0"
+                          v-if="enableRestore"
+                          v-bind="slotAttrs(canRestoreEntry(row.entry, row.entryIndex))"
                           icon="undo"
                           class="k-restore-button"
                           title="Restore this version"
@@ -290,14 +295,16 @@
                   <span class="k-content-watch-timeline-editor" :title="editorHelp(item.row.editor) || editorLabel(item.row.editor)">{{ editorLabel(item.row.editor) }}</span>
                   <span class="k-timeline-item-actions">
                     <k-button
-                      v-if="enableDiff && item.row.entry?.has_snapshot && item.row.file.history.length > 1"
+                      v-if="enableDiff"
+                      v-bind="slotAttrs(canDiff(item.row.file, item.row.entry))"
                       icon="split"
                       class="k-diff-button"
                       title="View changes"
                       @click.stop="viewDiff(item.row.file, item.row.entry, item.row.entryIndex)"
                     />
                     <k-button
-                      v-if="enableRestore && item.row.entry?.has_snapshot && item.row.entryIndex > 0"
+                      v-if="enableRestore"
+                      v-bind="slotAttrs(canRestoreEntry(item.row.entry, item.row.entryIndex))"
                       icon="undo"
                       class="k-restore-button"
                       title="Restore this version"
@@ -853,6 +860,24 @@ export default {
   },
 
   methods: {
+    canDiff(file, entry) {
+      return Boolean(entry?.has_snapshot && file.history.length > 1);
+    },
+
+    canRestoreEntry(entry, entryIndex) {
+      return Boolean(entry?.has_snapshot && entryIndex > 0);
+    },
+
+    // a button slot that doesn't apply stays in place, invisible and inert
+    slotAttrs(applies) {
+      return applies ? {} : {
+        class: 'k-cw-slot-empty',
+        disabled: true,
+        tabindex: -1,
+        'aria-hidden': 'true'
+      };
+    },
+
     viewStorageKey() {
       const user = window.panel?.user?.id || 'default';
       return 'tearoom1.content-watch.view.' + user;
@@ -1638,6 +1663,10 @@ export default {
     justify-content: flex-end;
     gap: 0.25rem;
     margin-left: auto;
+  }
+
+  .k-cw-slot-empty {
+    visibility: hidden;
   }
 
   .k-restore-button {
