@@ -1,3 +1,10 @@
+## [3.7.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.6.0...v3.7.0) (2026-10-23)
+
+
+### Features
+
+* Panel support link opens the central support page ([ae14ff0](https://github.com/tearoom1/kirby-content-watch/commit/ae14ff051f0f45b8b5c84d6cbc9b05bbc6762317))
+
 ## [3.6.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.5.0...v3.6.0) (2026-10-08)
 
 
@@ -60,11 +67,4 @@
 
 * register content model resolver trait ([ca122ce](https://github.com/tearoom1/kirby-content-watch/commit/ca122ce394ca6e8d1879634705242a57e260b2da)), closes [#12](https://github.com/tearoom1/kirby-content-watch/issues/12)
 * updated composer, bumped Kirby version to 5.5.3 ([88f731d](https://github.com/tearoom1/kirby-content-watch/commit/88f731d135b245838356990fdef40a21af839bbd))
-
-## [3.3.5](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.4...v3.3.5) (2026-06-10)
-
-
-### Bug Fixes
-
-* harden content watch API access ([1c78295](https://github.com/tearoom1/kirby-content-watch/commit/1c78295f2f4bd59abf296f7908a546af2c7c4413))
 
