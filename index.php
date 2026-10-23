@@ -101,6 +101,10 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             (new ChangeTracker())->trackContentChange($newFile);
         },
     ],
+    'translations' => [
+        'en' => ['tearoom1.content-watch.support' => 'Support this plugin'],
+        'de' => ['tearoom1.content-watch.support' => 'Plugin unterstützen'],
+    ],
     'areas' => [
         'content-watch' => require __DIR__ . '/src/areas/content-watch.php',
     ],

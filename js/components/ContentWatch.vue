@@ -2,40 +2,14 @@
   <k-panel-inside class="k-content-watch-view">
 
     <k-header class="k-section-header">
-      <div class="k-content-watch-sponsor">
-        <k-button
-          class="k-content-watch-sponsor-button"
-          icon="heart"
-          variant="filled"
-          size="sm"
-          theme="empty"
-          title="Support Content Watch"
-          aria-label="Support Content Watch"
-          @click="$refs.sponsorDropdown.toggle()"
-        />
-        <k-dropdown-content
-          ref="sponsorDropdown"
-          align-x="end"
-        >
-          <div class="k-content-watch-sponsor-text">
-            {{ sponsorText }}
-          </div>
-          <k-dropdown-item
-            icon="heart"
-            link="https://github.com/sponsors/tearoom1"
-            target="_blank"
-          >
-            Sponsor on GitHub
-          </k-dropdown-item>
-          <k-dropdown-item
-            icon="heart"
-            link="https://buymeacoffee.com/tearoom1"
-            target="_blank"
-          >
-            Buy Me a Coffee
-          </k-dropdown-item>
-        </k-dropdown-content>
-      </div>
+      <k-button
+        class="k-content-watch-sponsor-button"
+        icon="heart"
+        size="sm"
+        link="https://www.tearoom.one/en/kirby-plugins/support"
+        target="_blank"
+        :text="$t('tearoom1.content-watch.support')"
+      />
       <!-- Tab navigation -->
       <div v-if="enableLockedPages" class="k-content-watch-tabs">
         <k-button-group>
@@ -575,16 +549,6 @@ export default {
   },
 
   computed: {
-    sponsorText() {
-      const language = this.panelLanguage();
-
-      if (language.startsWith('de')) {
-        return 'Dieses Plugin entsteht mit viel Liebe und laufendem Aufwand. Wenn es dir Zeit spart, hilft eine kleine Spende, Wartung und Weiterentwicklung möglich zu machen.';
-      }
-
-      return 'This plugin is built with care and ongoing effort. If it saves you time, a small donation helps keep maintenance and future improvements going.';
-    },
-
     totalPages() {
       return Math.max(1, Math.ceil(this.filteredFiles.length / (this.pageSize || 10)));
     },
@@ -1178,30 +1142,18 @@ export default {
 .k-content-watch-view {
   position: relative;
 
-  .k-content-watch-sponsor {
-    float: right;
-    font-size: 14px;
-    font-weight: unset;
-    line-height: unset;
-  }
-
   .k-content-watch-sponsor-button {
+    float: right;
     --button-color-icon: #e0245e;
-    color: #e0245e;
+    color: var(--color-text-dimmed);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: normal;
   }
 
   .k-content-watch-sponsor-button:hover {
     --button-color-icon: #b81d4d;
-    color: #b81d4d;
-  }
-
-  .k-content-watch-sponsor-text {
-    max-width: 17rem;
-    padding: .75rem .75rem .5rem;
-    color: var(--color-text-dimmed);
-    font-size: .8rem;
-    font-weight: 400;
-    line-height: 1.35;
+    color: var(--color-text);
   }
 
   .k-content-watch-section, .k-content-watch-locked {

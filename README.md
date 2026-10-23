@@ -249,6 +249,14 @@ This will automatically make use of the advanced diff.
 - Add support for restoring media/binary files ?
 - Language support is not perfect yet. Currently only 2 digit codes work and the display of the versions may also be improved.
 
+## Support
+
+Content Watch is free and MIT licensed, and it stays that way. If it saves you time, you can help keep it maintained. Paying is voluntary and any amount is welcome.
+
+Agencies and companies that need an invoice can get a Supporter License. You choose the price and whether it covers one project or your whole company. Lemon Squeezy handles the sale as merchant of record, so you get a proper invoice with VAT. The license adds no features and no priority support.
+
+[Support this plugin](https://www.tearoom.one/en/kirby-plugins/support)
+
 ## License
 
 This plugin is licensed under the [MIT License](LICENSE)
@@ -257,8 +265,6 @@ This plugin is licensed under the [MIT License](LICENSE)
 
 - Developed by Mathis Koblin
 - Assisted by Claude (Anthropic)
-
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://coff.ee/tearoom1)
 
 ## Screenshots
 
