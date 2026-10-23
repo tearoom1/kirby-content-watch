@@ -1,34 +1,37 @@
 <template>
   <k-panel-inside class="k-content-watch-view">
 
-    <k-header class="k-section-header">
-      <k-button
-        class="k-content-watch-sponsor-button"
-        icon="heart"
-        size="sm"
-        link="https://www.tearoom.one/en/kirby-plugins/support"
-        target="_blank"
-        :text="$t('tearoom1.content-watch.support')"
-      />
-      <!-- Tab navigation -->
-      <div v-if="enableLockedPages" class="k-content-watch-tabs">
-        <k-button-group>
-          <k-button
-            :class="{'k-button-active': tab === 'content'}" :variant="(tab === 'content') ? 'filled' : null"
-            @click="tab = 'content'"
-            icon="edit-line">
-            Content Changes
-          </k-button>
-          <k-button
-            :class="{'k-button-active': tab === 'locked'}" :variant="(tab === 'locked') ? 'filled' : null"
-            @click="tab = 'locked'"
-            icon="lock">
-            Locked Pages
-          </k-button>
-        </k-button-group>
+    <!-- Top bar: tabs left, support link right (same rhythm as Meta Kit) -->
+    <div class="k-content-watch-topbar">
+      <k-button-group v-if="enableLockedPages" class="k-content-watch-tabs">
+        <k-button
+          :class="{'k-button-active': tab === 'content'}" :variant="(tab === 'content') ? 'filled' : null"
+          size="sm"
+          icon="edit-line"
+          @click="tab = 'content'">
+          Content Changes
+        </k-button>
+        <k-button
+          :class="{'k-button-active': tab === 'locked'}" :variant="(tab === 'locked') ? 'filled' : null"
+          size="sm"
+          icon="lock"
+          @click="tab = 'locked'">
+          Locked Pages
+        </k-button>
+      </k-button-group>
+      <h2 v-else class="k-content-watch-title">Content Changes</h2>
+
+      <div class="k-content-watch-topbar-end">
+        <k-button
+          class="k-content-watch-sponsor-button"
+          icon="heart"
+          size="sm"
+          link="https://www.tearoom.one/en/kirby-plugins/support"
+          target="_blank"
+          :text="$t('tearoom1.content-watch.support')"
+        />
       </div>
-      <span v-else>Content Changes</span>
-    </k-header>
+    </div>
 
     <!-- Content Watch Tab -->
     <section v-if="tab === 'content'" class="k-content-watch-section">
@@ -1142,13 +1145,31 @@ export default {
 .k-content-watch-view {
   position: relative;
 
+  .k-content-watch-topbar {
+    margin-top: -1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .k-content-watch-topbar-end {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+
+  .k-content-watch-title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semi);
+  }
+
   .k-content-watch-sponsor-button {
-    float: right;
     --button-color-icon: #e0245e;
     color: var(--color-text-dimmed);
-    font-size: 14px;
-    font-weight: 400;
-    line-height: normal;
   }
 
   .k-content-watch-sponsor-button:hover {
@@ -1156,7 +1177,7 @@ export default {
     color: var(--color-text);
   }
 
-  .k-content-watch-section, .k-content-watch-locked {
+  .k-content-watch-locked {
     margin-top: 1rem;
   }
 
@@ -1168,16 +1189,8 @@ export default {
     transition: all 0.3s ease;
   }
 
-  .k-content-watch-tabs .k-button-group {
+  .k-content-watch-tabs {
     gap: 0.25rem;
-  }
-
-  .k-content-watch-tabs .k-button {
-    --button-height: var(--height-md);
-    font-size: var(--text-sm);
-    font-weight: var(--font-normal);
-    padding-inline: 0.75rem;
-    margin-inline: 0;
   }
 
   .k-content-watch-buttons .k-button-group {
