@@ -1,44 +1,31 @@
 <template>
   <k-panel-inside class="k-content-watch-view">
 
-    <!-- Top bar: tabs left, support link right (same rhythm as Meta Kit) -->
-    <div class="k-content-watch-topbar">
-      <k-button-group v-if="enableLockedPages" class="k-content-watch-tabs">
-        <k-button
-          :class="{'k-button-active': tab === 'content'}" :variant="(tab === 'content') ? 'filled' : null"
-          size="sm"
-          icon="edit-line"
-          @click="tab = 'content'">
-          Content Changes
-        </k-button>
-        <k-button
-          :class="{'k-button-active': tab === 'locked'}" :variant="(tab === 'locked') ? 'filled' : null"
-          size="sm"
-          icon="lock"
-          @click="tab = 'locked'">
-          Locked Pages
-        </k-button>
-      </k-button-group>
-      <h2 v-else class="k-content-watch-title">Content Changes</h2>
-
-      <div class="k-content-watch-topbar-end">
-        <k-button-group v-if="tab === 'content'" class="k-content-watch-view-toggle">
+    <!-- native view header: title, header buttons, tabs -->
+    <k-header class="k-content-watch-header">
+      Content Watch
+      <template #buttons>
+        <k-button-group v-if="tab === 'content'" layout="collapsed" class="k-content-watch-view-toggle">
           <k-button
             icon="page"
             size="sm"
-            :variant="view === 'page' ? 'filled' : null"
+            variant="filled"
+            responsive="true"
+            :theme="view === 'page' ? 'dark' : null"
+            :current="view === 'page'"
+            :text="$t('tearoom1.content-watch.view.page')"
             :title="$t('tearoom1.content-watch.view.page')"
-            :aria-label="$t('tearoom1.content-watch.view.page')"
-            :aria-pressed="view === 'page' ? 'true' : 'false'"
             @click="setView('page')"
           />
           <k-button
             icon="clock"
             size="sm"
-            :variant="view === 'timeline' ? 'filled' : null"
+            variant="filled"
+            responsive="true"
+            :theme="view === 'timeline' ? 'dark' : null"
+            :current="view === 'timeline'"
+            :text="$t('tearoom1.content-watch.view.timeline')"
             :title="$t('tearoom1.content-watch.view.timeline')"
-            :aria-label="$t('tearoom1.content-watch.view.timeline')"
-            :aria-pressed="view === 'timeline' ? 'true' : 'false'"
             @click="setView('timeline')"
           />
         </k-button-group>
@@ -46,12 +33,17 @@
           class="k-content-watch-sponsor-button"
           icon="heart"
           size="sm"
+          variant="filled"
+          responsive="true"
           link="https://www.tearoom.one/en/kirby-plugins/support"
           target="_blank"
           :text="$t('tearoom1.content-watch.support')"
         />
-      </div>
-    </div>
+      </template>
+    </k-header>
+
+    <!-- Kirby renders no tabs when there is only one -->
+    <k-tabs :tab="tab" :tabs="tabs"/>
 
     <!-- Content Watch Tab -->
     <section v-if="tab === 'content'" class="k-content-watch-section">
@@ -541,6 +533,10 @@ export default {
     initialShowAll: {
       type: Boolean,
       default: false
+    },
+    initialTab: {
+      type: String,
+      default: 'content'
     }
   },
 
@@ -570,7 +566,6 @@ export default {
         {text: '20 per page', value: 20},
         {text: '50 per page', value: 50}
       ],
-      tab: 'content', // Default tab is content
       diffTarget: null,
       diffVersionOptions: [],
       diffFromVersionId: null,
@@ -597,6 +592,22 @@ export default {
   },
 
   computed: {
+    // tabs are links (?tab=locked), as in Kirby's own views
+    tab() {
+      return this.enableLockedPages && this.initialTab === 'locked' ? 'locked' : 'content';
+    },
+
+    tabs() {
+      if (!this.enableLockedPages) {
+        return [];
+      }
+
+      return [
+        {name: 'content', label: this.$t('tearoom1.content-watch.tab.content'), link: 'content-watch'},
+        {name: 'locked', label: this.$t('tearoom1.content-watch.tab.locked'), link: 'content-watch?tab=locked'}
+      ];
+    },
+
     listLength() {
       return this.view === 'timeline' ? this.timelineItems.length : this.filteredFiles.length;
     },
@@ -1378,35 +1389,12 @@ export default {
 .k-content-watch-view {
   position: relative;
 
-  .k-content-watch-topbar {
-    margin-top: -1rem;
-    margin-bottom: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .k-content-watch-topbar-end {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-left: auto;
-  }
-
   .k-content-watch-view-toggle {
     gap: 0;
   }
 
-  .k-content-watch-title {
-    font-size: var(--text-sm);
-    font-weight: var(--font-semi);
-  }
-
   .k-content-watch-sponsor-button {
     --button-color-icon: #e0245e;
-    color: var(--color-text-dimmed);
   }
 
   .k-content-watch-sponsor-button:hover {
@@ -1424,10 +1412,6 @@ export default {
     margin-bottom: 0.5rem;
     overflow: hidden;
     transition: all 0.3s ease;
-  }
-
-  .k-content-watch-tabs {
-    gap: 0.25rem;
   }
 
   /* search shrinks first, the buttons stay in one row */

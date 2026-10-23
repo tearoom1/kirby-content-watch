@@ -112,6 +112,8 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
     'translations' => [
         'en' => [
             'tearoom1.content-watch.support'        => 'Support this plugin',
+            'tearoom1.content-watch.tab.content'    => 'Content Changes',
+            'tearoom1.content-watch.tab.locked'     => 'Locked Pages',
             'tearoom1.content-watch.view.page'      => 'By page',
             'tearoom1.content-watch.view.timeline'  => 'Timeline',
             'tearoom1.content-watch.timeline.today' => 'Today',
@@ -157,6 +159,8 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         ],
         'de' => [
             'tearoom1.content-watch.support'        => 'Plugin unterstützen',
+            'tearoom1.content-watch.tab.content'    => 'Inhaltsänderungen',
+            'tearoom1.content-watch.tab.locked'     => 'Gesperrte Seiten',
             'tearoom1.content-watch.view.page'      => 'Nach Seite',
             'tearoom1.content-watch.view.timeline'  => 'Zeitleiste',
             'tearoom1.content-watch.timeline.today' => 'Heute',

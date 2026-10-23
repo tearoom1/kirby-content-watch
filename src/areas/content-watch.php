@@ -42,6 +42,7 @@ return [
                         'defaultView' => ContentWatchController::defaultView(),
                         'initialSearch' => (string)get('search', ''),
                         'initialShowAll' => (bool)get('all', false),
+                        'initialTab' => get('tab') === 'locked' ? 'locked' : 'content',
                     ],
                 ];
             }
