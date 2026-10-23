@@ -1,5 +1,42 @@
 ## [3.12.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.11.0...v3.12.0) (2026-10-23)
 
+### What's new since 3.7
+
+Versions 3.8.0 to 3.12.0 were released within one day. This is the summary of all of them, so you don't have to read each release.
+
+#### New view and layout
+- The area now uses Kirby's own view header: large title, tabs for "Content Changes" and "Locked Pages" (only when locked pages are enabled), and the "Support this plugin" button.
+- New **timeline** view next to the existing by-page view. It lists all changes across the site, newest first, grouped by day. Changes made outside the Panel within a few minutes (e.g. a deploy) are grouped into one expandable row.
+- The toolbar is calmer: search, a view switch (by page / timeline), filters, export and refresh. "Pages only / All files" moved into the filters, and the filters button shows how many filters are active.
+- New option `defaultView` (`page` or `timeline`). The choice is remembered per user.
+
+#### Diff
+- Fields show their blueprint label instead of the raw key.
+- Changed words are highlighted inside changed lines.
+- Blocks, layouts and structures are compared entry by entry: added, removed, moved and changed blocks, with unchanged runs collapsed.
+- References (`page://`, `file://`, `user://`) are shown as titles, filenames and names. Deleted ones are marked.
+- Secret-looking values (API keys, tokens, passwords) are never shown, only "value changed (hidden)".
+- The dialog compares with the current version by default and shows a short summary.
+- Versions equal to the current content are marked with a muted diff button.
+
+#### Restore
+- Restore can be started right from the diff dialog, with a confirmation.
+- Restore now runs through Kirby's own page actions as the current user. Permissions, blueprint validation, hooks and the page cache apply. A restore adds a new history entry instead of rewriting the history.
+- Restoring a translation only touches that language and never renames the page folder.
+- The beta note was removed.
+
+#### Reliability
+- The history file is written with a lock and atomically. A corrupt history file is moved aside instead of blocking the save.
+- Changes made in code (e.g. `$page->update($data, 'de')`) are recorded for the language that was actually written.
+- Changes without a Panel user are labelled "Outside the Panel". Deleted users are labelled "Deleted user".
+
+#### Good to know when updating
+- `layoutStyle` is deprecated and has no effect. The list is always compact.
+- Restore needs the matching Kirby permissions (update, changeSlug, changeStatus, changeTemplate). A version that fails the current blueprint validation can't be restored as a published page.
+- In Kirby 5, a page with unsaved changes can't be restored until they are saved or discarded.
+
+#### Commits
+
 
 ### Features
 
