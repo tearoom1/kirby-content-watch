@@ -37,40 +37,55 @@
               :class="{'k-button-active': view === 'page'}"
               :variant="view === 'page' ? 'filled' : null"
               icon="list-bullet"
-              responsive="true"
               :title="$t('tearoom1.content-watch.view.page')"
+              :aria-label="$t('tearoom1.content-watch.view.page')"
+              :aria-pressed="view === 'page' ? 'true' : 'false'"
               @click="setView('page')"
-            >{{ $t('tearoom1.content-watch.view.page') }}</k-button>
+            />
             <k-button
               class="k-content-watch-group-end"
               :class="{'k-button-active': view === 'timeline'}"
               :variant="view === 'timeline' ? 'filled' : null"
               icon="clock"
-              responsive="true"
               :title="$t('tearoom1.content-watch.view.timeline')"
+              :aria-label="$t('tearoom1.content-watch.view.timeline')"
+              :aria-pressed="view === 'timeline' ? 'true' : 'false'"
               @click="setView('timeline')"
-            >{{ $t('tearoom1.content-watch.view.timeline') }}</k-button>
-            <k-button :class="{'k-button-active': showOnlyPages}" :variant="(showOnlyPages) ? 'filled' : null" @click="toggleShowOnlyPages" icon="page" responsive="true">Pages only
-            </k-button>
-            <k-button :class="{'k-button-active': !showOnlyPages}" :variant="(!showOnlyPages) ? 'filled' : null" @click="toggleShowAll" icon="file-document" responsive="true">All
-              files
-            </k-button>
-            <k-button :class="{'k-button-active': showFilters || hasActiveFilters}" :variant="(showFilters || hasActiveFilters) ? 'filled' : null" @click="toggleFilters" icon="filter" responsive="true">
-              Filters
-            </k-button>
+            />
+            <k-button
+              :class="{'k-button-active': showFilters || activeFilterCount}"
+              :variant="(showFilters || activeFilterCount) ? 'filled' : null"
+              icon="filter"
+              :aria-expanded="showFilters ? 'true' : 'false'"
+              @click="toggleFilters"
+            >{{ $t('tearoom1.content-watch.filters') }}<template v-if="activeFilterCount"> ({{ activeFilterCount }})</template></k-button>
             <k-button
               icon="download"
-              title="Export filtered changes as CSV"
+              :title="$t('tearoom1.content-watch.export')"
+              :aria-label="$t('tearoom1.content-watch.export')"
               :disabled="!filteredFiles.length"
               @click="exportCsv"
             />
-            <k-button icon="refresh" title="Reload" @click="refresh"/>
+            <k-button
+              icon="refresh"
+              :title="$t('tearoom1.content-watch.reload')"
+              :aria-label="$t('tearoom1.content-watch.reload')"
+              @click="refresh"
+            />
           </k-button-group>
       </div>
 
       <div v-if="files.length && showFilters" class="k-content-watch-filters">
         <k-select-field
-          label="Author"
+          :label="$t('tearoom1.content-watch.filter.show')"
+          :value="showOnlyPages ? 'pages' : 'all'"
+          :options="showFilterOptions"
+          :empty="false"
+          :required="true"
+          @input="changeShowFilter"
+        />
+        <k-select-field
+          :label="$t('tearoom1.content-watch.filter.author')"
           :value="selectedAuthor"
           :options="authorFilterOptions"
           @input="changeAuthorFilter"
@@ -88,26 +103,23 @@
           @input="changeTemplateFilter"
         />
         <k-select-field
-          label="Period"
+          :label="$t('tearoom1.content-watch.filter.period')"
           :value="selectedPeriod"
           :options="periodFilterOptions"
           @input="changePeriodFilter"
         />
         <k-select-field
           v-if="languageFilterOptions.length"
-          label="Language"
+          :label="$t('tearoom1.content-watch.filter.language')"
           :value="selectedLanguage"
           :options="languageFilterOptions"
           @input="changeLanguageFilter"
         />
-        <div class="k-content-watch-filters-reset">
+        <div v-if="activeFilterCount" class="k-content-watch-filters-reset">
           <k-button
             icon="cancel"
-            :disabled="!hasActiveFilters"
             @click="resetFilters"
-          >
-            Reset
-          </k-button>
+          >{{ $t('tearoom1.content-watch.filter.reset') }}</k-button>
         </div>
       </div>
 
@@ -799,14 +811,23 @@ export default {
       return parts.join(' · ');
     },
 
-    hasActiveFilters() {
-      return Boolean(
-        this.selectedAuthor ||
-        this.selectedStatus ||
-        this.selectedTemplate ||
-        this.selectedPeriod ||
+    // filters that differ from the defaults, "All files" included
+    activeFilterCount() {
+      return [
+        !this.showOnlyPages,
+        this.selectedAuthor,
+        this.selectedStatus,
+        this.selectedTemplate,
+        this.selectedPeriod,
         this.selectedLanguage
-      );
+      ].filter(Boolean).length;
+    },
+
+    showFilterOptions() {
+      return [
+        {text: this.$t('tearoom1.content-watch.filter.pages'), value: 'pages'},
+        {text: this.$t('tearoom1.content-watch.filter.all'), value: 'all'}
+      ];
     },
 
     items() {
@@ -1008,16 +1029,6 @@ export default {
       this.filterLockedPages();
     },
 
-    toggleShowOnlyPages() {
-      this.showOnlyPages = true;
-      this.filterFiles();
-    },
-
-    toggleShowAll() {
-      this.showOnlyPages = false;
-      this.filterFiles();
-    },
-
     toggleFilters() {
       this.showFilters = !this.showFilters;
     },
@@ -1152,7 +1163,13 @@ export default {
       return Math.floor(now.getTime() / 1000) - parseInt(period, 10) * 86400;
     },
 
+    changeShowFilter(value) {
+      this.showOnlyPages = this.normalizeFilterValue(value) !== 'all';
+      this.filterFiles();
+    },
+
     resetFilters() {
+      this.showOnlyPages = true;
       this.selectedAuthor = '';
       this.selectedStatus = '';
       this.selectedTemplate = '';
