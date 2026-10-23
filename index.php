@@ -102,8 +102,16 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         },
     ],
     'translations' => [
-        'en' => ['tearoom1.content-watch.support' => 'Support this plugin'],
-        'de' => ['tearoom1.content-watch.support' => 'Plugin unterstützen'],
+        'en' => [
+            'tearoom1.content-watch.support'        => 'Support this plugin',
+            'tearoom1.content-watch.layout.compact' => 'Compact layout',
+            'tearoom1.content-watch.layout.relaxed' => 'Relaxed layout',
+        ],
+        'de' => [
+            'tearoom1.content-watch.support'        => 'Plugin unterstützen',
+            'tearoom1.content-watch.layout.compact' => 'Kompakte Ansicht',
+            'tearoom1.content-watch.layout.relaxed' => 'Großzügige Ansicht',
+        ],
     ],
     'areas' => [
         'content-watch' => require __DIR__ . '/src/areas/content-watch.php',

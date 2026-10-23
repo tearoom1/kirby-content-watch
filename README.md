@@ -22,7 +22,7 @@ Additionally it provides a view to see which pages are currently locked and by w
 - **Direct Panel Links**: One-click access to edit content in the Panel
 - **Customizable Retention**: Configure how long history is kept
 - **Version Restore**: Restore previous versions of content with a single click (optional)
-- **Dark Mode and Compact Layout**: Supports Kirby 5 dark mode and a compact layout option
+- **Dark Mode and Layout Density**: Supports Kirby 5 dark mode; switch between a compact and a relaxed list right in the Panel
 - **History Section**: Show recent changes of a page, the site or a file directly in its blueprint, with diff and restore
 - **Page Method**: Access change history programmatically via `$page->contentHistory()`
 
@@ -89,7 +89,7 @@ return [
 | `retentionDays` | `int` | `30` | Number of days to keep history entries before they are pruned |
 | `retentionCount` | `int` | `10` | Maximum number of history entries to keep per file and language |
 | `defaultPageSize` | `int` | `20` | Default number of items per page in the panel view. Possible values: `10`, `20`, `50` |
-| `layoutStyle` | `string` | `'compact'` | Layout density of the list: `'compact'` or `'relaxed'` for more spacing. The former value `'default'` still works and means `'relaxed'` |
+| `layoutStyle` | `string` | `'compact'` | Default layout density of the list: `'compact'` or `'relaxed'` for more spacing. Editors can switch it with the toggle next to the support link; their choice is remembered per user in the browser and wins over this option. The former value `'default'` still works and means `'relaxed'` |
 | `enableLockedPages` | `bool\|null` | `null` | Whether to show the locked pages view. `null` shows it on Kirby 4 only, since Kirby 5 has its own "Changes" overview |
 | `enableRestore` | `bool` | `false` | Enable content restore functionality. When enabled, full content snapshots are saved — increases disk usage |
 | `enableDiff` | `bool` | `true` | Enable content diff view. Requires `enableRestore` to be `true` |

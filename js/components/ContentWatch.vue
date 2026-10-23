@@ -22,6 +22,26 @@
       <h2 v-else class="k-content-watch-title">Content Changes</h2>
 
       <div class="k-content-watch-topbar-end">
+        <k-button-group class="k-content-watch-layout-toggle">
+          <k-button
+            icon="collapse"
+            size="sm"
+            :variant="layout === 'compact' ? 'filled' : null"
+            :title="$t('tearoom1.content-watch.layout.compact')"
+            :aria-label="$t('tearoom1.content-watch.layout.compact')"
+            :aria-pressed="layout === 'compact' ? 'true' : 'false'"
+            @click="setLayout('compact')"
+          />
+          <k-button
+            icon="expand"
+            size="sm"
+            :variant="layout === 'relaxed' ? 'filled' : null"
+            :title="$t('tearoom1.content-watch.layout.relaxed')"
+            :aria-label="$t('tearoom1.content-watch.layout.relaxed')"
+            :aria-pressed="layout === 'relaxed' ? 'true' : 'false'"
+            @click="setLayout('relaxed')"
+          />
+        </k-button-group>
         <k-button
           class="k-content-watch-sponsor-button"
           icon="heart"
@@ -117,7 +137,7 @@
           class="k-content-watch-file"
           :class="{'k-content-watch-file-open': expandedFiles.includes(file.id)}"
         >
-          <div v-if="layoutStyle === 'relaxed'" class="k-content-watch-file-header" @click="toggleFileExpand(file.id)">
+          <div v-if="layout === 'relaxed'" class="k-content-watch-file-header" @click="toggleFileExpand(file.id)">
             <div class="k-content-watch-file-info">
               <span class="k-content-watch-file-path">
                 <span class="k-content-watch-file-title-row">
@@ -150,7 +170,7 @@
             </div>
           </div>
 
-          <div v-if="layoutStyle === 'compact'" class="k-content-watch-file-header k-content-watch-file-header-compact"
+          <div v-if="layout === 'compact'" class="k-content-watch-file-header k-content-watch-file-header-compact"
                @click="toggleFileExpand(file.id)">
             <div class="k-content-watch-file-info">
               <span class="k-content-watch-file-path">
@@ -183,7 +203,7 @@
             <div
               v-if="file.history && file.history.length > 0"
               class="k-timeline-list"
-              :class="{'k-timeline-list-compact': layoutStyle === 'compact'}"
+              :class="{'k-timeline-list-compact': layout === 'compact'}"
             >
               <div
                 v-for="(entry, entryIndex) in file.history"
@@ -298,7 +318,7 @@
           :key="lock.id + '-' + lock.time"
           class="k-content-watch-file"
         >
-          <div v-if="layoutStyle === 'relaxed'" class="k-content-watch-file-header" @click="openLockedPage(lock)">
+          <div v-if="layout === 'relaxed'" class="k-content-watch-file-header" @click="openLockedPage(lock)">
             <div class="k-content-watch-file-info">
               <span class="k-content-watch-file-path">
                 <span class="k-content-watch-file-title-row">
@@ -328,7 +348,7 @@
           </div>
 
           <div
-            v-if="layoutStyle === 'compact'"
+            v-if="layout === 'compact'"
             class="k-content-watch-file-header k-content-watch-file-header-compact"
             @click="openLockedPage(lock)"
           >
@@ -522,7 +542,7 @@ export default {
       restoreTarget: null,
       showOnlyPages: !this.initialShowAll,
       currentPage: 1,
-      layoutStyle: this.layoutStyle,
+      layout: this.storedLayout() || this.layoutStyle,
       pageSize: this.defaultPageSize,
       pageSizeOptions: [
         {text: '10 per page', value: 10},
@@ -681,6 +701,31 @@ export default {
   },
 
   methods: {
+    layoutStorageKey() {
+      const user = window.panel?.user?.id || 'default';
+      return 'tearoom1.content-watch.layout.' + user;
+    },
+
+    // layout density chosen in the Panel, overrides the layoutStyle option
+    storedLayout() {
+      try {
+        const value = window.localStorage.getItem(this.layoutStorageKey());
+        return value === 'compact' || value === 'relaxed' ? value : null;
+      } catch (e) {
+        return null;
+      }
+    },
+
+    setLayout(layout) {
+      this.layout = layout;
+
+      try {
+        window.localStorage.setItem(this.layoutStorageKey(), layout);
+      } catch (e) {
+        // storage not available, keep the choice for this visit only
+      }
+    },
+
     panelLanguage() {
       const panel = window.panel || {};
       const panelLanguage = panel.language && panel.language.code;
@@ -1160,6 +1205,10 @@ export default {
     align-items: center;
     gap: 0.5rem;
     margin-left: auto;
+  }
+
+  .k-content-watch-layout-toggle {
+    gap: 0;
   }
 
   .k-content-watch-title {
