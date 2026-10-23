@@ -39,7 +39,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             (new ChangeTracker())->trackContentChange($page);
         },
         'page.update:after' => function ($newPage, $oldPage) {
-            (new ChangeTracker())->trackContentChange($newPage);
+            (new ChangeTracker())->trackUpdate($newPage, $oldPage);
         },
         'page.changeTitle:after' => function ($newPage, $oldPage) {
             (new ChangeTracker())->trackContentChange($newPage, [
@@ -81,7 +81,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             }
         },
         'site.update:after' => function ($newSite, $oldSite) {
-            (new ChangeTracker())->trackContentChange($newSite);
+            (new ChangeTracker())->trackUpdate($newSite, $oldSite);
         },
         'file.create:after' => function ($file) {
             (new ChangeTracker())->trackContentChange($file);

@@ -40,6 +40,9 @@ class ChangeTracker
     /**
      * Record a change. Runs in `:after` hooks, so it must never break saving:
      * errors are logged instead of thrown.
+     *
+     * `$meta['languages']` lists the languages that were written; without it
+     * the change is recorded for the current language.
      */
     public function trackContentChange(ModelWithContent $content, array $meta = []): void
     {
@@ -47,14 +50,73 @@ class ChangeTracker
             return;
         }
 
-        try {
-            $this->recordChange($content, $meta);
-        } catch (\Throwable $e) {
-            HistoryStore::log('Could not record a change: ' . $e->getMessage());
+        $languages = $meta['languages'] ?? [null];
+        unset($meta['languages']);
+
+        foreach ($languages === [] ? [null] : $languages as $language) {
+            try {
+                $this->recordChange($content, $meta, $language);
+            } catch (\Throwable $e) {
+                HistoryStore::log('Could not record a change: ' . $e->getMessage());
+            }
         }
     }
 
-    protected function recordChange(ModelWithContent $content, array $meta): void
+    /**
+     * Record an `update` action: one entry per language whose content file
+     * changed. Code like `$page->update($data, 'de')` writes a translation
+     * while the request language is another one.
+     */
+    public function trackUpdate(ModelWithContent $new, ModelWithContent $old, array $meta = []): void
+    {
+        if (self::$suspended > 0) {
+            return;
+        }
+
+        try {
+            $meta['languages'] = self::changedLanguages($new, $old);
+        } catch (\Throwable) {
+            // fall back to the current language
+        }
+
+        $this->trackContentChange($new, $meta);
+    }
+
+    /**
+     * Codes of the languages whose stored fields differ between two states
+     * of a model; [] on single-language sites or when nothing differs
+     */
+    public static function changedLanguages(ModelWithContent $new, ModelWithContent $old): array
+    {
+        if (kirby()->multilang() !== true) {
+            return [];
+        }
+
+        $changed = [];
+        foreach (kirby()->languages() as $language) {
+            if (self::rawContent($new, $language->code()) != self::rawContent($old, $language->code())) {
+                $changed[] = $language->code();
+            }
+        }
+
+        return $changed;
+    }
+
+    /**
+     * Fields stored in the content file of one language, without the
+     * fallback values Kirby merges in from the default language
+     */
+    public static function rawContent(ModelWithContent $model, ?string $language = null): array
+    {
+        if (method_exists($model, 'version')) {
+            return $model->version('latest')->read($language ?? 'default') ?? [];
+        }
+
+        // Kirby 4
+        return $model->translation($language)?->content() ?? [];
+    }
+
+    protected function recordChange(ModelWithContent $content, array $meta, ?string $languageCode = null): void
     {
         $user = kirby()->user();
         if (!$user) {
@@ -84,7 +146,7 @@ class ChangeTracker
             $dirPath = $content->root();
             // intendedTemplate() uses the content filename, not the fallback template
             $fileKey         = $isPage ? $content->intendedTemplate()->name() : 'site';
-            $kirbyLanguage   = kirby()->language();
+            $kirbyLanguage   = $languageCode !== null ? kirby()->language($languageCode) : kirby()->language();
             $record['type']  = 'page';
 
             if (option('tearoom1.kirby-content-watch.enableRestore') === true) {

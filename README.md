@@ -153,8 +153,10 @@ When restore functionality is enabled:
 1. Each time content is changed, a snapshot of the content is saved
 2. You can view and restore previous versions through the interface
 3. When you restore a previous version, the plugin runs Kirby's own actions as the current user: `changeTemplate`, `changeSlug` and `changeStatus` when the version differs, then `update` with the content of the version. Permissions, blueprint validation, hooks and the pages cache apply as for any change in the Panel. Everything that can be checked upfront (permissions, a URL appendix used by another page, unsaved changes) is checked before anything changes; if a Kirby action still fails, the steps done so far are undone.
-4. Restoring a translation only restores the content and the translated URL appendix of that language. Template, folder name and status follow the default language.
+4. Restoring a translation only restores the content and the translated URL appendix of that language. Template, folder name and status follow the default language. The fields are written exactly as the version stored them: a translation only gets the fields its own file had, so values shown from the default language (fallbacks) and untranslatable fields are never copied into it, and blocks keep their stored formatting.
 5. The restore is added to the history as a new version that refers to the restored one. Older versions stay as they are, so you can go back.
+
+Changes are recorded in the language that was written, also when code updates a translation (e.g. `$page->update($data, 'de')` from a translation plugin while the request runs in English); one update that writes several languages adds one entry per language.
 
 The history file is changed under a lock and replaced atomically, so parallel saves keep all entries. A history file that can't be read is moved aside as `.content-watch.corrupt-<time>.json` and a new history starts, saving content never fails because of it.
 

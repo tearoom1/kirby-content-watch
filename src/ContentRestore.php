@@ -21,8 +21,6 @@ class ContentRestore
 {
     use ResolvesContentModels;
 
-    /** Content keys that are not restored as fields */
-    protected const IGNORED_KEYS = ['uuid', 'slug'];
 
     protected ?string $error = null;
 
@@ -274,7 +272,7 @@ class ContentRestore
                 }
             }
 
-            return $model->update($data, $language, true);
+            return $this->writeContent($model, $data, $language);
         } catch (Throwable $e) {
             // undo the structure changes done so far, newest first
             foreach (array_reverse($undo) as $step) {
@@ -297,8 +295,10 @@ class ContentRestore
     protected ?string $translatedSlug = null;
 
     /**
-     * Field values of the snapshot. Fields that exist now but not in the
-     * snapshot are emptied, so the content matches the restored version.
+     * Fields of the snapshot exactly as they were stored in that language's
+     * content file. A translation only gets the fields its file had: values
+     * the Panel shows from the default language (fallbacks) and untranslatable
+     * fields are never written into it.
      */
     protected function contentData(ModelWithContent $model, string $content, ?string $language): array
     {
@@ -306,18 +306,70 @@ class ContentRestore
 
         $this->translatedSlug = is_string($data['slug'] ?? null) ? $data['slug'] : null;
 
-        $current = $model->content($language)->toArray();
-        foreach (array_keys($current) as $key) {
-            if (!array_key_exists($key, $data)) {
-                $data[$key] = null;
-            }
-        }
+        $isDefault = $language === null || kirby()->defaultLanguage()?->code() === $language;
 
-        foreach (self::IGNORED_KEYS as $key) {
-            unset($data[$key]);
+        if ($isDefault) {
+            // the page keeps its current UUID, the folder name is no field
+            unset($data['uuid'], $data['slug']);
+
+            $uuid = ChangeTracker::rawContent($model, $language)['uuid'] ?? null;
+            if (is_string($uuid) && $uuid !== '') {
+                $data['uuid'] = $uuid;
+            }
+        } else {
+            unset($data['uuid']);
         }
 
         return $data;
+    }
+
+    /**
+     * Write the snapshot fields as one Kirby `update` action: permission rules,
+     * `page.update:before/after` hooks and the pages cache flush apply. The
+     * fields are written as stored; Kirby's form would add every blueprint
+     * field (with default language fallbacks) to a translation.
+     */
+    protected function writeContent(ModelWithContent $model, array $data, ?string $language): ModelWithContent
+    {
+        $this->validateContent($model, $data, $language);
+
+        if (class_exists(\Kirby\Cms\ModelCommit::class)) {
+            $commit = new \Kirby\Cms\ModelCommit(model: $model, action: 'update');
+
+            return $commit->call(
+                [
+                    $model::CLASS_ALIAS => $model,
+                    'values'            => $data,
+                    'strings'           => $data,
+                    'languageCode'      => $language,
+                ],
+                fn ($model, $values, $strings, $languageCode) => $model->save($strings, $languageCode, true)
+            );
+        }
+
+        // Kirby 4: run the regular update for hooks and caches, then store the exact fields
+        $model = $model->update($data, $language);
+
+        return $model->save($data, $language, true);
+    }
+
+    /**
+     * Blueprint validation of the restored content, as for a Panel save.
+     * Drafts are not validated, like in Kirby.
+     */
+    protected function validateContent(ModelWithContent $model, array $data, ?string $language): void
+    {
+        if ($model instanceof Page && $model->isDraft() === true) {
+            return;
+        }
+
+        if (method_exists(\Kirby\Form\Form::class, 'validate') === false) {
+            return;
+        }
+
+        $form = \Kirby\Form\Form::for(model: $model, language: $language);
+        $form->submit(input: $data, force: true);
+        $form->validate();
     }
 
     protected function resolveLanguage(string $code): ?string
