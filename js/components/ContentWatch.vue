@@ -231,7 +231,8 @@
                     <strong :title="$t('tearoom1.content-watch.editor.outside.help')">{{ $t('tearoom1.content-watch.editor.outside') }}</strong>
                     · {{ outsideGroupLabel(item) }}
                   </span>
-                  <span class="k-content-watch-file-actions">
+                  <!-- in the actions column, right edge on the restore slot -->
+                  <span class="k-timeline-item-actions">
                     <k-button
                       icon="angle-down"
                       :title="expandedGroups.includes(groupKey(item)) ? 'Hide' : 'Show'"
