@@ -42,7 +42,7 @@ class ContentDiffResolver
      * Compare two history entries, or a history entry with the current content
      * (`toEntryId` = `current`), field by field for the diff dialog
      *
-     * @return array{html: string, changed: int, unchanged: int}
+     * @return array{html: string, changed: int, unchanged: int, canRestore: bool}
      */
     public function compare(
         string $dirPath,
@@ -67,14 +67,18 @@ class ContentDiffResolver
             throw new RuntimeException('One or both versions have no content', 404);
         }
 
-        $model = $this->resolveModel($dirPath, $fileKey);
-
-        return DiffGenerator::compare(
+        $model  = $this->resolveModel($dirPath, $fileKey);
+        $result = DiffGenerator::compare(
             $fromContent,
             $toContent,
             FieldLabels::forModel($model),
             FieldLabels::typesForModel($model)
         );
+
+        // the dialog offers to restore the compared version
+        $result['canRestore'] = ContentRestore::canRestore($model) && !empty($fromEntry['content']);
+
+        return $result;
     }
 
     /**

@@ -410,10 +410,8 @@
       class="k-content-watch-diff-dialog"
       ref="diffDialog"
       size="huge"
-      :button="$t('close')"
-      cancelButton=""
-      submitButton="Close"
       @close="closeDiff"
+      @submit="$refs.diffDialog.close()"
     >
       <div v-if="diffTarget" class="k-content-watch-diff-header">
         <div class="k-content-watch-diff-file-info">
@@ -449,6 +447,53 @@
       </div>
 
       <k-empty v-else icon="document" text="No diff available"/>
+
+      <template #footer>
+        <!-- inline confirmation before restoring the version -->
+        <div v-if="diffRestoreConfirm && diffFromEntry" class="k-content-watch-diff-confirm">
+          <k-text>
+            <p>
+              <strong>{{ t('restore.confirm.title', {version: diffFromEntry.version}) }}</strong>
+              {{ diffFromEntry.language
+                ? t('restore.confirm.text.language', {version: diffFromEntry.version, language: languageName(diffFromEntry.language)})
+                : t('restore.confirm.text', {version: diffFromEntry.version}) }}
+            </p>
+            <ul>
+              <li>{{ t('restore.confirm.history') }}</li>
+              <li v-if="diffFromEntry.language">{{ t('restore.confirm.languages') }}</li>
+            </ul>
+          </k-text>
+          <k-button-group>
+            <k-button variant="filled" :disabled="isRestoringFromDiff" @click="diffRestoreConfirm = false">{{ $t('cancel') }}</k-button>
+            <k-button
+              variant="filled"
+              theme="positive"
+              icon="undo"
+              :disabled="isRestoringFromDiff"
+              @click="restoreFromDiff"
+            >{{ t('restore.confirm.submit', {version: diffFromEntry.version}) }}</k-button>
+          </k-button-group>
+        </div>
+
+        <k-dialog-footer class="k-content-watch-diff-footer">
+          <span v-if="canRestoreFromDiff" class="k-content-watch-diff-hint">
+            {{ diffFromEntry.language
+              ? t('restore.hint.language', {language: diffFromEntry.language.toUpperCase()})
+              : t('restore.hint') }}
+          </span>
+          <k-button-group>
+            <k-button variant="filled" @click="$refs.diffDialog.close()">{{ $t('close') }}</k-button>
+            <k-button
+              v-if="canRestoreFromDiff"
+              variant="filled"
+              theme="positive"
+              icon="undo"
+              :disabled="diffRestoreConfirm"
+              @click="diffRestoreConfirm = true"
+            >{{ t('restore.button') }}</k-button>
+          </k-button-group>
+        </k-dialog-footer>
+      </template>
     </k-dialog>
   </k-panel-inside>
 </template>
@@ -537,6 +582,9 @@ export default {
       diffToVersionId: null,
       diffContent: null,
       diffSummary: null,
+      diffCanRestore: false,
+      diffRestoreConfirm: false,
+      isRestoringFromDiff: false,
       isDiffLoading: false
     };
   },
@@ -709,6 +757,22 @@ export default {
         {text: this.$t('tearoom1.content-watch.diff.current'), value: 'current'},
         ...this.diffVersionOptions
       ];
+    },
+
+    diffFromEntry() {
+      if (!this.diffTarget || this.diffFromVersionId === null) {
+        return null;
+      }
+
+      return this.diffTarget.file.history[parseInt(this.diffFromVersionId, 10)] || null;
+    },
+
+    canRestoreFromDiff() {
+      return this.enableRestore &&
+        this.diffCanRestore &&
+        !this.isDiffLoading &&
+        this.diffFromEntry?.has_snapshot === true &&
+        (this.diffSummary?.changed ?? 0) > 0;
     },
 
     diffSummaryText() {
@@ -1201,6 +1265,53 @@ export default {
       this.diffToVersionId = null;
       this.diffContent = null;
       this.diffSummary = null;
+      this.diffCanRestore = false;
+      this.diffRestoreConfirm = false;
+    },
+
+    // translated plugin string with {placeholders}
+    t(key, data = {}) {
+      return Object.entries(data).reduce(
+        (text, [name, value]) => text.split('{' + name + '}').join(value),
+        this.$t('tearoom1.content-watch.' + key)
+      );
+    },
+
+    languageName(code) {
+      const languages = window.panel?.languages || [];
+      return languages.find(language => language.code === code)?.name || code.toUpperCase();
+    },
+
+    async restoreFromDiff() {
+      const file = this.diffTarget?.file;
+      const entry = this.diffFromEntry;
+
+      if (!file || !entry) {
+        return;
+      }
+
+      this.isRestoringFromDiff = true;
+
+      try {
+        const response = await this.$api.post('/content-watch/restore', {
+          dirPath: file.dir_path,
+          fileKey: file.uid,
+          entryId: entry.entry_id ?? null,
+          timestamp: entry.time
+        });
+
+        if (response.status !== 'success') {
+          throw new Error(response.message);
+        }
+
+        window.panel.notification.success(this.t('restore.done', {version: entry.version}));
+        this.refresh();
+      } catch (error) {
+        window.panel.notification.error(error.message || 'Failed to restore content');
+        this.diffRestoreConfirm = false;
+      } finally {
+        this.isRestoringFromDiff = false;
+      }
     },
 
     changeFromVersion(versionId) {
@@ -1223,6 +1334,8 @@ export default {
       this.isDiffLoading = true;
       this.diffContent = null;
       this.diffSummary = null;
+      this.diffCanRestore = false;
+      this.diffRestoreConfirm = false;
 
       const file = this.diffTarget.file;
       const fromEntry = file.history[parseInt(this.diffFromVersionId, 10)];
@@ -1240,6 +1353,7 @@ export default {
         .then(response => {
           this.diffContent = response.diff;
           this.diffSummary = response.summary || null;
+          this.diffCanRestore = response.canRestore === true;
         })
         .catch(error => {
           window.panel.notification.error('Error loading diff: ' + (error.message || 'Unknown error'));
@@ -1707,45 +1821,6 @@ export default {
     width: 150px;
   }
 
-  .k-content-watch-diff-dialog .k-dialog-body {
-    display: grid;
-    gap: 0.5rem;
-  }
-
-  .k-content-watch-diff-header {
-    padding: 0 0 var(--spacing-4);
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .k-content-watch-diff-file-info {
-    font-size: var(--text-md);
-  }
-
-  .k-content-watch-diff-path {
-    font-size: var(--text-sm);
-    color: var(--color-text-dimmed);
-  }
-
-  .k-content-watch-diff-compare-versions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-3);
-    margin-top: var(--spacing-4);
-  }
-
-  .k-content-watch-diff-summary {
-    margin-top: var(--spacing-3);
-    font-size: var(--text-sm);
-    color: var(--color-text-dimmed);
-  }
-
-  .k-content-watch-diff-code {
-    font-size: 0.875rem;
-    font-family: monospace;
-    white-space: pre-wrap;
-  }
-
-
   @media (max-width: 40rem) {
     .k-content-watch-timeline-row {
       flex-wrap: wrap;
@@ -1761,10 +1836,6 @@ export default {
     .k-content-watch-timeline-editor {
       text-align: left;
       flex-basis: auto;
-    }
-
-    .k-content-watch-diff-compare-versions {
-      grid-template-columns: 1fr;
     }
 
     .k-content-watch-buttons .k-button-group {
@@ -1853,6 +1924,82 @@ export default {
       gap: 1rem;
       align-items: stretch;
     }
+  }
+}
+
+/* the dialogs render outside the view, so their styles are not nested */
+.k-content-watch-diff-dialog .k-dialog-body {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.k-content-watch-diff-header {
+  padding: 0 0 var(--spacing-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.k-content-watch-diff-file-info {
+  font-size: var(--text-md);
+}
+
+.k-content-watch-diff-path {
+  font-size: var(--text-sm);
+  color: var(--color-text-dimmed);
+}
+
+.k-content-watch-diff-compare-versions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-4);
+}
+
+.k-content-watch-diff-confirm {
+  display: grid;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4) var(--dialog-padding, var(--spacing-6));
+  border-top: 1px solid var(--color-border);
+  background: var(--panel-color-back);
+  font-size: var(--text-sm);
+}
+
+.k-content-watch-diff-confirm ul {
+  color: var(--color-text-dimmed);
+}
+
+.k-content-watch-diff-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+}
+
+.k-content-watch-diff-footer .k-button-group {
+  margin-left: auto;
+}
+
+.k-content-watch-diff-hint {
+  flex: 1 1 14rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-dimmed);
+}
+
+.k-content-watch-diff-summary {
+  margin-top: var(--spacing-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-dimmed);
+}
+
+.k-content-watch-diff-code {
+  font-size: 0.875rem;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 40rem) {
+  .k-content-watch-diff-compare-versions {
+    grid-template-columns: 1fr;
   }
 }
 

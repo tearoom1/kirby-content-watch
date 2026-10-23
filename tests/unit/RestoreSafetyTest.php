@@ -3,6 +3,7 @@
 namespace TearoomOne\ContentWatch\Tests\Unit;
 
 use TearoomOne\ContentWatch\ChangeTracker;
+use TearoomOne\ContentWatch\ContentDiffResolver;
 use TearoomOne\ContentWatch\ContentRestore;
 use TearoomOne\ContentWatch\Tests\TestCase;
 
@@ -230,5 +231,43 @@ class RestoreSafetyTest extends TestCase
         $this->assertFalse($restore->restoreContent($dir, 'default', 'before'));
         $this->assertStringContainsString('unsaved changes', (string)$restore->error());
         $this->assertSame("Title: Now\n", file_get_contents($dir . '/default.txt'));
+    }
+
+    protected function diffPage(): string
+    {
+        $dir = $this->contentDir . '/1_page';
+        $this->writeContent($dir . '/default.txt', "Title: Now\n");
+        $this->writeHistory($dir, ['default' => [
+            $this->entry('before', "Title: Before\n", ['path' => '', 'slug' => 'page', 'status' => 'listed', 'template' => 'default']),
+        ]]);
+
+        return $dir;
+    }
+
+    public function testDiffOffersRestoreToUsersWhoMayUpdate(): void
+    {
+        $dir = $this->diffPage();
+        $this->app();
+
+        $result = (new ContentDiffResolver())->compare($dir, 'default', 'before', ContentDiffResolver::CURRENT);
+        $this->assertTrue($result['canRestore']);
+    }
+
+    public function testDiffDoesNotOfferRestoreWithoutUpdatePermission(): void
+    {
+        $dir = $this->diffPage();
+        $this->editorApp(['update' => false]);
+
+        $result = (new ContentDiffResolver())->compare($dir, 'default', 'before', ContentDiffResolver::CURRENT);
+        $this->assertFalse($result['canRestore']);
+    }
+
+    public function testDiffDoesNotOfferRestoreWhenRestoreIsDisabled(): void
+    {
+        $dir = $this->diffPage();
+        $this->app(['options' => ['tearoom1.kirby-content-watch.enableRestore' => false]]);
+
+        $result = (new ContentDiffResolver())->compare($dir, 'default', 'before', ContentDiffResolver::CURRENT);
+        $this->assertFalse($result['canRestore']);
     }
 }
