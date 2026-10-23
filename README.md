@@ -22,7 +22,8 @@ Additionally it provides a view to see which pages are currently locked and by w
 - **Direct Panel Links**: One-click access to edit content in the Panel
 - **Customizable Retention**: Configure how long history is kept
 - **Version Restore**: Restore previous versions of content with a single click (optional)
-- **Dark Mode and Layout Density**: Supports Kirby 5 dark mode; switch between a compact and a relaxed list right in the Panel
+- **Two Views**: Browse changes by page, or as a timeline of all changes grouped by day, where a deploy's changes outside the Panel collapse into one row
+- **Dark Mode**: Supports Kirby 5 dark mode
 - **History Section**: Show recent changes of a page, the site or a file directly in its blueprint, with diff and restore
 - **Page Method**: Access change history programmatically via `$page->contentHistory()`
 
@@ -59,7 +60,8 @@ composer require tearoom1/kirby-content-watch
 
 After installation, you'll see a new "Content Watch" item in the Panel menu. Click on it to access:
 
-- **Files View**: All content files with their modification history
+- **By page**: All content files with their modification history
+- **Timeline**: All changes across pages, the site and files, newest first and grouped by day (Today, Yesterday, then dates). Changes outside the Panel within five minutes of each other, typically a deploy, collapse into one row such as "Outside the Panel · 12 pages". Search and filters apply to both views. The timeline is paginated in the browser with the chosen page size.
 - **Locked Pages**: Overview of currently locked pages and who is editing them
 
 Each file in the list can be expanded to show its modification history. For each history entry with a snapshot, a restore button is available to revert to that previous version.
@@ -77,7 +79,7 @@ return [
         'retentionDays'    => 30,
         'retentionCount'   => 10,
         'defaultPageSize'  => 20,
-        'layoutStyle'      => 'compact',
+        'defaultView'      => 'page',
         'enableLockedPages' => null,
         'enableRestore'    => false,
         'enableDiff'       => true,
@@ -93,7 +95,8 @@ return [
 | `retentionDays` | `int` | `30` | Number of days to keep history entries before they are pruned |
 | `retentionCount` | `int` | `10` | Maximum number of history entries to keep per file and language |
 | `defaultPageSize` | `int` | `20` | Default number of items per page in the panel view. Possible values: `10`, `20`, `50` |
-| `layoutStyle` | `string` | `'compact'` | Default layout density of the list: `'compact'` or `'relaxed'` for more spacing. Editors can switch it with the toggle next to the support link; their choice is remembered per user in the browser and wins over this option. The former value `'default'` still works and means `'relaxed'` |
+| `defaultView` | `string` | `'page'` | View the area opens with: `'page'` (changes grouped by page) or `'timeline'` (all changes, newest first). Editors can switch with the toggle next to the support link; their choice is remembered per user in the browser and wins over this option |
+| `layoutStyle` | `string` | `'compact'` | **Deprecated.** The list always uses the compact layout; `'relaxed'` and `'default'` are still accepted but have no effect |
 | `enableLockedPages` | `bool\|null` | `null` | Whether to show the locked pages view. `null` shows it on Kirby 4 only, since Kirby 5 has its own "Changes" overview |
 | `enableRestore` | `bool` | `false` | Enable content restore functionality. When enabled, full content snapshots are saved — increases disk usage |
 | `enableDiff` | `bool` | `true` | Enable content diff view. Requires `enableRestore` to be `true` |

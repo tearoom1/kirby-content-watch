@@ -329,18 +329,22 @@ class ContentWatchControllerTest extends TestCase
         $this->assertSame(['news'], array_column($files, 'id'));
     }
 
-    public function testLayoutStyleSupportsRelaxedAndLegacyDefault(): void
+    public function testDeprecatedLayoutStyleAlwaysRendersCompact(): void
     {
-        $cases = [
-            'compact'     => 'compact',
-            'relaxed'     => 'relaxed',
-            'default'     => 'relaxed', // legacy name
-            'unknown'     => 'compact',
-        ];
+        foreach (['compact', 'relaxed', 'default', 'unknown'] as $option) {
+            $this->kirby = $this->makeApp(['options' => ['tearoom1.kirby-content-watch.layoutStyle' => $option]]);
+            $this->assertSame('compact', ContentWatchController::layoutStyle(), $option);
+        }
+    }
+
+    public function testDefaultView(): void
+    {
+        $cases = [null => 'page', 'page' => 'page', 'timeline' => 'timeline', 'unknown' => 'page'];
 
         foreach ($cases as $option => $expected) {
-            $this->kirby = $this->makeApp(['options' => ['tearoom1.kirby-content-watch.layoutStyle' => $option]]);
-            $this->assertSame($expected, ContentWatchController::layoutStyle(), $option);
+            $options = $option === '' ? [] : ['tearoom1.kirby-content-watch.defaultView' => $option];
+            $this->kirby = $this->makeApp(['options' => $options]);
+            $this->assertSame($expected, ContentWatchController::defaultView(), (string)$option);
         }
     }
 }

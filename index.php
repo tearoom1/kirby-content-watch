@@ -112,8 +112,12 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
     'translations' => [
         'en' => [
             'tearoom1.content-watch.support'        => 'Support this plugin',
-            'tearoom1.content-watch.layout.compact' => 'Compact layout',
-            'tearoom1.content-watch.layout.relaxed' => 'Relaxed layout',
+            'tearoom1.content-watch.view.page'      => 'By page',
+            'tearoom1.content-watch.view.timeline'  => 'Timeline',
+            'tearoom1.content-watch.timeline.today' => 'Today',
+            'tearoom1.content-watch.timeline.yesterday' => 'Yesterday',
+            'tearoom1.content-watch.timeline.pages' => '{count} pages',
+            'tearoom1.content-watch.timeline.empty' => 'No changes found',
             'tearoom1.content-watch.editor.outside' => 'Outside the Panel',
             'tearoom1.content-watch.editor.outside.help' => 'Changed directly in the file system, e.g. by a deploy, FTP or git',
             'tearoom1.content-watch.editor.deleted' => 'Deleted user',
@@ -143,8 +147,12 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         ],
         'de' => [
             'tearoom1.content-watch.support'        => 'Plugin unterstützen',
-            'tearoom1.content-watch.layout.compact' => 'Kompakte Ansicht',
-            'tearoom1.content-watch.layout.relaxed' => 'Großzügige Ansicht',
+            'tearoom1.content-watch.view.page'      => 'Nach Seite',
+            'tearoom1.content-watch.view.timeline'  => 'Zeitleiste',
+            'tearoom1.content-watch.timeline.today' => 'Heute',
+            'tearoom1.content-watch.timeline.yesterday' => 'Gestern',
+            'tearoom1.content-watch.timeline.pages' => '{count} Seiten',
+            'tearoom1.content-watch.timeline.empty' => 'Keine Änderungen gefunden',
             'tearoom1.content-watch.editor.outside' => 'Außerhalb des Panels',
             'tearoom1.content-watch.editor.outside.help' => 'Direkt im Dateisystem geändert, z. B. durch ein Deployment, FTP oder Git',
             'tearoom1.content-watch.editor.deleted' => 'Gelöschter Benutzer',
@@ -263,7 +271,8 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         'enableRestore'      => false,
         'enableDiff'         => true,
         'defaultPageSize'    => 20,
-        'layoutStyle'        => 'compact', // 'compact' or 'relaxed' ('default' still works as alias for 'relaxed')
+        'layoutStyle'        => 'compact', // deprecated: the list is always compact, 'relaxed' and 'default' are ignored
+        'defaultView'        => 'page', // 'page' or 'timeline'
         'notify'             => null, // Webhook URL (JSON POST) or callable receiving the change payload
     ],
     'api' => [

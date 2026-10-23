@@ -35,17 +35,21 @@ class ContentWatchController
     }
 
     /**
-     * Layout density of the panel list: `compact` (default) or `relaxed`.
-     * `default` is the former name of `relaxed` and stays supported.
+     * @deprecated The list always uses the compact layout now. `relaxed` and
+     *             `default` are still accepted in the config but have no effect.
      */
     public static function layoutStyle(): string
     {
-        $style = option('tearoom1.kirby-content-watch.layoutStyle', 'compact');
+        return 'compact';
+    }
 
-        return match ($style) {
-            'relaxed', 'default' => 'relaxed',
-            default                  => 'compact',
-        };
+    /**
+     * View the Content Watch area opens with: `page` (default) or `timeline`.
+     * Editors can switch it in the Panel; their choice is kept in the browser.
+     */
+    public static function defaultView(): string
+    {
+        return option('tearoom1.kirby-content-watch.defaultView', 'page') === 'timeline' ? 'timeline' : 'page';
     }
 
     /**

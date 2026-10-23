@@ -23,6 +23,9 @@ jobs:
       - name: Run tests
         run: composer test
 
+      - name: Run JS tests
+        run: npm test
+
   changelog:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
