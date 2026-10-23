@@ -220,7 +220,7 @@ class StructuredDiff
 
     protected static function matched(array $old, array $new, int $oldIndex, int $newIndex, bool $moved): array
     {
-        $same = $old['type'] === $new['type'] && $old['content'] == $new['content'];
+        $same = $old['type'] === $new['type'] && self::normalize($old['content']) == self::normalize($new['content']);
 
         return [
             'status'   => $same ? 'unchanged' : 'changed',
@@ -230,6 +230,32 @@ class StructuredDiff
             'newIndex' => $newIndex,
             'moved'    => $moved,
         ];
+    }
+
+    /**
+     * Content without empty values: a property added later with an empty
+     * value (e.g. after a blueprint update) is no change
+     */
+    protected static function normalize(array $content): array
+    {
+        return array_filter($content, fn ($value) => $value !== null && $value !== '' && $value !== []);
+    }
+
+    /**
+     * Passwords, API keys, tokens and secrets are never shown in the diff
+     */
+    public static function isSecret(string $name, ?string $type = null): bool
+    {
+        return $type === 'password'
+            || preg_match('/api.?key|secret|token|passw(or)?d/i', $name) === 1;
+    }
+
+    /**
+     * Line for a changed secret value
+     */
+    public static function hiddenChange(): string
+    {
+        return '<li class="hidden-change">' . DiffGenerator::escape(DiffGenerator::t('diff.hidden', 'value changed (hidden)')) . '</li>';
     }
 
     /**
@@ -328,10 +354,20 @@ class StructuredDiff
             }
 
             $label  = $fields['labels'][$prop] ?? Str::label((string)$prop);
+            $lines  = self::isSecret((string)$prop, $propType)
+                ? self::hiddenChange()
+                : DiffGenerator::renderValueChange($old, $new);
             $props .= '<div class="k-cw-diff-prop">'
                 . '<span class="k-cw-diff-prop-label">' . DiffGenerator::escape($label) . '</span>'
-                . '<ul class="k-cw-diff-lines">' . DiffGenerator::renderValueChange($old, $new) . '</ul>'
+                . '<ul class="k-cw-diff-lines">' . $lines . '</ul>'
                 . '</div>';
+        }
+
+        // a changed item always tells what changed
+        if ($props === '' && $item['status'] === 'changed') {
+            $props = '<ul class="k-cw-diff-lines"><li class="context">'
+                . DiffGenerator::escape(DiffGenerator::t('diff.formatting', 'Only the stored format changed'))
+                . '</li></ul>';
         }
 
         return '<div class="k-cw-diff-item k-cw-diff-item-' . $item['status'] . '">'

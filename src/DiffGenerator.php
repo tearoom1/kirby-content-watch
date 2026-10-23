@@ -56,9 +56,10 @@ class DiffGenerator
 
             $field = self::renderComparedField($key, $old, $new, $labels, $types[$key] ?? null);
 
-            // only the JSON formatting differs
+            // only the stored format or empty properties differ
             if ($field === null) {
                 $unchanged++;
+                $formatOnly = true;
                 continue;
             }
 
@@ -67,7 +68,7 @@ class DiffGenerator
         }
 
         // structured decoding found no field deltas, but the snapshots differ
-        if ($changed === 0) {
+        if ($changed === 0 && empty($formatOnly)) {
             $changed = 1;
             $html   .= self::renderField(['field' => null, 'sub' => null, 'old' => trim($oldContent), 'new' => trim($newContent)], $labels);
         }
@@ -109,6 +110,10 @@ class DiffGenerator
             }
 
             return self::renderFieldWrapper($key, null, $labels, $structured['badge'], 'changed', $structured['html']);
+        }
+
+        if (StructuredDiff::isSecret($key, $type)) {
+            return self::renderFieldWrapper($key, null, $labels, self::t('diff.' . $status, $status), $status, '<ul class="k-cw-diff-lines">' . StructuredDiff::hiddenChange() . '</ul>');
         }
 
         // text diff; JSON values without blocks may still split into several parts

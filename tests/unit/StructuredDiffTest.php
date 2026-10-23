@@ -226,4 +226,32 @@ class StructuredDiffTest extends TestCase
         $structure = StructuredDiff::render("- \n  link: page://gone123\n", "- \n  link: page://aboutuuid\n", 'structure');
         $this->assertStringContainsString('About us', $structure['html']);
     }
+
+    public function testEmptyPropertiesAddedLaterAreNoChange(): void
+    {
+        $old = $this->blocks([['s', 'mk-openrouter', ['apikey' => 'x', 'model' => 'gemma']]]);
+        $new = $this->blocks([['s', 'mk-openrouter', ['provider' => '', 'apikey' => 'x', 'endpoint' => null, 'model' => 'gemma']]]);
+
+        $this->assertSame(0, StructuredDiff::render($old, $new)['changed']);
+
+        $result = DiffGenerator::compare("Ai: $old\n----\nTitle: T", "Ai: $new\n----\nTitle: T");
+        $this->assertSame(0, $result['changed']);
+    }
+
+    public function testSecretsAreNeverShown(): void
+    {
+        $old = $this->blocks([['s', 'mk-openrouter', ['apikey' => 'sk-old-secret', 'model' => 'openai/gpt-6-luna']]]);
+        $new = $this->blocks([['s', 'mk-openrouter', ['apikey' => 'sk-new-secret', 'model' => 'google/gemma-4-31b-it:free']]]);
+
+        $html = StructuredDiff::render($old, $new)['html'];
+
+        $this->assertStringNotContainsString('sk-old-secret', $html);
+        $this->assertStringNotContainsString('sk-new-secret', $html);
+        $this->assertStringContainsString('value changed (hidden)', $html);
+        $this->assertStringContainsString('gemma', $html);
+
+        $field = DiffGenerator::compare("Api_token: abc\n", "Api_token: def\n")['html'];
+        $this->assertStringNotContainsString('abc', $field);
+        $this->assertStringContainsString('value changed (hidden)', $field);
+    }
 }

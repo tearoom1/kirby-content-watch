@@ -324,3 +324,9 @@
   font-size: var(--text-xs);
   color: var(--color-text-dimmed);
 }
+
+.k-content-watch-diff-dialog .k-cw-diff-lines li.hidden-change {
+  font-style: italic;
+  color: var(--color-text-dimmed);
+  background: color-mix(in srgb, var(--color-blue-500) 12%, transparent);
+}
