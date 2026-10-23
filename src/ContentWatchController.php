@@ -272,17 +272,25 @@ class ContentWatchController
         return ChangeTracker::limitPerLanguage($entries, max(0, $retentionCount));
     }
 
+    /**
+     * Editor of a history entry
+     *
+     * Entries without a Panel user come from changes outside the Panel
+     * (deploy, FTP, git, scripts running as the `kirby` user) and get
+     * `outside: true`; entries of users that no longer exist get `deleted: true`.
+     * The Panel translates both, see js/editor.js.
+     */
     public function getEditor(mixed $record): array
     {
-        $unknown = ['id' => 'unknown', 'name' => 'Unknown', 'email' => 'unknown'];
+        $editorId = is_array($record) ? ($record['editor_id'] ?? null) : null;
 
-        if (!isset($record) || empty($record['editor_id']) || $record['editor_id'] === 'unknown') {
-            return $unknown;
+        if (empty($editorId) || $editorId === 'unknown' || $editorId === 'kirby') {
+            return ['id' => 'unknown', 'name' => '', 'email' => '', 'outside' => true];
         }
 
-        $user = kirby()->user($record['editor_id']);
+        $user = kirby()->user($editorId);
         if (!$user) {
-            return $unknown;
+            return ['id' => (string)$editorId, 'name' => '', 'email' => '', 'deleted' => true];
         }
 
         return [

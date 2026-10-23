@@ -158,7 +158,7 @@
                 </span>
               </span>
               <span class="k-content-watch-file-editor">
-                {{ file.editor.name || file.editor.email || 'Unknown' }}<br>
+                <span :title="editorHelp(file.editor)">{{ editorLabel(file.editor) }}</span><br>
                 {{ formatRelative(file.modified) }}
               </span>
             </div>
@@ -186,9 +186,7 @@
                 </strong> ~ {{ file.path_short }}
               </span>
               <span class="k-content-watch-file-editor">
-                 {{ formatRelative(file.modified) }} by <strong>{{
-                  file.editor.name || file.editor.email || 'Unknown'
-                }}</strong>
+                 {{ formatRelative(file.modified) }} by <strong :title="editorHelp(file.editor)">{{ editorLabel(file.editor) }}</strong>
               </span>
             </div>
             <div class="k-content-watch-file-actions">
@@ -217,7 +215,7 @@
                   class="k-timeline-item-tag"
                   :class="'k-timeline-item-tag-' + entryAction(entry)"
                 >{{ entryAction(entry) }}</span>
-                <span class="k-timeline-item-editor">{{ entryEditor(entry) }}</span>
+                <span class="k-timeline-item-editor" :title="editorHelp(entry.editor)">{{ entryEditor(entry) }}</span>
                 <span class="k-timeline-item-when">
                   {{ formatRelative(entry.time) }}
                   <span class="k-timeline-item-when-absolute">{{ formatAbsolute(entry.time) }}</span>
@@ -477,6 +475,7 @@
 
 <script>
 import {formatDistance} from 'date-fns';
+import {editorHelp, editorLabel} from '../editor.js';
 
 export default {
   props: {
@@ -924,7 +923,7 @@ export default {
             entry.version ? 'v' + entry.version : '',
             entry.language || '',
             entry.version ? this.entryAction(entry) : '',
-            entry.editor?.name || '',
+            entry.editor?.name || this.editorLabel(entry.editor),
             entry.editor?.email || '',
             entry.time_formatted || ''
           ]);
@@ -1018,7 +1017,7 @@ export default {
     },
 
     entryEditor(entry) {
-      return entry?.editor?.name || entry?.editor?.email || 'Unknown';
+      return this.editorLabel(entry?.editor);
     },
 
     formatAbsolute(time) {
@@ -1062,7 +1061,7 @@ export default {
       this.diffVersionOptions = file.history.map((historyEntry, historyIndex) => ({
         text: 'v' + historyEntry.version + ' / ' + historyEntry.language + ' / ' +
           this.formatRelative(historyEntry.time) + ' (' +
-          (historyEntry.editor.name || historyEntry.editor.email || 'Unknown') + ')',
+          this.editorLabel(historyEntry.editor) + ')',
         value: String(historyIndex)
       }));
 
@@ -1160,7 +1159,7 @@ export default {
       }
 
       return 'v' + entry.version + ' / ' + entry.language + ' / ' +
-        entry.time_formatted + ' (' + (entry.editor.name || entry.editor.email || 'Unknown') + ')';
+        entry.time_formatted + ' (' + this.editorLabel(entry.editor) + ')';
     },
 
     normalizeDiffVersionId(versionId) {
@@ -1180,7 +1179,15 @@ export default {
     },
 
     fileEditorName(file) {
-      return file.editor?.name || file.editor?.email || 'Unknown';
+      return this.editorLabel(file.editor);
+    },
+
+    editorLabel(editor) {
+      return editorLabel(editor, this.$t.bind(this));
+    },
+
+    editorHelp(editor) {
+      return editorHelp(editor, this.$t.bind(this));
     }
   }
 };

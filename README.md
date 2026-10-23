@@ -62,6 +62,8 @@ After installation, you'll see a new "Content Watch" item in the Panel menu. Cli
 
 Each file in the list can be expanded to show its modification history. For each history entry with a snapshot, a restore button is available to revert to that previous version.
 
+Changes that were not made in the Panel, e.g. by a deploy, FTP, git or a script, have no Panel user. They are shown as **Outside the Panel**; hover the name for an explanation. Changes by users that were deleted since are shown as **Deleted user**.
+
 ## Configuration
 
 You can configure the plugin in your `config.php`:

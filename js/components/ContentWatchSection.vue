@@ -36,7 +36,7 @@
           />
         </span>
         <span class="k-cw-section-meta">
-          <span class="k-cw-section-editor">{{ entryEditor(entry) }}</span>
+          <span class="k-cw-section-editor" :title="editorHelp(entry.editor)">{{ entryEditor(entry) }}</span>
           <span class="k-cw-section-time" :title="formatAbsolute(entry.time)">
             · {{ formatRelative(entry.time) }}
           </span>
@@ -100,6 +100,7 @@
 
 <script>
 import {formatDistance} from 'date-fns';
+import {editorHelp, editorLabel} from '../editor.js';
 
 export default {
   data() {
@@ -243,7 +244,11 @@ export default {
     },
 
     entryEditor(entry) {
-      return entry.editor?.name || entry.editor?.email || 'Unknown';
+      return editorLabel(entry.editor, this.$t.bind(this));
+    },
+
+    editorHelp(editor) {
+      return editorHelp(editor, this.$t.bind(this));
     },
 
     formatRelative(time) {

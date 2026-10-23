@@ -49,35 +49,50 @@ class ContentWatchControllerTest extends TestCase
     // getEditor()
     // -------------------------------------------------------------------------
 
-    public function testGetEditorReturnsUnknownForNullRecord(): void
+    public function testGetEditorMarksMissingRecordAsOutsideThePanel(): void
     {
         $editor = (new ContentWatchController())->getEditor(null);
 
         $this->assertSame('unknown', $editor['id']);
-        $this->assertSame('Unknown', $editor['name']);
+        $this->assertTrue($editor['outside']);
+        $this->assertSame('', $editor['name']);
     }
 
-    public function testGetEditorReturnsUnknownForMissingEditorId(): void
+    public function testGetEditorMarksMissingEditorIdAsOutsideThePanel(): void
     {
         $editor = (new ContentWatchController())->getEditor(['time' => time(), 'version' => 1]);
 
         $this->assertSame('unknown', $editor['id']);
+        $this->assertTrue($editor['outside']);
     }
 
-    public function testGetEditorReturnsUnknownForNonExistentUserId(): void
+    public function testGetEditorMarksKirbySystemUserAsOutsideThePanel(): void
     {
-        $editor = (new ContentWatchController())->getEditor(['editor_id' => 'no-such-user-xyz']);
-
-        $this->assertSame('unknown', $editor['id']);
-    }
-
-    public function testGetEditorReturnsUnknownForKirbySystemUser(): void
-    {
-        // 'kirby' is a virtual impersonation user; it is NOT in the accounts directory,
-        // so kirby()->user('kirby') returns null → getEditor falls back to 'unknown'.
+        // 'kirby' is the virtual impersonation user of scripts, no Panel user
         $editor = (new ContentWatchController())->getEditor(['editor_id' => 'kirby']);
 
         $this->assertSame('unknown', $editor['id']);
+        $this->assertTrue($editor['outside']);
+    }
+
+    public function testGetEditorMarksNonExistentUserAsDeleted(): void
+    {
+        $editor = (new ContentWatchController())->getEditor(['editor_id' => 'no-such-user-xyz']);
+
+        $this->assertSame('no-such-user-xyz', $editor['id']);
+        $this->assertTrue($editor['deleted']);
+        $this->assertArrayNotHasKey('outside', $editor);
+    }
+
+    public function testGetEditorReturnsTheUser(): void
+    {
+        $this->kirby = $this->makeApp([
+            'users' => [['id' => 'abc', 'email' => 'editor@example.com', 'name' => 'Edith', 'role' => 'admin']],
+        ]);
+
+        $editor = (new ContentWatchController())->getEditor(['editor_id' => 'abc']);
+
+        $this->assertSame(['id' => 'abc', 'name' => 'Edith', 'email' => 'editor@example.com'], $editor);
     }
 
     // -------------------------------------------------------------------------
