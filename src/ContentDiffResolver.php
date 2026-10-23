@@ -2,12 +2,17 @@
 
 namespace TearoomOne\ContentWatch;
 
+use Kirby\Cms\ModelWithContent;
+use Kirby\Cms\Page;
+use Kirby\Cms\Site;
 use Kirby\Data\Data;
 use Kirby\Filesystem\F;
 use RuntimeException;
 
 class ContentDiffResolver
 {
+    use ResolvesContentModels;
+
     public function generate(
         string $dirPath,
         string $fileKey,
@@ -25,7 +30,26 @@ class ContentDiffResolver
             throw new RuntimeException('One or both versions have no content', 404);
         }
 
-        return DiffGenerator::generate($fromContent, $toContent);
+        $labels = FieldLabels::forModel($this->resolveModel($dirPath, $fileKey));
+
+        return DiffGenerator::generate($fromContent, $toContent, $labels);
+    }
+
+    /**
+     * Page, site or file the history belongs to, for its blueprint field labels
+     */
+    protected function resolveModel(string $dirPath, string $fileKey): ?ModelWithContent
+    {
+        $owner = $this->findContentModelByRoot($dirPath);
+
+        if ($owner instanceof Site || $owner instanceof Page) {
+            $file = $owner->file($fileKey);
+            if ($file !== null) {
+                return $file;
+            }
+        }
+
+        return $owner;
     }
 
     protected function loadHistory(string $dirPath, string $fileKey): array

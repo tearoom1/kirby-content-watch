@@ -11,6 +11,7 @@ load([
     'TearoomOne\\ContentWatch\\DiffGenerator'          => 'src/DiffGenerator.php',
     'TearoomOne\\ContentWatch\\SnapshotSerializer'     => 'src/SnapshotSerializer.php',
     'TearoomOne\\ContentWatch\\ContentDiffResolver'    => 'src/ContentDiffResolver.php',
+    'TearoomOne\\ContentWatch\\FieldLabels'            => 'src/FieldLabels.php',
 ], __DIR__);
 
 use Kirby\Cms\File;

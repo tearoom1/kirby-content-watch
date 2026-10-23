@@ -16,9 +16,10 @@ class DiffGenerator
      *
      * @param mixed $oldContent Array or string content
      * @param mixed $newContent Array or string content
+     * @param array<string, string> $labels field key => readable label, see FieldLabels
      * @return string
      */
-    public static function generate($oldContent, $newContent): string
+    public static function generate($oldContent, $newContent, array $labels = []): string
     {
         // Handle both string and array content types
         if (trim($oldContent) === trim($newContent)) {
@@ -27,137 +28,137 @@ class DiffGenerator
         // check if package is installed
         $useAdvancedDiff = class_exists('Jfcherng\Diff\Differ');
 
-        $oldFields = self::flattenJSON(Txt::decode($oldContent));
-        $newFields = self::flattenJSON(Txt::decode($newContent));
+        $oldFields = self::flattenFields(Txt::decode($oldContent));
+        $newFields = self::flattenFields(Txt::decode($newContent));
 
         $allKeys = array_unique(array_merge(array_keys($oldFields), array_keys($newFields)));
 
-        $oldValues = [];
-        $newValues = [];
+        $changes = [];
         foreach ($allKeys as $key) {
-            $old = $oldFields[$key] ?? '';
-            $new = $newFields[$key] ?? '';
+            $old = $oldFields[$key]['value'] ?? '';
+            $new = $newFields[$key]['value'] ?? '';
             if ($old !== $new) {
-                if ($useAdvancedDiff) {
-                    $oldValues = array_merge($oldValues, explode("\n", $old));
-                    $newValues = array_merge($newValues, explode("\n", $new));
-                } else {
-                    $oldValues[] = $old;
-                    $newValues[] = $new;
-                }
+                $changes[] = [
+                    'field' => $oldFields[$key]['field'] ?? $newFields[$key]['field'],
+                    'sub'   => $oldFields[$key]['sub'] ?? $newFields[$key]['sub'] ?? null,
+                    'old'   => $old,
+                    'new'   => $new,
+                ];
             }
         }
 
         // Fallback: if structured TXT decoding produced no field deltas but the composed
         // snapshots still differ, diff the raw lines so meta-only changes stay visible.
-        if ($oldValues === [] && $newValues === [] && trim($oldContent) !== trim($newContent)) {
-            $oldValues = preg_split('/\R/', trim($oldContent)) ?: [];
-            $newValues = preg_split('/\R/', trim($newContent)) ?: [];
+        if ($changes === []) {
+            $changes[] = [
+                'field' => null,
+                'sub'   => null,
+                'old'   => trim($oldContent),
+                'new'   => trim($newContent),
+            ];
         }
 
-        if (!$useAdvancedDiff) {
-            return self::diffStringsSimple($oldValues, $newValues);
+        if ($useAdvancedDiff) {
+            $oldValues = [];
+            $newValues = [];
+            foreach ($changes as $change) {
+                $prefix    = $change['field'] !== null ? self::fieldPrefix($change) : '';
+                $oldValues = array_merge($oldValues, explode("\n", $change['old'] === '' ? '' : $prefix . $change['old']));
+                $newValues = array_merge($newValues, explode("\n", $change['new'] === '' ? '' : $prefix . $change['new']));
+            }
+
+            return self::diffStringsWithDiffer($oldValues, $newValues);
         }
 
-        return self::diffStringsWithDiffer($oldValues, $newValues);
+        $output = '';
+        foreach ($changes as $change) {
+            $output .= self::renderField($change, $labels);
+        }
+
+        return '<div class="k-cw-diff">' . $output . '</div>';
     }
 
     /**
-     * Generate a line-by-line diff between two strings
-     *
-     * @param string $oldStr
-     * @param string $newStr
-     * @return string
+     * One changed field: its label (with the raw key) and the changed lines
      */
-    private static function diffStringsSimple(array $oldLines, array $newLines): string
+    protected static function renderField(array $change, array $labels): string
     {
-        $output = '';
-        $changes = false;
+        $header = '';
 
-        $lineCount = max(count($oldLines), count($newLines));
-        for ($i = 0; $i < $lineCount; $i++) {
-            $oldLine = $oldLines[$i] ?? '';
-            $newLine = $newLines[$i] ?? '';
+        if ($change['field'] !== null) {
+            $key   = $change['field'];
+            $label = $labels[$key] ?? null;
+            $raw   = $key . ($change['sub'] ? ' · ' . $change['sub'] : '');
 
-            $oldLine = htmlentities($oldLine);
-            $newLine = htmlentities($newLine);
-
-            if ($oldLine !== $newLine) {
-
-                // Split lines into words and highlight differences
-                $oldWords = preg_split('/\s+/', $oldLine);
-                $newWords = preg_split('/\s+/', $newLine);
-
-                // Find common words at the beginning
-                $startCommon = 0;
-                $minLength = min(count($oldWords), count($newWords));
-                while ($startCommon < $minLength && $oldWords[$startCommon] === $newWords[$startCommon]) {
-                    $startCommon++;
-                }
-
-                // Find common words at the end
-                $oldEnd = count($oldWords) - 1;
-                $newEnd = count($newWords) - 1;
-                $endCommon = 0;
-                while ($endCommon < $minLength - $startCommon &&
-                    $oldEnd - $endCommon >= $startCommon &&
-                    $newEnd - $endCommon >= $startCommon &&
-                    $oldWords[$oldEnd - $endCommon] === $newWords[$newEnd - $endCommon]) {
-                    $endCommon++;
-                }
-
-                // Highlight the differences
-                $oldLine = '';
-                $newLine = '';
-
-                // Add common prefix
-                for ($j = 0; $j < $startCommon; $j++) {
-                    $oldLine .= $oldWords[$j] . ' ';
-                    $newLine .= $newWords[$j] . ' ';
-                }
-
-                $oldLine .= '<span class="diff-delete">';
-                // Add highlighted differences
-                $oldHighContent = '';
-                for ($j = $startCommon; $j <= $oldEnd - $endCommon; $j++) {
-                    $oldHighContent .= $oldWords[$j] . ' ';
-                }
-                $oldLine .= trim($oldHighContent) . '</span> ';
-                $newLine .= '<span class="diff-add">';
-                $newHighContent = '';
-                for ($j = $startCommon; $j <= $newEnd - $endCommon; $j++) {
-                    $newHighContent .= $newWords[$j] . ' ';
-                }
-                $newLine .= trim($newHighContent) . '</span> ';
-
-                // Add common suffix
-                for ($j = 0; $j < $endCommon; $j++) {
-                    $oldLine .= $oldWords[$oldEnd - $endCommon + 1 + $j] . ' ';
-                    $newLine .= $newWords[$newEnd - $endCommon + 1 + $j] . ' ';
-                }
-
-                $oldLine = trim($oldLine);
-                $newLine = trim($newLine);
-
-                $diffLine = '';
-                if ($oldLine !== '') {
-                    $diffLine .= "<li class='removed'>{$oldLine}</li>";
-                }
-
-                if ($newLine !== '') {
-                    $diffLine .= "<li class='added'>{$newLine}</li>";
-                }
-                $changes = true;
-
-                if (!empty($diffLine)) {
-                    $output .= '<ul>';
-                    $output .= $diffLine;
-                    $output .= '</ul><hr/>';
-                }
+            $header = '<div class="k-cw-diff-field-header">';
+            if (is_string($label) && $label !== '') {
+                $header .= '<span class="k-cw-diff-field-label">' . self::escape($label) . '</span> ';
+                $header .= '<span class="k-cw-diff-field-key">' . self::escape($raw) . '</span>';
+            } else {
+                // unknown field: the raw key is all we have
+                $header .= '<span class="k-cw-diff-field-label">' . self::escape($raw) . '</span>';
             }
+            $header .= '</div>';
         }
 
-        return $changes ? $output : '';
+        return '<div class="k-cw-diff-field">'
+            . $header
+            . '<ul class="k-cw-diff-lines">' . self::renderValueChange($change['old'], $change['new']) . '</ul>'
+            . '</div>';
+    }
+
+    /**
+     * Old and new value of a field, the changed words in between marked
+     */
+    protected static function renderValueChange(string $old, string $new): string
+    {
+        $oldLine = self::escape($old);
+        $newLine = self::escape($new);
+
+        if ($old === '' || $new === '') {
+            $lines = '';
+            if ($old !== '') {
+                $lines .= '<li class="removed">' . $oldLine . '</li>';
+            }
+            if ($new !== '') {
+                $lines .= '<li class="added">' . $newLine . '</li>';
+            }
+
+            return $lines;
+        }
+
+        // Split lines into words and highlight differences
+        $oldWords = preg_split('/\s+/', $oldLine);
+        $newWords = preg_split('/\s+/', $newLine);
+
+        // Find common words at the beginning
+        $startCommon = 0;
+        $minLength = min(count($oldWords), count($newWords));
+        while ($startCommon < $minLength && $oldWords[$startCommon] === $newWords[$startCommon]) {
+            $startCommon++;
+        }
+
+        // Find common words at the end
+        $oldEnd = count($oldWords) - 1;
+        $newEnd = count($newWords) - 1;
+        $endCommon = 0;
+        while ($endCommon < $minLength - $startCommon &&
+            $oldEnd - $endCommon >= $startCommon &&
+            $newEnd - $endCommon >= $startCommon &&
+            $oldWords[$oldEnd - $endCommon] === $newWords[$newEnd - $endCommon]) {
+            $endCommon++;
+        }
+
+        $prefix = implode(' ', array_slice($oldWords, 0, $startCommon));
+        $suffix = implode(' ', array_slice($oldWords, $oldEnd - $endCommon + 1));
+        $oldMid = implode(' ', array_slice($oldWords, $startCommon, $oldEnd - $endCommon - $startCommon + 1));
+        $newMid = implode(' ', array_slice($newWords, $startCommon, $newEnd - $endCommon - $startCommon + 1));
+
+        $oldLine = trim($prefix . ' ' . ($oldMid !== '' ? '<span class="diff-delete">' . $oldMid . '</span>' : '') . ' ' . $suffix);
+        $newLine = trim($prefix . ' ' . ($newMid !== '' ? '<span class="diff-add">' . $newMid . '</span>' : '') . ' ' . $suffix);
+
+        return '<li class="removed">' . $oldLine . '</li>'
+            . '<li class="added">' . $newLine . '</li>';
     }
 
     /**
@@ -202,15 +203,39 @@ class DiffGenerator
     }
 
     /**
+     * Content fields as readable `key: value` strings,
+     * blocks and layouts split into one entry per block
+     *
      * @param array $fields
      * @return array
      */
     public static function flattenJSON(array $fields): array
     {
+        return array_map(
+            fn (array $entry) => self::fieldPrefix([
+                'field' => $entry['field'],
+                'sub'   => $entry['sub'],
+                'old'   => $entry['value'],
+                'new'   => '',
+            ]) . $entry['value'],
+            self::flattenFields($fields)
+        );
+    }
+
+    /**
+     * Content fields with their key, the block type (if any) and the value to compare
+     *
+     * @return array<string, array{field: string, sub: ?string, value: string}>
+     */
+    public static function flattenFields(array $fields): array
+    {
+        $flat = [];
+
         foreach ($fields as $key => $field) {
+            $key = (string)$key;
+
             // if fields is json, decode it and pretty print it
             if (is_string($field) && strpos($field, '[') === 0) {
-                unset($fields[$key]);
                 // Use JSON_UNESCAPED_UNICODE flag to properly decode UTF-8 characters
                 $object = json_decode($field, true, 512, JSON_UNESCAPED_UNICODE);
                 if ($object === null && json_last_error() !== JSON_ERROR_NONE) {
@@ -218,10 +243,10 @@ class DiffGenerator
                     $field = self::decodeUnicodeEscapes($field);
                     $object = json_decode($field, true, 512, JSON_UNESCAPED_UNICODE);
                 }
-                
+
                 // Not valid JSON (e.g. a text starting with a Markdown link): treat as plain text
                 if (!is_array($object)) {
-                    $fields[$key] = self::formatField($key, $field);
+                    $flat[$key] = ['field' => $key, 'sub' => null, 'value' => $field];
                     continue;
                 }
 
@@ -229,24 +254,36 @@ class DiffGenerator
                 $contents = self::array_value_recursive('content', $object);
                 if ($contents === []) {
                     // JSON without blocks: show the whole pretty-printed value
-                    $fields[$key] = $key . ":\n" . self::jsonEncodeFormatted($object);
+                    $flat[$key] = ['field' => $key, 'sub' => null, 'value' => self::jsonEncodeFormatted($object)];
                     continue;
                 }
                 foreach ($contents as $id => $content) {
-                    $fields[$key . $id] = $key . " - " . $content;
+                    $flat[$key . $id] = ['field' => $key, 'sub' => $content['type'], 'value' => $content['value']];
                 }
             } else {
-                $fields[$key] = self::formatField($key, $field);
+                $value = is_scalar($field) || $field === null ? (string)$field : self::jsonEncodeFormatted($field);
+                $flat[$key] = ['field' => $key, 'sub' => null, 'value' => $value];
             }
         }
-        return $fields;
+
+        return $flat;
     }
 
-    private static function formatField(string $key, mixed $field): string
+    /**
+     * `key: ` or `key - blocktype: ` in front of a value, multi-line values start on the next line
+     */
+    protected static function fieldPrefix(array $change): string
     {
-        return is_string($field) && str_contains($field, "\n")
-            ? $key . ":\n" . $field
-            : $key . ': ' . $field;
+        $prefix = $change['field'] . ($change['sub'] ? ' - ' . $change['sub'] : '');
+
+        return str_contains($change['old'] . $change['new'], "\n")
+            ? $prefix . ":\n"
+            : $prefix . ': ';
+    }
+
+    protected static function escape(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
     private static function array_value_recursive($key, array $arr): array
@@ -256,14 +293,17 @@ class DiffGenerator
             if ($k === $key) {
                 // Use JSON_PRETTY_PRINT and JSON_UNESCAPED_UNICODE for proper UTF-8 output
                 $id = $arr['id'] ?? md5(self::jsonEncodeFormatted($arr));
-                $val[$id] = ($arr['type'] ?? $key) . ': ' . self::jsonEncodeFormatted($v);
+                $val[$id] = [
+                    'type'  => (string)($arr['type'] ?? $key),
+                    'value' => self::jsonEncodeFormatted($v),
+                ];
             } elseif (is_array($v)) {
                 $val = array_merge($val, self::array_value_recursive($key, $v));
             }
         }
         return $val;
     }
-    
+
     /**
      * Encode JSON with pretty printing and proper UTF-8 handling
      *
@@ -274,10 +314,10 @@ class DiffGenerator
     {
         return json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
-    
+
     /**
      * Manually decode Unicode escape sequences in a string
-     * 
+     *
      * @param string $str String with Unicode escape sequences
      * @return string String with decoded UTF-8 characters
      */
