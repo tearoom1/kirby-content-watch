@@ -1,3 +1,10 @@
+## [3.10.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.10.0...v3.10.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* fill in translation placeholders and tidy the timeline layout ([26f62a1](https://github.com/tearoom1/kirby-content-watch/commit/26f62a140230e2a3c7b3f6ebdd2935bf27200a95))
+
 ## [3.10.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.9.1...v3.10.0) (2026-10-23)
 
 
@@ -34,11 +41,4 @@
 ### Bug Fixes
 
 * move tabs and support link into a compact row under the area title ([cb03e46](https://github.com/tearoom1/kirby-content-watch/commit/cb03e468e9143585caa64c731ff8664d054b6605))
-
-## [3.7.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.6.0...v3.7.0) (2026-10-23)
-
-
-### Features
-
-* Panel support link opens the central support page ([ae14ff0](https://github.com/tearoom1/kirby-content-watch/commit/ae14ff051f0f45b8b5c84d6cbc9b05bbc6762317))
 
