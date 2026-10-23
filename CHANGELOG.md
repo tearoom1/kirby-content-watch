@@ -1,3 +1,10 @@
+## [3.9.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.9.0...v3.9.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* restore through Kirby and keep the history file safe ([322d7a7](https://github.com/tearoom1/kirby-content-watch/commit/322d7a7a210cb854a1258b5c64b7ce9a548a6be7))
+
 ## [3.9.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.8.0...v3.9.0) (2026-10-23)
 
 
@@ -38,16 +45,4 @@
 ### Bug Fixes
 
 * refresh the history section after saving ([d215bb3](https://github.com/tearoom1/kirby-content-watch/commit/d215bb3379113830e475f0ddfd79ba925f61f97d))
-
-## [3.5.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.4.0...v3.5.0) (2026-10-07)
-
-
-### Features
-
-* align history section with the new timeline design ([7e441c7](https://github.com/tearoom1/kirby-content-watch/commit/7e441c799e95d96c110fcd25af755588edfbe833))
-
-
-### Bug Fixes
-
-* make active tabs and toggles visible in light mode ([82dc67f](https://github.com/tearoom1/kirby-content-watch/commit/82dc67f76cc3daaf8f5d1fbac8c5857ca8c33a44))
 
