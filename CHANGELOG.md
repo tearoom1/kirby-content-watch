@@ -1,3 +1,18 @@
+## [3.8.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.7.0...v3.8.0) (2026-10-23)
+
+
+### Features
+
+* highlight changed words inside changed lines of the diff ([cdb76b5](https://github.com/tearoom1/kirby-content-watch/commit/cdb76b5a121041a734995b555dd29a2fa9eb9314))
+* show blueprint field labels instead of raw keys in the diff ([350b2f6](https://github.com/tearoom1/kirby-content-watch/commit/350b2f6e957ef9ade357bea218c4312ec5a63a40))
+* show changes without a Panel user as "Outside the Panel" ([9bd4b14](https://github.com/tearoom1/kirby-content-watch/commit/9bd4b1492452719a30d3d407d40ec27453757da6))
+* switch between compact and relaxed layout in the Panel ([7ce77cc](https://github.com/tearoom1/kirby-content-watch/commit/7ce77ccda88f99dc1445e8444ea4fe3b610e5898))
+
+
+### Bug Fixes
+
+* move tabs and support link into a compact row under the area title ([cb03e46](https://github.com/tearoom1/kirby-content-watch/commit/cb03e468e9143585caa64c731ff8664d054b6605))
+
 ## [3.7.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.6.0...v3.7.0) (2026-10-23)
 
 
@@ -59,12 +74,4 @@
 * show a readable label for locks of unknown users ([cb844af](https://github.com/tearoom1/kirby-content-watch/commit/cb844af90e5cb2ccd856f105e45c828853260798))
 * slightly more row spacing in compact timeline, align compact fallbacks ([fb9004f](https://github.com/tearoom1/kirby-content-watch/commit/fb9004fb608418dd65ea65909046f7a78cfd4141))
 * tone down tab size and make the panel view usable on small screens ([ec734e6](https://github.com/tearoom1/kirby-content-watch/commit/ec734e6904c1aff95f17322ee8b6cae643db3866))
-
-## [3.3.7](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.5...v3.3.7) (2026-09-02)
-
-
-### Bug Fixes
-
-* register content model resolver trait ([ca122ce](https://github.com/tearoom1/kirby-content-watch/commit/ca122ce394ca6e8d1879634705242a57e260b2da)), closes [#12](https://github.com/tearoom1/kirby-content-watch/issues/12)
-* updated composer, bumped Kirby version to 5.5.3 ([88f731d](https://github.com/tearoom1/kirby-content-watch/commit/88f731d135b245838356990fdef40a21af839bbd))
 
