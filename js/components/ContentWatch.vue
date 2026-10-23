@@ -55,8 +55,7 @@
 
     <!-- Content Watch Tab -->
     <section v-if="tab === 'content'" class="k-content-watch-section">
-      <k-grid v-if="files.length">
-        <k-column width="1/2">
+      <div v-if="files.length" class="k-content-watch-toolbar">
           <k-input
             class="k-content-watch-search"
             type="text"
@@ -65,9 +64,7 @@
             @input="filterFiles"
             icon="search"
           />
-        </k-column>
-        <k-column width="1/2" class="k-content-watch-buttons">
-          <k-button-group>
+          <k-button-group class="k-content-watch-buttons">
             <k-button :class="{'k-button-active': showOnlyPages}" :variant="(showOnlyPages) ? 'filled' : null" @click="toggleShowOnlyPages" icon="page">Pages only
             </k-button>
             <k-button :class="{'k-button-active': !showOnlyPages}" :variant="(!showOnlyPages) ? 'filled' : null" @click="toggleShowAll" icon="file-document">All
@@ -84,8 +81,7 @@
             />
             <k-button icon="refresh" title="Reload" @click="refresh"/>
           </k-button-group>
-        </k-column>
-      </k-grid>
+      </div>
 
       <div v-if="files.length && showFilters" class="k-content-watch-filters">
         <k-select-field
@@ -255,6 +251,27 @@
                         <a :href="row.file.panel_url" class="k-content-watch-timeline-title" @click.stop>{{ row.file.title }}</a>
                         <span class="k-content-watch-timeline-path">{{ row.file.path_short }}</span>
                       </span>
+                      <span v-if="row.entry?.language" class="k-timeline-item-language">{{ row.entry.language }}</span>
+                      <span
+                        class="k-timeline-item-tag"
+                        :class="'k-timeline-item-tag-' + entryAction(row.entry)"
+                      >{{ entryAction(row.entry) }}</span>
+                      <span class="k-timeline-item-actions">
+                        <k-button
+                          v-if="enableDiff && row.entry?.has_snapshot && row.file.history.length > 1"
+                          icon="split"
+                          class="k-diff-button"
+                          title="View changes"
+                          @click.stop="viewDiff(row.file, row.entry, row.entryIndex)"
+                        />
+                        <k-button
+                          v-if="enableRestore && row.entry?.has_snapshot && row.entryIndex > 0"
+                          icon="undo"
+                          class="k-restore-button"
+                          title="Restore this version"
+                          @click.stop="confirmRestore(row.file, row.entry)"
+                        />
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -328,8 +345,7 @@
 
     <!-- Locked Pages Tab -->
     <section v-if="enableLockedPages && tab === 'locked'" class="k-content-watch-section">
-      <k-grid v-if="lockedPages.length">
-        <k-column width="1/2">
+      <div v-if="lockedPages.length" class="k-content-watch-toolbar">
           <k-input
             class="k-content-watch-search"
             type="text"
@@ -338,9 +354,7 @@
             @input="filterLockedPages"
             icon="search"
           />
-        </k-column>
-        <k-column width="1/2" class="k-content-watch-buttons">
-          <k-button-group>
+          <k-button-group class="k-content-watch-buttons">
             <k-button :class="{'k-button-active': lockedShowOnlyPages}" :variant="(lockedShowOnlyPages) ? 'filled' : null" @click="toggleLockedShowOnlyPages" icon="page">
               Pages only
             </k-button>
@@ -350,8 +364,7 @@
             </k-button>
             <k-button icon="refresh" title="Reload" @click="refresh"/>
           </k-button-group>
-        </k-column>
-      </k-grid>
+      </div>
 
       <div v-if="filteredLockedPages.length" class="k-content-watch-files k-content-watch-locked">
         <div
@@ -782,10 +795,7 @@ export default {
 
       const {changed, unchanged} = this.diffSummary;
       const from = this.diffTarget.file.history[parseInt(this.diffFromVersionId, 10)];
-      const t = (key, data) => Object.entries(data).reduce(
-        (text, [name, value]) => text.replace('{' + name + '}', value),
-        this.$t('tearoom1.content-watch.' + key)
-      );
+      const t = (key, data) => this.t(key, data);
 
       if (!changed) {
         return t('diff.summary.none', {});
@@ -896,7 +906,7 @@ export default {
 
     outsideGroupLabel(item) {
       const count = new Set(item.rows.map(row => row.file.id)).size;
-      return this.$t('tearoom1.content-watch.timeline.pages').replace('{count}', count);
+      return this.t('timeline.pages', {count});
     },
 
     panelLanguage() {
@@ -1269,12 +1279,9 @@ export default {
       this.diffRestoreConfirm = false;
     },
 
-    // translated plugin string with {placeholders}
+    // translated plugin string; Kirby's $t fills the {placeholders} from data
     t(key, data = {}) {
-      return Object.entries(data).reduce(
-        (text, [name, value]) => text.split('{' + name + '}').join(value),
-        this.$t('tearoom1.content-watch.' + key)
-      );
+      return this.$t('tearoom1.content-watch.' + key, data);
     },
 
     languageName(code) {
@@ -1466,7 +1473,21 @@ export default {
     gap: 0.25rem;
   }
 
-  .k-content-watch-buttons .k-button-group {
+  /* search shrinks first, the buttons stay in one row */
+  .k-content-watch-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+  }
+
+  .k-content-watch-toolbar .k-content-watch-search {
+    flex: 1 1 10rem;
+    min-width: 0;
+  }
+
+  .k-content-watch-buttons {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
     justify-content: flex-end;
   }
 
@@ -1729,24 +1750,30 @@ export default {
     min-height: 2.25rem;
   }
 
+  /* wide enough for "03:46 PM" */
   .k-content-watch-timeline-time {
-    flex: 0 0 3rem;
+    flex: 0 0 4.75rem;
+    white-space: nowrap;
     color: var(--color-text-dimmed);
     font-variant-numeric: tabular-nums;
   }
 
   .k-content-watch-timeline-main {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
     display: flex;
     align-items: baseline;
     gap: 0.5rem;
     overflow: hidden;
     white-space: nowrap;
-    text-overflow: ellipsis;
   }
 
+  /* the path gives way first, then the title */
   .k-content-watch-timeline-title {
+    flex: 0 1 auto;
+    min-width: 4rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-weight: var(--font-semi);
     color: var(--color-text);
   }
@@ -1756,13 +1783,16 @@ export default {
   }
 
   .k-content-watch-timeline-path {
+    flex: 0 1000 auto;
+    min-width: 0;
     color: var(--color-text-dimmed);
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .k-content-watch-timeline-editor {
-    flex: 0 1 10rem;
+    flex: 0 1 auto;
+    max-width: 9rem;
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
@@ -1838,7 +1868,15 @@ export default {
       flex-basis: auto;
     }
 
-    .k-content-watch-buttons .k-button-group {
+    .k-content-watch-toolbar {
+      flex-wrap: wrap;
+    }
+
+    .k-content-watch-toolbar .k-content-watch-search {
+      flex-basis: 100%;
+    }
+
+    .k-content-watch-buttons {
       flex-wrap: wrap;
       justify-content: flex-start;
     }

@@ -172,4 +172,36 @@ class StructuredDiffTest extends TestCase
         $this->assertStringContainsString('<del>Old</del>', $result['html']);
         $this->assertStringContainsString('<ins>Current</ins>', $result['html']);
     }
+
+    public function testCurrentVersionIsThePublishedFileEvenWhenChangedOutsideThePanel(): void
+    {
+        $pageDir = $this->contentDir . '/1_matcha';
+        $saved   = "Title: Matcha\n----\nRobots: noindex, follow\n";
+        $this->writeHistory($pageDir, ['article' => [
+            ['editor_id' => 'kirby', 'uuid' => 'v2', 'time' => 2000000, 'version' => 2, 'language' => 'en', 'content' => $saved],
+            ['editor_id' => 'kirby', 'uuid' => 'v1', 'time' => 1000000, 'version' => 1, 'language' => 'en', 'content' => "Title: Matcha\n----\nRobots: \n"],
+        ]]);
+        // after the last snapshot the file was reset outside the Panel (git, deploy);
+        // another plugin keeps an old copy in a subfolder, which must not be read
+        $this->writeContent($pageDir . '/article.en.txt', "Title: Matcha\n----\nRobots: \n");
+        $this->writeContent($pageDir . '/_versions/2026-10-08/article.en.txt', $saved);
+        $this->writeContent($pageDir . '/article.de.txt', "Title: Matcha DE\n----\nRobots: noindex\n");
+
+        $this->kirby = $this->makeApp(['languages' => [
+            ['code' => 'en', 'name' => 'English', 'default' => true],
+            ['code' => 'de', 'name' => 'Deutsch'],
+        ]]);
+        $this->kirby->impersonate('kirby');
+
+        $resolver = new ContentDiffResolver();
+
+        // v1 matches the file on disk: nothing changed
+        $this->assertSame(0, $resolver->compare($pageDir, 'article', 'v1', ContentDiffResolver::CURRENT)['changed']);
+
+        // v2 (latest snapshot) differs from the file: robots was removed outside the Panel
+        $result = $resolver->compare($pageDir, 'article', 'v2', ContentDiffResolver::CURRENT);
+        $this->assertSame(1, $result['changed']);
+        $this->assertStringContainsString('k-cw-diff-badge-removed', $result['html']);
+        $this->assertStringContainsString('<li class="removed">noindex, follow</li>', $result['html']);
+    }
 }
