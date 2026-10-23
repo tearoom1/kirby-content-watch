@@ -1,3 +1,21 @@
+## [3.12.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.11.0...v3.12.0) (2026-10-23)
+
+
+### Features
+
+* mark versions that equal the current content ([b5b8a2a](https://github.com/tearoom1/kirby-content-watch/commit/b5b8a2a321b44504cd3417adb1c5e724f3bec941))
+
+
+### Bug Fixes
+
+* align the chevron of deploy groups with the action column ([40663ec](https://github.com/tearoom1/kirby-content-watch/commit/40663ec823a2752c010db1ae2e56e7e8515a81dd))
+* changed blocks always list their changes, secrets stay hidden ([e12c62b](https://github.com/tearoom1/kirby-content-watch/commit/e12c62bd834467880d7e54a9073cfeb230d13a16))
+* keep diff and restore buttons in fixed columns ([b03455d](https://github.com/tearoom1/kirby-content-watch/commit/b03455df25f6a3256bfa2500b9e99cd46f1c9185))
+* more room for titles in the timeline, no required marker on "Show" ([9021e44](https://github.com/tearoom1/kirby-content-watch/commit/9021e44b236c7b12c1794cdd3ca9fa031fdbdb2e))
+* resolve references inside blocks and structures, mark deleted ones ([5fb2c6f](https://github.com/tearoom1/kirby-content-watch/commit/5fb2c6f043b471e80d50763a3893ad88d9680b36))
+* stronger colours for changed lines in the diff ([61a8f6b](https://github.com/tearoom1/kirby-content-watch/commit/61a8f6be8a0923618763f63b86ca35cd2a0ecdef))
+* versions equal to the current content keep a muted diff button ([76dfa85](https://github.com/tearoom1/kirby-content-watch/commit/76dfa85e9e73817f0aa2a92aafc8f0dd38bf0f62))
+
 ## [3.11.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.10.1...v3.11.0) (2026-10-23)
 
 
@@ -34,11 +52,4 @@
 ### Bug Fixes
 
 * restore through Kirby and keep the history file safe ([322d7a7](https://github.com/tearoom1/kirby-content-watch/commit/322d7a7a210cb854a1258b5c64b7ce9a548a6be7))
-
-## [3.9.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.8.0...v3.9.0) (2026-10-23)
-
-
-### Features
-
-* compare versions with the current content and diff blocks block by block ([7f9939f](https://github.com/tearoom1/kirby-content-watch/commit/7f9939f0678838eedb1afcbd342a90d81479e5b9))
 
