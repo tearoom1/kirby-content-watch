@@ -1,3 +1,10 @@
+## [3.9.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.8.0...v3.9.0) (2026-10-23)
+
+
+### Features
+
+* compare versions with the current content and diff blocks block by block ([7f9939f](https://github.com/tearoom1/kirby-content-watch/commit/7f9939f0678838eedb1afcbd342a90d81479e5b9))
+
 ## [3.8.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.7.0...v3.8.0) (2026-10-23)
 
 
@@ -43,35 +50,4 @@
 ### Bug Fixes
 
 * make active tabs and toggles visible in light mode ([82dc67f](https://github.com/tearoom1/kirby-content-watch/commit/82dc67f76cc3daaf8f5d1fbac8c5857ca8c33a44))
-
-## [3.4.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.3.7...v3.4.0) (2026-10-07)
-
-
-### Features
-
-* add contentwatch blueprint section showing a model's recent changes ([ff21e63](https://github.com/tearoom1/kirby-content-watch/commit/ff21e636fb0236880dee054ae02f1571a1ab3e3b))
-* apply retentionCount per language ([fb2d566](https://github.com/tearoom1/kirby-content-watch/commit/fb2d566f983d30ea5c06e5c6adb4042680441492))
-* export filtered change history as CSV ([b649487](https://github.com/tearoom1/kirby-content-watch/commit/b649487230ac830e6eb1ae5f559e78688037e173))
-* filter content changes by period and language ([cc34c50](https://github.com/tearoom1/kirby-content-watch/commit/cc34c50a62cccaeb490db3043cab311473411b80))
-* hide locked pages view on Kirby 5 by default ([d25a495](https://github.com/tearoom1/kirby-content-watch/commit/d25a495bcb2e13eedf50ff68622dde0cc09e20cc))
-* notify a webhook or closure on content changes ([28d50da](https://github.com/tearoom1/kirby-content-watch/commit/28d50da1ac7816914caac108cecf5a9e6905e23f))
-* redesign history timeline per layout style ([cf9cea3](https://github.com/tearoom1/kirby-content-watch/commit/cf9cea302526b728112ac610f18fb257b808167f))
-* rename layoutStyle 'default' to 'relaxed' ([b554366](https://github.com/tearoom1/kirby-content-watch/commit/b5543665c0699f38bbc8f62dd4b6463de670fac4))
-* show the action as a colored tag in the compact timeline ([687a5cf](https://github.com/tearoom1/kirby-content-watch/commit/687a5cfa93628c09704db3f5af5039b2cbad169f))
-* tighter timeline rows with single-line time in compact layout ([e6d1f21](https://github.com/tearoom1/kirby-content-watch/commit/e6d1f2140fac94ce42bce5a2d39df7be59454e8a))
-
-
-### Bug Fixes
-
-* apply period and language filters to exported CSV entries ([159344b](https://github.com/tearoom1/kirby-content-watch/commit/159344b461a71e786e3e4af68fd2301475f63a64))
-* harden diff generation, reset history on duplicate, drop history of deleted files ([6e21c96](https://github.com/tearoom1/kirby-content-watch/commit/6e21c967e1c1582d3a59999c3ac8cb461ce11b36))
-* hide history entries outside the retention window in the panel ([5b76b00](https://github.com/tearoom1/kirby-content-watch/commit/5b76b00b0c054a742a64d347d6d9e8ce949435bf))
-* hide locked pages tab when enableLockedPages is disabled ([ae1e71d](https://github.com/tearoom1/kirby-content-watch/commit/ae1e71d6121dddc5ffa595b5fc016971db38ce81))
-* ignore content folders without a Kirby model ([18e58d2](https://github.com/tearoom1/kirby-content-watch/commit/18e58d23cc2d9e4b5e3fcc44689f95f1b6850c5a))
-* label icon-only buttons and drop empty page size option ([29edadb](https://github.com/tearoom1/kirby-content-watch/commit/29edadb14d48bf5d1e9eee2b64428b48c9998e43))
-* polish history section icons and navigate inside the panel ([73423d9](https://github.com/tearoom1/kirby-content-watch/commit/73423d94b9b36003a504b42e880aaeeed31e4f1d))
-* reject restore for directories without a content model ([8bc3514](https://github.com/tearoom1/kirby-content-watch/commit/8bc3514fcad927455532a70f1c11234e6dbdfc84))
-* show a readable label for locks of unknown users ([cb844af](https://github.com/tearoom1/kirby-content-watch/commit/cb844af90e5cb2ccd856f105e45c828853260798))
-* slightly more row spacing in compact timeline, align compact fallbacks ([fb9004f](https://github.com/tearoom1/kirby-content-watch/commit/fb9004fb608418dd65ea65909046f7a78cfd4141))
-* tone down tab size and make the panel view usable on small screens ([ec734e6](https://github.com/tearoom1/kirby-content-watch/commit/ec734e6904c1aff95f17322ee8b6cae643db3866))
 
