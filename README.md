@@ -41,7 +41,7 @@ The restore feature also has some limitations
 - in Kirby 5, a page with unsaved changes in the Panel cannot be restored until the changes are saved or discarded
 - a version that fails the current blueprint validation (e.g. an empty required field) cannot be restored as a published page
 
-> Beware the restore feature is BETA and may have bugs. Use at your own risk!
+Restore runs through Kirby's own page actions as the current user, so the user's permissions, blueprint validation, hooks and the page cache all apply. Each restore adds a new entry to the history, so it can be undone. As with any tool that changes content, keep regular backups.
 
 ## Installation
 
