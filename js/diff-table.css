@@ -313,3 +313,14 @@
   color: var(--color-text-dimmed);
   padding-block: 0;
 }
+
+/* reference to a page, file or user that no longer exists */
+.k-content-watch-diff-dialog .k-cw-diff-ref-missing {
+  font-style: italic;
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-ref-id {
+  font-style: normal;
+  font-size: var(--text-xs);
+  color: var(--color-text-dimmed);
+}

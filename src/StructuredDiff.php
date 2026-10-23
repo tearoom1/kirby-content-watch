@@ -428,10 +428,43 @@ class StructuredDiff
                 return $model->title()->value();
             }
         } catch (Throwable) {
-            // model deleted since: show the reference
+            // model deleted since
+        }
+
+        if (preg_match('/\A(page|user|site):\/\//', $value, $match) === 1) {
+            return self::missing($match[1], $value);
         }
 
         return $value;
+    }
+
+    /** Markers around a reference that no longer resolves, see missing() */
+    public const MISSING_START = "\u{E000}";
+    public const MISSING_ID    = "\u{E001}";
+    public const MISSING_END   = "\u{E002}";
+
+    /**
+     * "deleted page" plus the id. The markers keep the reference one word in
+     * the word diff; DiffGenerator::compare() turns them into markup that
+     * shows the id muted.
+     */
+    protected static function missing(string $kind, string $id): string
+    {
+        $label = DiffGenerator::t('diff.deleted.' . $kind, 'deleted ' . $kind);
+
+        return self::MISSING_START . $label . self::MISSING_ID . $id . self::MISSING_END;
+    }
+
+    /**
+     * Replace the markers of missing references in rendered (escaped) HTML
+     */
+    public static function missingToHtml(string $html): string
+    {
+        return strtr($html, [
+            self::MISSING_START => '<span class="k-cw-diff-ref-missing">',
+            self::MISSING_ID    => ' <span class="k-cw-diff-ref-id">',
+            self::MISSING_END   => '</span></span>',
+        ]);
     }
 
     protected static function referenceName(string $value): string
@@ -463,10 +496,10 @@ class StructuredDiff
                     return $file->filename();
                 }
             } catch (Throwable) {
-                // file deleted since: show the reference
+                // file deleted since
             }
 
-            return $value;
+            return self::missing('file', $value);
         }
 
         return basename($value);

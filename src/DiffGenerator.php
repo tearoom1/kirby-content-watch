@@ -73,7 +73,7 @@ class DiffGenerator
         }
 
         return [
-            'html'      => '<div class="k-cw-diff">' . $html . '</div>',
+            'html'      => StructuredDiff::missingToHtml('<div class="k-cw-diff">' . $html . '</div>'),
             'changed'   => $changed,
             'unchanged' => $unchanged,
         ];
@@ -374,11 +374,13 @@ class DiffGenerator
         $common = 0;
         foreach ($ops as [$type, $token]) {
             if ($type === '=' && trim($token) !== '') {
-                $common += mb_strlen($token);
+                $common += str_starts_with($token, "\u{E000}") ? 1 : mb_strlen($token);
             }
         }
 
-        $longest = max(mb_strlen(preg_replace('/\s+/u', '', $old)), mb_strlen(preg_replace('/\s+/u', '', $new)));
+        // a missing reference counts as one character, its id is no content
+        $length  = fn (string $line) => mb_strlen(preg_replace(['/\x{E000}[^\x{E002}]*\x{E002}/u', '/\s+/u'], ['#', ''], $line));
+        $longest = max($length($old), $length($new));
         if ($longest === 0 || $common / $longest < self::MIN_WORD_SIMILARITY) {
             return null;
         }
@@ -427,7 +429,8 @@ class DiffGenerator
      */
     protected static function tokenize(string $line): array
     {
-        preg_match_all('/[\p{L}\p{N}_]+|\s+|./us', $line, $matches);
+        // a reference that no longer resolves stays one token, see StructuredDiff::missing()
+        preg_match_all('/\x{E000}[^\x{E002}]*\x{E002}|[\p{L}\p{N}_]+|\s+|./us', $line, $matches);
 
         return $matches[0];
     }

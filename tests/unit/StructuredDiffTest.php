@@ -204,4 +204,26 @@ class StructuredDiffTest extends TestCase
         $this->assertStringContainsString('k-cw-diff-badge-removed', $result['html']);
         $this->assertStringContainsString('<li class="removed">noindex, follow</li>', $result['html']);
     }
+
+    public function testReferencesInsideBlocksAndStructuresAreResolved(): void
+    {
+        $this->writeContent($this->contentDir . '/1_about/default.txt', "Title: About us\n----\nUuid: aboutuuid\n");
+        $this->kirby = $this->makeApp();
+        $this->kirby->impersonate('kirby');
+
+        $old = $this->blocks([['a', 'sitemap', ['exclude' => 'page://aboutuuid']]]);
+        $new = $this->blocks([['a', 'sitemap', ['exclude' => 'page://aboutuuid, page://gone123']]]);
+
+        $result = DiffGenerator::compare("Settings: $old", "Settings: $new");
+        $html   = $result['html'];
+
+        $this->assertStringContainsString('About us', $html);
+        $this->assertStringNotContainsString('page://aboutuuid', $html);
+        $this->assertStringContainsString('<span class="k-cw-diff-ref-missing">deleted page <span class="k-cw-diff-ref-id">page://gone123</span></span>', $html);
+        // the missing reference is one word in the word diff
+        $this->assertMatchesRegularExpression('/<ins>[^<]*<span class="k-cw-diff-ref-missing">deleted page <span class="k-cw-diff-ref-id">page:\/\/gone123<\/span><\/span><\/ins>/', $html);
+
+        $structure = StructuredDiff::render("- \n  link: page://gone123\n", "- \n  link: page://aboutuuid\n", 'structure');
+        $this->assertStringContainsString('About us', $structure['html']);
+    }
 }
