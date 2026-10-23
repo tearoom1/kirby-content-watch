@@ -1,0 +1,175 @@
+<?php
+
+namespace TearoomOne\ContentWatch\Tests\Unit;
+
+use TearoomOne\ContentWatch\ContentDiffResolver;
+use TearoomOne\ContentWatch\DiffGenerator;
+use TearoomOne\ContentWatch\StructuredDiff;
+use TearoomOne\ContentWatch\Tests\TestCase;
+
+class StructuredDiffTest extends TestCase
+{
+    protected function blocks(array $blocks): string
+    {
+        return json_encode(array_map(fn ($b) => [
+            'id'       => $b[0],
+            'type'     => $b[1],
+            'content'  => $b[2],
+            'isHidden' => false,
+        ], $blocks));
+    }
+
+    protected function statuses(array $items): array
+    {
+        return array_map(fn ($item) => $item['status'] . ($item['moved'] ? '+moved' : ''), $items);
+    }
+
+    public function testMatchesBlocksByIdAndDetectsAllChangeKinds(): void
+    {
+        $old = StructuredDiff::parseBlocks($this->blocks([
+            ['a', 'heading', ['text' => 'Intro']],
+            ['b', 'text', ['text' => '<p>We steep for 40 seconds.</p>']],
+            ['c', 'quote', ['text' => 'Tea is nought but this']],
+            ['d', 'text', ['text' => '<p>Outro</p>']],
+        ]));
+        $new = StructuredDiff::parseBlocks($this->blocks([
+            ['a', 'heading', ['text' => 'Intro']],
+            ['b', 'text', ['text' => '<p>We steep for 30 seconds.</p>']],
+            ['e', 'image', ['image' => ['gaiwan-pour.jpg'], 'caption' => 'Pouring']],
+            ['d', 'text', ['text' => '<p>Outro</p>']],
+        ]));
+
+        $items = StructuredDiff::diffItems($old, $new, true);
+
+        $this->assertSame(['unchanged', 'changed', 'removed', 'added', 'unchanged'], $this->statuses($items));
+        $this->assertSame(2, $items[2]['oldIndex']);
+        $this->assertSame(2, $items[3]['newIndex']);
+    }
+
+    public function testMovedBlockKeepsItsIdentity(): void
+    {
+        $old = StructuredDiff::parseBlocks($this->blocks([
+            ['a', 'text', ['text' => 'A']],
+            ['b', 'text', ['text' => 'B']],
+            ['c', 'text', ['text' => 'C']],
+        ]));
+        $new = StructuredDiff::parseBlocks($this->blocks([
+            ['c', 'text', ['text' => 'C']],
+            ['a', 'text', ['text' => 'A']],
+            ['b', 'text', ['text' => 'B']],
+        ]));
+
+        $statuses = $this->statuses(StructuredDiff::diffItems($old, $new, true));
+
+        $this->assertSame(['unchanged+moved', 'unchanged', 'unchanged'], $statuses);
+    }
+
+    public function testRendersBlocksWithTypePositionBadgesAndCollapsedRuns(): void
+    {
+        $old = $this->blocks([
+            ['a', 'heading', ['text' => 'Intro']],
+            ['x', 'text', ['text' => '<p>Same</p>']],
+            ['b', 'text', ['text' => '<p>We steep for 40 seconds.</p>']],
+            ['c', 'quote', ['text' => 'Tea is nought but this']],
+        ]);
+        $new = $this->blocks([
+            ['a', 'heading', ['text' => 'Intro']],
+            ['x', 'text', ['text' => '<p>Same</p>']],
+            ['b', 'text', ['text' => '<p>We steep for 30 seconds.</p>']],
+            ['e', 'image', ['image' => ['gaiwan-pour.jpg'], 'caption' => 'Pouring']],
+        ]);
+
+        $result = StructuredDiff::render($old, $new);
+
+        $this->assertNotNull($result);
+        $this->assertSame('3 of 5 blocks changed', $result['badge']);
+        $html = $result['html'];
+        $this->assertStringContainsString('2 unchanged blocks (Heading, Text)', $html);
+        $this->assertStringContainsString('Block 3', $html);
+        $this->assertStringContainsString('<del>40</del>', $html);
+        $this->assertStringContainsString('<ins>30</ins>', $html);
+        $this->assertStringNotContainsString('&lt;p&gt;', $html);
+        $this->assertStringContainsString('was block 4', $html);
+        $this->assertStringContainsString('gaiwan-pour.jpg', $html);
+        $this->assertStringContainsString('k-cw-diff-badge-added', $html);
+        $this->assertStringContainsString('k-cw-diff-badge-removed', $html);
+    }
+
+    public function testLayoutColumnsAreFlattenedToBlocks(): void
+    {
+        $layout = fn (string $text) => json_encode([[
+            'id'      => 'row',
+            'columns' => [
+                ['id' => 'col1', 'width' => '1/2', 'blocks' => [['id' => 'a', 'type' => 'text', 'content' => ['text' => $text]]]],
+                ['id' => 'col2', 'width' => '1/2', 'blocks' => [['id' => 'b', 'type' => 'heading', 'content' => ['text' => 'Side']]]],
+            ],
+        ]]);
+
+        $blocks = StructuredDiff::parseBlocks($layout('Left'));
+        $this->assertSame(['a', 'b'], array_column($blocks, 'id'));
+
+        $result = StructuredDiff::render($layout('Left column'), $layout('Left side column'));
+        $this->assertSame('1 of 2 blocks changed', $result['badge']);
+        $this->assertStringContainsString('<ins>side </ins>', $result['html']);
+    }
+
+    public function testStructureRowsAreComparedByPosition(): void
+    {
+        $old = "- \n  name: Sencha\n  price: 12\n- \n  name: Bancha\n  price: 8\n";
+        $new = "- \n  name: Sencha\n  price: 14\n- \n  name: Bancha\n  price: 8\n- \n  name: Hojicha\n  price: 9\n";
+
+        $result = StructuredDiff::render($old, $new, 'structure');
+
+        $this->assertSame('2 of 3 entries changed', $result['badge']);
+        $this->assertStringContainsString('Entry 1', $result['html']);
+        $this->assertStringContainsString('<li class="added">14</li>', $result['html']);
+        $this->assertStringContainsString('1 unchanged entry', $result['html']);
+        $this->assertStringContainsString('Hojicha', $result['html']);
+    }
+
+    public function testFallsBackToTextDiffWhenParsingFails(): void
+    {
+        $this->assertNull(StructuredDiff::parseBlocks('[{"no":"blocks"}]'));
+        $this->assertNull(StructuredDiff::render('["red","blue"]', '["red","green"]'));
+        $this->assertNull(StructuredDiff::render('[not json', '[still not json'));
+
+        // the field still shows up as a text diff
+        $result = DiffGenerator::compare('Tags: ["red","blue"]', 'Tags: ["red","green"]');
+        $this->assertSame(1, $result['changed']);
+        $this->assertStringContainsString('<li class="added">    &quot;green&quot;</li>', $result['html']);
+        $this->assertStringNotContainsString('class="skipped"', $result['html']);
+    }
+
+    public function testCompareCountsChangedAndUnchangedFields(): void
+    {
+        $result = DiffGenerator::compare(
+            "Title: Oolong\n----\nText: Old\n----\nIntro: Same",
+            "Title: Oolong\n----\nText: New\n----\nIntro: Same\n----\nOgdescription: Added"
+        );
+
+        $this->assertSame(2, $result['changed']);
+        $this->assertSame(2, $result['unchanged']);
+        $this->assertStringContainsString('k-cw-diff-badge-added', $result['html']);
+        $this->assertStringNotContainsString('Same', $result['html']);
+    }
+
+    public function testCompareWithCurrentContent(): void
+    {
+        $pageDir = $this->contentDir . '/1_test-page';
+        $this->writeContent($pageDir . '/article.txt', "Title: Current title\n----\nText: Body\n");
+        $this->writeHistory($pageDir, ['article' => [
+            ['editor_id' => 'kirby', 'uuid' => 'new', 'time' => 2000000, 'version' => 2, 'content' => "Title: Saved title\n----\nText: Body\n"],
+            ['editor_id' => 'kirby', 'uuid' => 'old', 'time' => 1000000, 'version' => 1, 'content' => "Title: Old title\n----\nText: Body\n"],
+        ]]);
+
+        $this->kirby = $this->makeApp();
+        $this->kirby->impersonate('kirby');
+
+        $result = (new ContentDiffResolver())->compare($pageDir, 'article', 'old', ContentDiffResolver::CURRENT);
+
+        $this->assertSame(1, $result['changed']);
+        $this->assertSame(1, $result['unchanged']);
+        $this->assertStringContainsString('<del>Old</del>', $result['html']);
+        $this->assertStringContainsString('<ins>Current</ins>', $result['html']);
+    }
+}

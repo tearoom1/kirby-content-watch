@@ -87,6 +87,47 @@ class FieldLabels
     }
 
     /**
+     * @return array<string, string> content key => blueprint field type
+     */
+    public static function typesForModel(?ModelWithContent $model): array
+    {
+        if ($model === null) {
+            return [];
+        }
+
+        try {
+            return static::typesFromFields($model->blueprint()->fields());
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function typesFromFields(array $fields): array
+    {
+        $types = [];
+
+        foreach ($fields as $name => $field) {
+            if (!is_array($field)) {
+                continue;
+            }
+
+            if (($field['type'] ?? null) === 'group' && is_array($field['fields'] ?? null)) {
+                $types = array_replace($types, static::typesFromFields($field['fields']));
+                continue;
+            }
+
+            if (is_string($field['type'] ?? null)) {
+                $types[static::normalizeKey((string)($field['name'] ?? $name))] = $field['type'];
+            }
+        }
+
+        return $types;
+    }
+
+    /**
      * Same normalization as Kirby\Data\Txt::decode() for content keys
      */
     public static function normalizeKey(string $key): string

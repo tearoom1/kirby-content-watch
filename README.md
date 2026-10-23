@@ -231,15 +231,16 @@ foreach ($page->contentHistory() as $entry) {
 
 This gives you full Kirby field method access (`.html()`, `.kirbytext()`, `.value()`, etc.) on any historical snapshot.
 
-### Diff Generation
+### Comparing Versions
 
-If you like to have a more advanced diff, you can install `jfcherng/php-diff`
-```bash
-composer require jfcherng/php-diff
-```
+With `enableRestore` and `enableDiff` turned on, each history entry has a "View changes" button. The dialog compares the chosen version with the current content by default; pick another version under "Compare with" to compare two versions.
 
-This will automatically make use of the advanced diff.
+- Only changed fields are shown, with the field label from the blueprint and the raw key next to it. A summary line tells how many fields changed and how many unchanged fields are hidden.
+- Inside changed lines only the changed words are marked. Long texts show the changed lines with one line of context.
+- Blocks and layouts are compared block by block (matched by their id): each changed, added, removed or moved block shows its type and position, changed blocks list their changed properties. Unchanged blocks collapse to one line. Structure fields are compared entry by entry.
+- Files, pages and users show their names instead of their ids.
 
+The optional `jfcherng/php-diff` package is no longer used by the Panel.
 
 ## Requirements
 

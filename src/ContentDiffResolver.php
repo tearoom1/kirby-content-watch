@@ -35,6 +35,82 @@ class ContentDiffResolver
         return DiffGenerator::generate($fromContent, $toContent, $labels);
     }
 
+    /** Entry id that stands for the content as it is now on disk */
+    public const CURRENT = 'current';
+
+    /**
+     * Compare two history entries, or a history entry with the current content
+     * (`toEntryId` = `current`), field by field for the diff dialog
+     *
+     * @return array{html: string, changed: int, unchanged: int}
+     */
+    public function compare(
+        string $dirPath,
+        string $fileKey,
+        ?string $fromEntryId = null,
+        ?string $toEntryId = null,
+        ?int $fromTimestamp = null,
+        ?int $toTimestamp = null
+    ): array {
+        $history   = $this->loadHistory($dirPath, $fileKey);
+        $fromEntry = $this->findHistoryEntry($history, $fromEntryId, $fromTimestamp);
+
+        $fromContent = isset($fromEntry['content'])
+            ? SnapshotSerializer::compose($fromEntry['content'], $fromEntry['meta'] ?? null)
+            : null;
+
+        $toContent = $toEntryId === self::CURRENT
+            ? $this->currentContent($dirPath, $fileKey, $fromEntry)
+            : $this->resolveContent($history, $toEntryId, $toTimestamp);
+
+        if ($fromContent === null || $toContent === null) {
+            throw new RuntimeException('One or both versions have no content', 404);
+        }
+
+        $model = $this->resolveModel($dirPath, $fileKey);
+
+        return DiffGenerator::compare(
+            $fromContent,
+            $toContent,
+            FieldLabels::forModel($model),
+            FieldLabels::typesForModel($model)
+        );
+    }
+
+    /**
+     * Content file of the page or site as it is now, in the language of the
+     * compared entry, with the page meta when the entry has it too
+     */
+    protected function currentContent(string $dirPath, string $fileKey, ?array $entry): ?string
+    {
+        $dirPath  = $this->resolveContentDirectory($dirPath);
+        $language = (string)($entry['language'] ?? '');
+
+        if ($dirPath === null || ($language !== '' && preg_match('/\A[A-Za-z0-9_-]+\z/', $language) !== 1)) {
+            return null;
+        }
+
+        $file = $dirPath . '/' . $fileKey . ($language !== '' ? '.' . $language : '') . '.txt';
+        if (F::exists($file) !== true) {
+            return null;
+        }
+
+        $content = F::read($file) ?: '';
+        $owner   = $this->findContentModelByRoot($dirPath);
+        $meta    = null;
+
+        if ($owner instanceof Page && !empty($entry['meta'])) {
+            $meta = [
+                'path'     => $owner->parent()?->id() ?? '',
+                'slug'     => $owner->slug(),
+                'status'   => $owner->status(),
+                'template' => $owner->intendedTemplate()->name(),
+            ];
+        }
+
+        return SnapshotSerializer::compose($content, $meta);
+    }
+
     /**
      * Page, site or file the history belongs to, for its blueprint field labels
      */

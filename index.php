@@ -12,6 +12,7 @@ load([
     'TearoomOne\\ContentWatch\\SnapshotSerializer'     => 'src/SnapshotSerializer.php',
     'TearoomOne\\ContentWatch\\ContentDiffResolver'    => 'src/ContentDiffResolver.php',
     'TearoomOne\\ContentWatch\\FieldLabels'            => 'src/FieldLabels.php',
+    'TearoomOne\\ContentWatch\\StructuredDiff'         => 'src/StructuredDiff.php',
 ], __DIR__);
 
 use Kirby\Cms\File;
@@ -111,6 +112,28 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             'tearoom1.content-watch.editor.outside.help' => 'Changed directly in the file system, e.g. by a deploy, FTP or git',
             'tearoom1.content-watch.editor.deleted' => 'Deleted user',
             'tearoom1.content-watch.field.path'     => 'Parent page',
+            'tearoom1.content-watch.diff.version'           => 'Version',
+            'tearoom1.content-watch.diff.compare'           => 'Compare with',
+            'tearoom1.content-watch.diff.current'           => 'Current version',
+            'tearoom1.content-watch.diff.summary.changed'   => '{count} fields changed since v{version}',
+            'tearoom1.content-watch.diff.summary.changed.one' => '1 field changed since v{version}',
+            'tearoom1.content-watch.diff.summary.unchanged' => '{count} unchanged fields hidden',
+            'tearoom1.content-watch.diff.summary.unchanged.one' => '1 unchanged field hidden',
+            'tearoom1.content-watch.diff.summary.none'      => 'No changes',
+            'tearoom1.content-watch.diff.changed'           => 'changed',
+            'tearoom1.content-watch.diff.added'             => 'added',
+            'tearoom1.content-watch.diff.removed'           => 'removed',
+            'tearoom1.content-watch.diff.moved'             => 'moved',
+            'tearoom1.content-watch.diff.block'             => 'Block {n}',
+            'tearoom1.content-watch.diff.block.was'         => 'was block {n}',
+            'tearoom1.content-watch.diff.row'               => 'Entry {n}',
+            'tearoom1.content-watch.diff.row.was'           => 'was entry {n}',
+            'tearoom1.content-watch.diff.blocks.changed'    => '{changed} of {total} blocks changed',
+            'tearoom1.content-watch.diff.rows.changed'      => '{changed} of {total} entries changed',
+            'tearoom1.content-watch.diff.blocks.unchanged'  => '{count} unchanged blocks ({types})',
+            'tearoom1.content-watch.diff.blocks.unchanged.one' => '1 unchanged block ({types})',
+            'tearoom1.content-watch.diff.rows.unchanged'    => '{count} unchanged entries',
+            'tearoom1.content-watch.diff.rows.unchanged.one' => '1 unchanged entry',
         ],
         'de' => [
             'tearoom1.content-watch.support'        => 'Plugin unterstützen',
@@ -120,6 +143,28 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             'tearoom1.content-watch.editor.outside.help' => 'Direkt im Dateisystem geändert, z. B. durch ein Deployment, FTP oder Git',
             'tearoom1.content-watch.editor.deleted' => 'Gelöschter Benutzer',
             'tearoom1.content-watch.field.path'     => 'Übergeordnete Seite',
+            'tearoom1.content-watch.diff.version'           => 'Version',
+            'tearoom1.content-watch.diff.compare'           => 'Vergleichen mit',
+            'tearoom1.content-watch.diff.current'           => 'Aktuelle Version',
+            'tearoom1.content-watch.diff.summary.changed'   => '{count} Felder seit v{version} geändert',
+            'tearoom1.content-watch.diff.summary.changed.one' => '1 Feld seit v{version} geändert',
+            'tearoom1.content-watch.diff.summary.unchanged' => '{count} unveränderte Felder ausgeblendet',
+            'tearoom1.content-watch.diff.summary.unchanged.one' => '1 unverändertes Feld ausgeblendet',
+            'tearoom1.content-watch.diff.summary.none'      => 'Keine Änderungen',
+            'tearoom1.content-watch.diff.changed'           => 'geändert',
+            'tearoom1.content-watch.diff.added'             => 'hinzugefügt',
+            'tearoom1.content-watch.diff.removed'           => 'entfernt',
+            'tearoom1.content-watch.diff.moved'             => 'verschoben',
+            'tearoom1.content-watch.diff.block'             => 'Block {n}',
+            'tearoom1.content-watch.diff.block.was'         => 'war Block {n}',
+            'tearoom1.content-watch.diff.row'               => 'Eintrag {n}',
+            'tearoom1.content-watch.diff.row.was'           => 'war Eintrag {n}',
+            'tearoom1.content-watch.diff.blocks.changed'    => '{changed} von {total} Blöcken geändert',
+            'tearoom1.content-watch.diff.rows.changed'      => '{changed} von {total} Einträgen geändert',
+            'tearoom1.content-watch.diff.blocks.unchanged'  => '{count} unveränderte Blöcke ({types})',
+            'tearoom1.content-watch.diff.blocks.unchanged.one' => '1 unveränderter Block ({types})',
+            'tearoom1.content-watch.diff.rows.unchanged'    => '{count} unveränderte Einträge',
+            'tearoom1.content-watch.diff.rows.unchanged.one' => '1 unveränderter Eintrag',
         ],
     ],
     'areas' => [
@@ -279,7 +324,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                     }
 
                     try {
-                        $diff = (new ContentDiffResolver())->generate(
+                        $result = (new ContentDiffResolver())->compare(
                             $dirPath,
                             $fileKey,
                             is_string($fromEntryId) ? $fromEntryId : null,
@@ -289,8 +334,12 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                         );
 
                         return Response::json([
-                            'status' => 'success',
-                            'diff'   => $diff,
+                            'status'  => 'success',
+                            'diff'    => $result['html'],
+                            'summary' => [
+                                'changed'   => $result['changed'],
+                                'unchanged' => $result['unchanged'],
+                            ],
                         ]);
                     } catch (\Exception $e) {
                         $code = $e->getCode();

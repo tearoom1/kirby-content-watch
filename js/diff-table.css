@@ -136,8 +136,99 @@
 
 .k-content-watch-diff-dialog .k-cw-diff {
   display: grid;
-  gap: var(--spacing-6);
   padding-bottom: var(--spacing-4);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-field {
+  padding-block: var(--spacing-3);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-field + .k-cw-diff-field {
+  border-top: 1px solid var(--color-border);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-badge {
+  --badge-color: var(--color-text-dimmed);
+  font-size: var(--text-xs);
+  line-height: 1.25rem;
+  padding-inline: var(--spacing-2);
+  border-radius: 999px;
+  color: var(--badge-color);
+  background: color-mix(in srgb, var(--badge-color) 14%, transparent);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-badge-changed { --badge-color: var(--color-blue-600); }
+.k-content-watch-diff-dialog .k-cw-diff-badge-added { --badge-color: var(--color-green-600); }
+.k-content-watch-diff-dialog .k-cw-diff-badge-removed { --badge-color: var(--color-red-600); }
+.k-content-watch-diff-dialog .k-cw-diff-badge-moved { --badge-color: var(--color-purple-600); }
+
+.k-content-watch-diff-dialog .k-cw-diff-sub {
+  margin-block: var(--spacing-2) var(--spacing-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-dimmed);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-items {
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--rounded);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-item-added {
+  border-color: color-mix(in srgb, var(--color-green-500) 45%, transparent);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-item-removed {
+  border-color: color-mix(in srgb, var(--color-red-500) 45%, transparent);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-item-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--text-sm);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-item-type {
+  font-weight: var(--font-semi);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-item-position {
+  font-size: var(--text-xs);
+  color: var(--color-text-dimmed);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-item-badges {
+  display: flex;
+  gap: var(--spacing-1);
+  margin-left: auto;
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-item-body {
+  display: grid;
+  gap: var(--spacing-2);
+  padding: 0 var(--spacing-3) var(--spacing-3);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-prop-label {
+  display: block;
+  margin-bottom: var(--spacing-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-dimmed);
+}
+
+.k-content-watch-diff-dialog .k-cw-diff-collapsed {
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-dimmed);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--rounded);
 }
 
 .k-content-watch-diff-dialog .k-cw-diff-field-header {

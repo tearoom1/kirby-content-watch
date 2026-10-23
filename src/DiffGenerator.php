@@ -5,6 +5,7 @@ namespace TearoomOne\ContentWatch;
 use Jfcherng\Diff\Differ;
 use Jfcherng\Diff\Factory\RendererFactory;
 use Kirby\Data\Txt;
+use Kirby\Toolkit\I18n;
 
 /**
  * Class to generate diffs between content versions
@@ -17,6 +18,159 @@ class DiffGenerator
 
     /** Share of unchanged characters a line pair needs for inline word marks */
     protected const MIN_WORD_SIMILARITY = 0.3;
+
+    /**
+     * Field by field comparison of two snapshots for the diff dialog
+     *
+     * Unchanged fields are left out and only counted. Blocks, layouts and
+     * structure fields are compared item by item (see StructuredDiff),
+     * everything else line by line with the changed words marked.
+     *
+     * @param array<string, string> $labels field key => label, see FieldLabels
+     * @param array<string, string> $types  field key => blueprint field type
+     * @return array{html: string, changed: int, unchanged: int}
+     */
+    public static function compare(string $oldContent, string $newContent, array $labels = [], array $types = []): array
+    {
+        if (trim($oldContent) === trim($newContent)) {
+            return ['html' => '', 'changed' => 0, 'unchanged' => count(Txt::decode($newContent))];
+        }
+
+        $oldFields = Txt::decode($oldContent);
+        $newFields = Txt::decode($newContent);
+        $allKeys   = array_unique(array_merge(array_keys($oldFields), array_keys($newFields)));
+
+        $html      = '';
+        $changed   = 0;
+        $unchanged = 0;
+
+        foreach ($allKeys as $key) {
+            $key = (string)$key;
+            $old = self::stringValue($oldFields[$key] ?? '');
+            $new = self::stringValue($newFields[$key] ?? '');
+
+            if ($old === $new) {
+                $unchanged++;
+                continue;
+            }
+
+            $field = self::renderComparedField($key, $old, $new, $labels, $types[$key] ?? null);
+
+            // only the JSON formatting differs
+            if ($field === null) {
+                $unchanged++;
+                continue;
+            }
+
+            $changed++;
+            $html .= $field;
+        }
+
+        // structured decoding found no field deltas, but the snapshots differ
+        if ($changed === 0) {
+            $changed = 1;
+            $html   .= self::renderField(['field' => null, 'sub' => null, 'old' => trim($oldContent), 'new' => trim($newContent)], $labels);
+        }
+
+        return [
+            'html'      => '<div class="k-cw-diff">' . $html . '</div>',
+            'changed'   => $changed,
+            'unchanged' => $unchanged,
+        ];
+    }
+
+    protected static function renderComparedField(string $key, string $old, string $new, array $labels, ?string $type): ?string
+    {
+        if (in_array($type, ['files', 'pages', 'users'], true)) {
+            $oldNames = StructuredDiff::referencesToText($old, $type);
+            $newNames = StructuredDiff::referencesToText($new, $type);
+            if ($oldNames !== null && $newNames !== null) {
+                $old = $oldNames;
+                $new = $newNames;
+            }
+        }
+
+        $status = match (true) {
+            trim($old) === '' => 'added',
+            trim($new) === '' => 'removed',
+            default           => 'changed',
+        };
+
+        $structured = null;
+        try {
+            $structured = StructuredDiff::render($old, $new, $type);
+        } catch (\Throwable) {
+            // unexpected data: fall back to the text diff below
+        }
+
+        if ($structured !== null) {
+            if ($structured['changed'] === 0) {
+                return null;
+            }
+
+            return self::renderFieldWrapper($key, null, $labels, $structured['badge'], 'changed', $structured['html']);
+        }
+
+        // text diff; JSON values without blocks may still split into several parts
+        $oldParts = self::flattenFields([$key => $old]);
+        $newParts = self::flattenFields([$key => $new]);
+        $body     = '';
+
+        foreach (array_unique(array_merge(array_keys($oldParts), array_keys($newParts))) as $part) {
+            $o = $oldParts[$part]['value'] ?? '';
+            $n = $newParts[$part]['value'] ?? '';
+            if ($o === $n) {
+                continue;
+            }
+            $sub   = $oldParts[$part]['sub'] ?? $newParts[$part]['sub'] ?? null;
+            $body .= ($sub ? '<div class="k-cw-diff-sub">' . self::escape($sub) . '</div>' : '')
+                . '<ul class="k-cw-diff-lines">' . self::renderValueChange($o, $n) . '</ul>';
+        }
+
+        return self::renderFieldWrapper($key, null, $labels, self::t('diff.' . $status, $status), $status, $body);
+    }
+
+    protected static function renderFieldWrapper(string $key, ?string $sub, array $labels, string $badge, string $status, string $body): string
+    {
+        $label = $labels[$key] ?? null;
+        $raw   = $key . ($sub ? ' · ' . $sub : '');
+
+        $header = '<div class="k-cw-diff-field-header">';
+        if (is_string($label) && $label !== '') {
+            $header .= '<span class="k-cw-diff-field-label">' . self::escape($label) . '</span> ';
+            $header .= '<span class="k-cw-diff-field-key">' . self::escape($raw) . '</span>';
+        } else {
+            $header .= '<span class="k-cw-diff-field-label">' . self::escape($raw) . '</span>';
+        }
+        $header .= ' ' . self::badge($badge, $status) . '</div>';
+
+        return '<div class="k-cw-diff-field">' . $header . $body . '</div>';
+    }
+
+    public static function badge(string $text, string $status): string
+    {
+        return '<span class="k-cw-diff-badge k-cw-diff-badge-' . self::escape($status) . '">' . self::escape($text) . '</span>';
+    }
+
+    /**
+     * Translated string of the plugin in the Panel language, `{name}` placeholders replaced
+     */
+    public static function t(string $key, string $fallback, array $data = []): string
+    {
+        $text = I18n::translate('tearoom1.content-watch.' . $key, $fallback, FieldLabels::locale());
+        $text = is_string($text) ? $text : $fallback;
+
+        foreach ($data as $name => $value) {
+            $text = str_replace('{' . $name . '}', (string)$value, $text);
+        }
+
+        return $text;
+    }
+
+    protected static function stringValue(mixed $value): string
+    {
+        return is_scalar($value) || $value === null ? (string)$value : self::jsonEncodeFormatted($value);
+    }
 
     /**
      * Generate a visual diff between two content arrays or strings
@@ -119,7 +273,7 @@ class DiffGenerator
      * get the changed words marked, pure additions and removals keep the
      * full-line style. Unchanged lines show as context next to a change only.
      */
-    protected static function renderValueChange(string $old, string $new): string
+    public static function renderValueChange(string $old, string $new): string
     {
         $oldLines = $old === '' ? [] : explode("\n", $old);
         $newLines = $new === '' ? [] : explode("\n", $new);
@@ -129,12 +283,23 @@ class DiffGenerator
         $output = '';
         $skipped = false;
 
+        // unchanged lines next to a change stay visible as context
+        $visible = [];
+        foreach ($ops as $i => [$type]) {
+            $visible[$i] = $type !== '=' || ($ops[$i - 1][0] ?? '=') !== '=' || ($ops[$i + 1][0] ?? '=') !== '=';
+        }
+        // a single hidden line takes as much room as the "…" marker: show it instead
+        foreach ($visible as $i => $isVisible) {
+            if (!$isVisible && ($visible[$i - 1] ?? true) && ($visible[$i + 1] ?? true)) {
+                $visible[$i] = true;
+            }
+        }
+
         for ($i = 0; $i < $count; $i++) {
             [$type] = $ops[$i];
 
             if ($type === '=') {
-                $nearChange = ($ops[$i - 1][0] ?? '=') !== '=' || ($ops[$i + 1][0] ?? '=') !== '=';
-                if ($nearChange) {
+                if ($visible[$i]) {
                     $output .= '<li class="context">' . self::escape($ops[$i][1]) . '</li>';
                     $skipped = false;
                 } elseif (!$skipped) {
@@ -275,7 +440,7 @@ class DiffGenerator
      *
      * @return array<int, array{0: string, 1: string}> ['=', item], ['-', item] or ['+', item]
      */
-    protected static function diffSequences(array $old, array $new, int $maxCells): array
+    public static function diffSequences(array $old, array $new, int $maxCells = self::MAX_LINE_CELLS): array
     {
         $head = [];
         while ($old !== [] && $new !== [] && $old[0] === $new[0]) {
@@ -456,7 +621,7 @@ class DiffGenerator
             : $prefix . ': ';
     }
 
-    protected static function escape(string $value): string
+    public static function escape(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
@@ -485,7 +650,7 @@ class DiffGenerator
      * @param mixed $data Data to encode
      * @return string Formatted JSON string
      */
-    private static function jsonEncodeFormatted($data): string
+    public static function jsonEncodeFormatted($data): string
     {
         return json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
