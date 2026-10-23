@@ -1,3 +1,11 @@
+## [3.10.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.9.1...v3.10.0) (2026-10-23)
+
+
+### Features
+
+* restore a version right from the diff dialog ([5301a62](https://github.com/tearoom1/kirby-content-watch/commit/5301a62e4dae974722883a3ab6e210e3397fec2c))
+* switch between a by-page view and a timeline of all changes ([ab3dd51](https://github.com/tearoom1/kirby-content-watch/commit/ab3dd51cdc4149e597b37842c619dadfb76a3ec2))
+
 ## [3.9.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.9.0...v3.9.1) (2026-10-23)
 
 
@@ -33,16 +41,4 @@
 ### Features
 
 * Panel support link opens the central support page ([ae14ff0](https://github.com/tearoom1/kirby-content-watch/commit/ae14ff051f0f45b8b5c84d6cbc9b05bbc6762317))
-
-## [3.6.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.5.0...v3.6.0) (2026-10-08)
-
-
-### Features
-
-* compare and restore versions from the history section ([e7d61cf](https://github.com/tearoom1/kirby-content-watch/commit/e7d61cfa75971fa290f7512331190c61721d18ba))
-
-
-### Bug Fixes
-
-* refresh the history section after saving ([d215bb3](https://github.com/tearoom1/kirby-content-watch/commit/d215bb3379113830e475f0ddfd79ba925f61f97d))
 
