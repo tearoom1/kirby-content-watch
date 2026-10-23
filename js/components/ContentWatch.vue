@@ -5,30 +5,6 @@
     <k-header class="k-content-watch-header">
       Content Watch
       <template #buttons>
-        <k-button-group v-if="tab === 'content'" layout="collapsed" class="k-content-watch-view-toggle">
-          <k-button
-            icon="page"
-            size="sm"
-            variant="filled"
-            responsive="true"
-            :theme="view === 'page' ? 'dark' : null"
-            :current="view === 'page'"
-            :text="$t('tearoom1.content-watch.view.page')"
-            :title="$t('tearoom1.content-watch.view.page')"
-            @click="setView('page')"
-          />
-          <k-button
-            icon="clock"
-            size="sm"
-            variant="filled"
-            responsive="true"
-            :theme="view === 'timeline' ? 'dark' : null"
-            :current="view === 'timeline'"
-            :text="$t('tearoom1.content-watch.view.timeline')"
-            :title="$t('tearoom1.content-watch.view.timeline')"
-            @click="setView('timeline')"
-          />
-        </k-button-group>
         <k-button
           class="k-content-watch-sponsor-button"
           icon="heart"
@@ -57,12 +33,29 @@
             icon="search"
           />
           <k-button-group class="k-content-watch-buttons">
-            <k-button :class="{'k-button-active': showOnlyPages}" :variant="(showOnlyPages) ? 'filled' : null" @click="toggleShowOnlyPages" icon="page">Pages only
+            <k-button
+              :class="{'k-button-active': view === 'page'}"
+              :variant="view === 'page' ? 'filled' : null"
+              icon="list-bullet"
+              responsive="true"
+              :title="$t('tearoom1.content-watch.view.page')"
+              @click="setView('page')"
+            >{{ $t('tearoom1.content-watch.view.page') }}</k-button>
+            <k-button
+              class="k-content-watch-group-end"
+              :class="{'k-button-active': view === 'timeline'}"
+              :variant="view === 'timeline' ? 'filled' : null"
+              icon="clock"
+              responsive="true"
+              :title="$t('tearoom1.content-watch.view.timeline')"
+              @click="setView('timeline')"
+            >{{ $t('tearoom1.content-watch.view.timeline') }}</k-button>
+            <k-button :class="{'k-button-active': showOnlyPages}" :variant="(showOnlyPages) ? 'filled' : null" @click="toggleShowOnlyPages" icon="page" responsive="true">Pages only
             </k-button>
-            <k-button :class="{'k-button-active': !showOnlyPages}" :variant="(!showOnlyPages) ? 'filled' : null" @click="toggleShowAll" icon="file-document">All
+            <k-button :class="{'k-button-active': !showOnlyPages}" :variant="(!showOnlyPages) ? 'filled' : null" @click="toggleShowAll" icon="file-document" responsive="true">All
               files
             </k-button>
-            <k-button :class="{'k-button-active': showFilters || hasActiveFilters}" :variant="(showFilters || hasActiveFilters) ? 'filled' : null" @click="toggleFilters" icon="filter">
+            <k-button :class="{'k-button-active': showFilters || hasActiveFilters}" :variant="(showFilters || hasActiveFilters) ? 'filled' : null" @click="toggleFilters" icon="filter" responsive="true">
               Filters
             </k-button>
             <k-button
@@ -1389,8 +1382,9 @@ export default {
 .k-content-watch-view {
   position: relative;
 
-  .k-content-watch-view-toggle {
-    gap: 0;
+  /* space between the view switch and the next group */
+  .k-content-watch-group-end {
+    margin-inline-end: var(--spacing-3);
   }
 
   .k-content-watch-sponsor-button {
