@@ -48,15 +48,22 @@
     <k-dialog
       v-if="history?.enableRestore"
       ref="restoreDialog"
-      :button="$t('restore')"
+      :submit-button="restoreTarget ? $t('tearoom1.content-watch.restore.confirm.submit', {version: restoreTarget.version}) : $t('restore')"
       theme="positive"
-      icon="refresh"
+      icon="undo"
       @submit="restore"
     >
       <k-text v-if="restoreTarget">
-        Restore <strong>v{{ restoreTarget.version }}</strong> from
-        {{ formatAbsolute(restoreTarget.time) }} ({{ entryEditor(restoreTarget) }})?
-        This will overwrite the current content.
+        <p>
+          <strong>{{ $t('tearoom1.content-watch.restore.confirm.title', {version: restoreTarget.version}) }}</strong>
+          {{ restoreTarget.language
+            ? $t('tearoom1.content-watch.restore.confirm.text.language', {version: restoreTarget.version, language: languageName(restoreTarget.language)})
+            : $t('tearoom1.content-watch.restore.confirm.text', {version: restoreTarget.version}) }}
+        </p>
+        <ul>
+          <li>{{ $t('tearoom1.content-watch.restore.confirm.history') }}</li>
+          <li v-if="restoreTarget.language">{{ $t('tearoom1.content-watch.restore.confirm.languages') }}</li>
+        </ul>
       </k-text>
     </k-dialog>
 
@@ -178,13 +185,13 @@ export default {
         }
 
         this.$refs.restoreDialog.close();
-        window.panel.notification.success('Version ' + entry.version + ' restored');
+        window.panel.notification.success(this.$t('tearoom1.content-watch.restore.done', {version: entry.version}));
 
         // reload the form with the restored content and the new history entry
         await window.panel.view.reload();
         await this.fetch();
       } catch (error) {
-        window.panel.notification.error('Error restoring content: ' + (error.message || 'Unknown error'));
+        window.panel.notification.error(error.message || 'Failed to restore content');
       } finally {
         this.restoreTarget = null;
       }
@@ -245,6 +252,11 @@ export default {
 
     entryEditor(entry) {
       return editorLabel(entry.editor, this.$t.bind(this));
+    },
+
+    languageName(code) {
+      const languages = window.panel?.languages || [];
+      return languages.find(language => language.code === code)?.name || code.toUpperCase();
     },
 
     editorHelp(editor) {

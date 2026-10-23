@@ -227,7 +227,7 @@
               >
                 <div class="k-content-watch-file-header k-content-watch-timeline-row k-content-watch-timeline-group" @click="toggleOutsideGroup(item)">
                   <span class="k-content-watch-timeline-time">{{ formatTime(item.time) }}</span>
-                  <span class="k-content-watch-timeline-main">
+                  <span class="k-content-watch-timeline-main k-content-watch-timeline-main-wide">
                     <strong :title="$t('tearoom1.content-watch.editor.outside.help')">{{ $t('tearoom1.content-watch.editor.outside') }}</strong>
                     · {{ outsideGroupLabel(item) }}
                   </span>
@@ -251,11 +251,12 @@
                         <a :href="row.file.panel_url" class="k-content-watch-timeline-title" @click.stop>{{ row.file.title }}</a>
                         <span class="k-content-watch-timeline-path">{{ row.file.path_short }}</span>
                       </span>
-                      <span v-if="row.entry?.language" class="k-timeline-item-language">{{ row.entry.language }}</span>
+                      <span class="k-content-watch-timeline-cell"><span v-if="row.entry?.language" class="k-timeline-item-language">{{ row.entry.language }}</span></span>
                       <span
                         class="k-timeline-item-tag"
                         :class="'k-timeline-item-tag-' + entryAction(row.entry)"
                       >{{ entryAction(row.entry) }}</span>
+                      <span class="k-content-watch-timeline-editor"></span>
                       <span class="k-timeline-item-actions">
                         <k-button
                           v-if="enableDiff && row.entry?.has_snapshot && row.file.history.length > 1"
@@ -284,12 +285,12 @@
                     <a :href="item.row.file.panel_url" class="k-content-watch-timeline-title">{{ item.row.file.title }}</a>
                     <span class="k-content-watch-timeline-path">{{ item.row.file.path_short }}</span>
                   </span>
-                  <span v-if="item.row.entry?.language" class="k-timeline-item-language">{{ item.row.entry.language }}</span>
+                  <span class="k-content-watch-timeline-cell"><span v-if="item.row.entry?.language" class="k-timeline-item-language">{{ item.row.entry.language }}</span></span>
                   <span
                     class="k-timeline-item-tag"
                     :class="'k-timeline-item-tag-' + entryAction(item.row.entry)"
                   >{{ entryAction(item.row.entry) }}</span>
-                  <span class="k-content-watch-timeline-editor" :title="editorHelp(item.row.editor)">{{ editorLabel(item.row.editor) }}</span>
+                  <span class="k-content-watch-timeline-editor" :title="editorHelp(item.row.editor) || editorLabel(item.row.editor)">{{ editorLabel(item.row.editor) }}</span>
                   <span class="k-timeline-item-actions">
                     <k-button
                       v-if="enableDiff && item.row.entry?.has_snapshot && item.row.file.history.length > 1"
@@ -398,25 +399,6 @@
 
       <k-empty v-else icon="lock" text="No locked pages found"/>
     </section>
-
-    <!-- Confirmation dialog for restore -->
-    <k-dialog
-      v-if="enableRestore"
-      ref="restoreDialog"
-      :button="$t('restore')"
-      theme="positive"
-      icon="refresh"
-      @submit="restoreContent"
-      class="k-content-watch-restore-dialog"
-    >
-      <k-text>Are you sure you want to restore this version?</k-text>
-      <k-text v-if="restoreTarget">
-        <strong>File:</strong> {{ restoreTarget.file?.title }}<br>
-        <strong>Version:</strong> {{ restoreTarget.entry?.time_formatted }}
-        ({{ formatRelative(restoreTarget.entry?.time) }})
-      </k-text>
-      <k-text>This will overwrite the current content with this previous version.</k-text>
-    </k-dialog>
 
     <!-- Diff dialog for comparing versions -->
     <k-dialog
@@ -577,7 +559,7 @@ export default {
       showFilters: false,
       lockedShowOnlyPages: true,
       expandedFiles: [],
-      restoreTarget: null,
+      diffConfirmOnLoad: false,
       showOnlyPages: !this.initialShowAll,
       currentPage: 1,
       view: this.storedView() || (this.defaultView === 'timeline' ? 'timeline' : 'page'),
@@ -1186,11 +1168,11 @@ export default {
       });
     },
 
+    // restore buttons in the lists: the diff dialog opens with its confirmation
     confirmRestore(file, entry) {
       if (!this.enableRestore) return;
 
-      this.restoreTarget = {file, entry};
-      this.$refs.restoreDialog.open();
+      this.viewDiff(file, entry, file.history.indexOf(entry), true);
     },
 
     entryAction(entry) {
@@ -1216,43 +1198,15 @@ export default {
       });
     },
 
-    async restoreContent() {
-      if (!this.enableRestore || !this.restoreTarget) return;
-
-      const {file, entry} = this.restoreTarget;
-
-      this.isLoading = true;
-
-      try {
-        const response = await this.$api.post('/content-watch/restore', {
-          dirPath: file.dir_path,
-          fileKey: file.uid,
-          entryId: entry.entry_id ?? null,
-          timestamp: entry.time
-        });
-
-        if (response.status === 'success') {
-          // this.$store.dispatch('notification/success', 'Content restored successfully');
-          this.refresh();
-        } else {
-          window.panel.notification.error(response.message || 'Failed to restore content');
-        }
-      } catch (error) {
-        window.panel.notification.error('Error restoring content: ' + (error.message || 'Unknown error'));
-      } finally {
-        this.isLoading = false;
-        this.restoreTarget = null;
-      }
-    },
-
     versionLabel(entry) {
       return 'v' + entry.version + (entry.language ? ' · ' + entry.language.toUpperCase() : '') + ' · ' +
         this.formatRelative(entry.time) + ' · ' + this.editorLabel(entry.editor);
     },
 
     // compare a version with the current content by default
-    viewDiff(file, entry, entryIndex) {
+    viewDiff(file, entry, entryIndex, confirmRestore = false) {
       this.diffTarget = {file, entry, entryIndex};
+      this.diffConfirmOnLoad = confirmRestore;
       this.diffVersionOptions = file.history.map((historyEntry, historyIndex) => ({
         text: this.versionLabel(historyEntry),
         value: String(historyIndex),
@@ -1260,7 +1214,7 @@ export default {
       }));
 
       // the newest version usually is the current content: show what it changed instead
-      const fromIndex = entryIndex === 0 && file.history.length > 1 ? 1 : entryIndex;
+      const fromIndex = entryIndex === 0 && file.history.length > 1 && !confirmRestore ? 1 : entryIndex;
       this.diffFromVersionId = String(fromIndex);
       this.diffToVersionId = 'current';
 
@@ -1360,7 +1314,10 @@ export default {
         .then(response => {
           this.diffContent = response.diff;
           this.diffSummary = response.summary || null;
+          this.isDiffLoading = false;
           this.diffCanRestore = response.canRestore === true;
+          this.diffRestoreConfirm = this.diffConfirmOnLoad && this.canRestoreFromDiff;
+          this.diffConfirmOnLoad = false;
         })
         .catch(error => {
           window.panel.notification.error('Error loading diff: ' + (error.message || 'Unknown error'));
@@ -1738,12 +1695,26 @@ export default {
     margin-top: var(--spacing-2);
   }
 
+  /* fixed columns: time | title and path | language | action | author | actions */
   .k-content-watch-timeline-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 4.75rem minmax(0, 1fr) 2.25rem 5.5rem 9rem 4.5rem;
     align-items: center;
-    gap: 0.875rem;
+    column-gap: 0.875rem;
     font-size: var(--text-sm);
     cursor: default;
+  }
+
+  .k-content-watch-timeline-main-wide {
+    grid-column: 2 / 6;
+  }
+
+  .k-content-watch-timeline-cell {
+    display: flex;
+  }
+
+  .k-content-watch-timeline-row .k-timeline-item-actions {
+    margin-left: 0;
   }
 
   .k-content-watch-file > .k-content-watch-timeline-row {
@@ -1752,14 +1723,12 @@ export default {
 
   /* wide enough for "03:46 PM" */
   .k-content-watch-timeline-time {
-    flex: 0 0 4.75rem;
     white-space: nowrap;
     color: var(--color-text-dimmed);
     font-variant-numeric: tabular-nums;
   }
 
   .k-content-watch-timeline-main {
-    flex: 1 1 auto;
     min-width: 0;
     display: flex;
     align-items: baseline;
@@ -1791,13 +1760,10 @@ export default {
   }
 
   .k-content-watch-timeline-editor {
-    flex: 0 1 auto;
-    max-width: 9rem;
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    text-align: right;
     color: var(--color-text-dimmed);
   }
 
@@ -1853,6 +1819,7 @@ export default {
 
   @media (max-width: 40rem) {
     .k-content-watch-timeline-row {
+      display: flex;
       flex-wrap: wrap;
       row-gap: 0.25rem;
     }
@@ -2041,8 +2008,4 @@ export default {
   }
 }
 
-.k-content-watch-restore-dialog .k-dialog-body {
-  display: grid;
-  gap: 1rem;
-}
 </style>
