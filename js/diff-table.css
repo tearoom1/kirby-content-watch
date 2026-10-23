@@ -283,28 +283,26 @@
   content: "+";
 }
 
-/* changed line pairs: light line background, the changed words stronger */
-.k-content-watch-diff-dialog .k-cw-diff-lines li.removed.inline {
-  background: color-mix(in srgb, var(--color-red-500) 7%, transparent);
-}
-
-.k-content-watch-diff-dialog .k-cw-diff-lines li.added.inline {
-  background: color-mix(in srgb, var(--color-green-500) 7%, transparent);
-}
-
+/*
+ * Changed line pairs keep the same line background as pure additions and
+ * removals (above); the changed words get a much stronger tint of the same
+ * hue. With the Panel text colour on top this stays above WCAG AA contrast
+ * in the light and the dark theme.
+ */
 .k-content-watch-diff-dialog .k-cw-diff-lines del,
 .k-content-watch-diff-dialog .k-cw-diff-lines ins {
+  color: var(--color-text);
   text-decoration: none;
   border-radius: var(--rounded-sm);
   padding-inline: 1px;
 }
 
 .k-content-watch-diff-dialog .k-cw-diff-lines del {
-  background: color-mix(in srgb, var(--color-red-500) 32%, transparent);
+  background: color-mix(in srgb, var(--color-red-500) 45%, transparent);
 }
 
 .k-content-watch-diff-dialog .k-cw-diff-lines ins {
-  background: color-mix(in srgb, var(--color-green-500) 32%, transparent);
+  background: color-mix(in srgb, var(--color-green-500) 45%, transparent);
 }
 
 .k-content-watch-diff-dialog .k-cw-diff-lines li.context {
