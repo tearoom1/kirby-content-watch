@@ -13,6 +13,8 @@ load([
     'TearoomOne\\ContentWatch\\ContentDiffResolver'    => 'src/ContentDiffResolver.php',
     'TearoomOne\\ContentWatch\\FieldLabels'            => 'src/FieldLabels.php',
     'TearoomOne\\ContentWatch\\StructuredDiff'         => 'src/StructuredDiff.php',
+    'TearoomOne\\ContentWatch\\HistoryStore'           => 'src/HistoryStore.php',
+    'TearoomOne\\ContentWatch\\RestoreException'       => 'src/RestoreException.php',
 ], __DIR__);
 
 use Kirby\Cms\File;
@@ -24,6 +26,7 @@ use TearoomOne\ContentWatch\ChangeTracker;
 use TearoomOne\ContentWatch\ContentDiffResolver;
 use TearoomOne\ContentWatch\ContentRestore;
 use TearoomOne\ContentWatch\ContentWatchController;
+use TearoomOne\ContentWatch\RestoreException;
 
 // Don't load plugin if disabled in config
 if (option('tearoom1.kirby-content-watch.disable', false)) {
@@ -73,6 +76,9 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         },
         'page.delete:before' => function ($page) {
             F::remove($page->root() . '/.content-watch.json');
+            foreach (glob($page->root() . '/.content-watch.corrupt-*.json') ?: [] as $corrupt) {
+                F::remove($corrupt);
+            }
         },
         'site.update:after' => function ($newSite, $oldSite) {
             (new ChangeTracker())->trackContentChange($newSite);
@@ -239,7 +245,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                 return [];
             }
 
-            $history = json_decode(F::read($historyFile), true) ?: [];
+            $history = \TearoomOne\ContentWatch\HistoryStore::read($this->root());
             $entries = $history[$this->intendedTemplate()->name()] ?? [];
 
             if ($language !== null) {
@@ -285,16 +291,21 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
                         return Response::json(['status' => 'error', 'message' => 'Missing required parameters'], 400);
                     }
 
-                    $success = (new ContentRestore())->restoreContent(
-                        $dirPath,
-                        $fileKey,
-                        is_string($entryId) ? $entryId : null,
-                        $timestamp ?: null
-                    );
+                    try {
+                        (new ContentRestore())->restore(
+                            $dirPath,
+                            $fileKey,
+                            is_string($entryId) ? $entryId : null,
+                            $timestamp ?: null
+                        );
+                    } catch (RestoreException $e) {
+                        $code = $e->getCode();
+                        $status = is_int($code) && $code >= 400 && $code < 600 ? $code : 400;
 
-                    return $success
-                        ? Response::json(['status' => 'success', 'message' => 'Content restored successfully'])
-                        : Response::json(['status' => 'error', 'message' => 'Failed to restore content'], 500);
+                        return Response::json(['status' => 'error', 'message' => $e->getMessage()], $status);
+                    }
+
+                    return Response::json(['status' => 'success', 'message' => 'Content restored successfully']);
                 },
             ],
             [

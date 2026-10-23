@@ -35,8 +35,10 @@ This may be a problem for sites with a large number of files.
 The restore feature also has some limitations
 - binary files are not supported
 - when restoring a page, its files are not restored
-- the snapshot is written directly to the content file, bypassing Kirby's update hooks, blueprint validation and caches
 - only pages and the site can be restored; directories without a Kirby model (e.g. `_drafts`) are rejected
+- a page is not moved back to a former parent page
+- in Kirby 5, a page with unsaved changes in the Panel cannot be restored until the changes are saved or discarded
+- a version that fails the current blueprint validation (e.g. an empty required field) cannot be restored as a published page
 
 > Beware the restore feature is BETA and may have bugs. Use at your own risk!
 
@@ -135,7 +137,7 @@ To grant access to additional Kirby roles, list them in `allowedRoles`:
 
 Notes:
 - Admins are **always** allowed; you do not need to include `'admin'` in the list.
-- The `allowedRoles` check gates *access to the plugin*. Restoring content additionally requires the user to have Kirby's update permission on the target page/file — so a role allowed by `allowedRoles` cannot use restore to overwrite content they are not normally allowed to edit.
+- The `allowedRoles` check gates *access to the plugin*. A restore runs through Kirby as the current user and needs the same permissions as the change in the Panel: `update`, and `changeSlug`, `changeStatus` or `changeTemplate` when the restored version differs in these. A role allowed by `allowedRoles` cannot use restore to change anything it is not normally allowed to change.
 - Restore and diff API requests are authenticated and only resolve history files inside Kirby's configured content root.
 - Only grant `allowedRoles` to roles you trust to read every page's modification history, including drafts.
 
@@ -147,10 +149,11 @@ History entries are automatically pruned based on your retention settings.
 When restore functionality is enabled:
 1. Each time content is changed, a snapshot of the content is saved
 2. You can view and restore previous versions through the interface
-3. When you restore a previous version, the plugin will:
-   - Extract the content from the saved snapshot
-   - Overwrite the current content file
-   - Record this restoration in the history with a reference to the restored version
+3. When you restore a previous version, the plugin runs Kirby's own actions as the current user: `changeTemplate`, `changeSlug` and `changeStatus` when the version differs, then `update` with the content of the version. Permissions, blueprint validation, hooks and the pages cache apply as for any change in the Panel. Everything that can be checked upfront (permissions, a URL appendix used by another page, unsaved changes) is checked before anything changes; if a Kirby action still fails, the steps done so far are undone.
+4. Restoring a translation only restores the content and the translated URL appendix of that language. Template, folder name and status follow the default language.
+5. The restore is added to the history as a new version that refers to the restored one. Older versions stay as they are, so you can go back.
+
+The history file is changed under a lock and replaced atomically, so parallel saves keep all entries. A history file that can't be read is moved aside as `.content-watch.corrupt-<time>.json` and a new history starts, saving content never fails because of it.
 
 When restore functionality is disabled:
 1. The plugin only tracks metadata like timestamps and editor information

@@ -20,7 +20,41 @@ class ChangeTracker
         self::$requestTrackedEntries = [];
     }
 
+    /** Set while a restore runs: its Kirby actions are recorded as one restore entry */
+    protected static int $suspended = 0;
+
+    /**
+     * Run Kirby actions without recording each of them
+     */
+    public static function withoutTracking(callable $callback): mixed
+    {
+        self::$suspended++;
+
+        try {
+            return $callback();
+        } finally {
+            self::$suspended--;
+        }
+    }
+
+    /**
+     * Record a change. Runs in `:after` hooks, so it must never break saving:
+     * errors are logged instead of thrown.
+     */
     public function trackContentChange(ModelWithContent $content, array $meta = []): void
+    {
+        if (self::$suspended > 0) {
+            return;
+        }
+
+        try {
+            $this->recordChange($content, $meta);
+        } catch (\Throwable $e) {
+            HistoryStore::log('Could not record a change: ' . $e->getMessage());
+        }
+    }
+
+    protected function recordChange(ModelWithContent $content, array $meta): void
     {
         $user = kirby()->user();
         if (!$user) {
@@ -35,6 +69,12 @@ class ChangeTracker
 
         if (!empty($meta['action']) && is_string($meta['action'])) {
             $record['action'] = $meta['action'];
+        }
+
+        foreach (['restored_from', 'restored_from_id', 'restored_from_version'] as $key) {
+            if (isset($meta[$key])) {
+                $record[$key] = $meta[$key];
+            }
         }
 
         $isPage = $content instanceof \Kirby\Cms\Page;
@@ -59,7 +99,8 @@ class ChangeTracker
                 if ($content instanceof Page) {
                     $record['meta'] = [
                         'path'     => $content->parent()?->id() ?? '',
-                        'slug'     => $content->slug(),
+                        // the folder name: the slug of the default language, not a translated one
+                        'slug'     => $content->slug(kirby()->defaultLanguage()?->code()),
                         'status'   => $content->status(),
                         'template' => $content->intendedTemplate()->name(),
                     ];
@@ -75,68 +116,67 @@ class ChangeTracker
             return;
         }
 
-        $editorFile = $dirPath . '/.content-watch.json';
+        $editorFile = HistoryStore::path($dirPath);
+        $coalesced  = false;
 
-        $history = F::exists($editorFile)
-            ? (Data::read($editorFile, 'json') ?: [])
-            : [];
+        HistoryStore::mutate($dirPath, function (array $history) use (&$record, &$coalesced, $meta, $fileKey, $editorFile) {
+            $previousFileKey = $meta['previous_file_key'] ?? null;
+            if (
+                is_string($previousFileKey) &&
+                $previousFileKey !== '' &&
+                $previousFileKey !== $fileKey &&
+                isset($history[$previousFileKey]) &&
+                is_array($history[$previousFileKey])
+            ) {
+                $history[$fileKey] = array_values(array_merge(
+                    $history[$fileKey] ?? [],
+                    $history[$previousFileKey]
+                ));
+                unset($history[$previousFileKey]);
+            }
 
-        $previousFileKey = $meta['previous_file_key'] ?? null;
-        if (
-            is_string($previousFileKey) &&
-            $previousFileKey !== '' &&
-            $previousFileKey !== $fileKey &&
-            isset($history[$previousFileKey]) &&
-            is_array($history[$previousFileKey])
-        ) {
-            $history[$fileKey] = array_values(array_merge(
-                $history[$fileKey] ?? [],
-                $history[$previousFileKey]
+            if (!isset($history[$fileKey]) || !is_array($history[$fileKey])) {
+                $history[$fileKey] = [];
+            }
+
+            // Increment version from the highest existing version number
+            $latestVersion = 0;
+            if (count($history[$fileKey]) > 0) {
+                $latestVersion = max(array_map(
+                    fn($entry) => is_array($entry) ? ($entry['version'] ?? 1) : 0,
+                    $history[$fileKey]
+                ));
+            }
+            $record['version'] = $latestVersion + 1;
+
+            $retentionDays  = (int)option('tearoom1.kirby-content-watch.retentionDays', 30);
+            $retentionCount = (int)option('tearoom1.kirby-content-watch.retentionCount', 10);
+            $cutoffTime     = time() - ($retentionDays * 86400);
+            $requestKey     = $this->requestTrackedKey($editorFile, $fileKey, $record, $meta);
+
+            $coalesced      = $this->shouldCoalesceWithinRequest($requestKey, $history[$fileKey], $record, $meta);
+
+            if ($coalesced) {
+                $record['uuid'] = $history[$fileKey][0]['uuid'] ?? $record['uuid'];
+                $record['version'] = $history[$fileKey][0]['version'] ?? $record['version'];
+                $history[$fileKey][0] = $record;
+            } else {
+                // Newest entry first
+                array_unshift($history[$fileKey], $record);
+                self::$requestTrackedEntries[$requestKey] = true;
+            }
+
+            // Prune entries older than the retention window
+            $history[$fileKey] = array_values(array_filter(
+                $history[$fileKey],
+                fn($entry) => isset($entry['time']) && $entry['time'] >= $cutoffTime
             ));
-            unset($history[$previousFileKey]);
-        }
 
-        if (!isset($history[$fileKey]) || !is_array($history[$fileKey])) {
-            $history[$fileKey] = [];
-        }
+            // Limit to retention count, per language
+            $history[$fileKey] = self::limitPerLanguage($history[$fileKey], $retentionCount);
 
-        // Increment version from the highest existing version number
-        $latestVersion = 0;
-        if (count($history[$fileKey]) > 0) {
-            $latestVersion = max(array_map(
-                fn($entry) => $entry['version'] ?? 1,
-                $history[$fileKey]
-            ));
-        }
-        $record['version'] = $latestVersion + 1;
-
-        $retentionDays  = (int)option('tearoom1.kirby-content-watch.retentionDays', 30);
-        $retentionCount = (int)option('tearoom1.kirby-content-watch.retentionCount', 10);
-        $cutoffTime     = time() - ($retentionDays * 86400);
-        $requestKey     = $this->requestTrackedKey($editorFile, $fileKey, $record, $meta);
-
-        $coalesced      = $this->shouldCoalesceWithinRequest($requestKey, $history[$fileKey], $record, $meta);
-
-        if ($coalesced) {
-            $record['uuid'] = $history[$fileKey][0]['uuid'] ?? $record['uuid'];
-            $record['version'] = $history[$fileKey][0]['version'] ?? $record['version'];
-            $history[$fileKey][0] = $record;
-        } else {
-            // Newest entry first
-            array_unshift($history[$fileKey], $record);
-            self::$requestTrackedEntries[$requestKey] = true;
-        }
-
-        // Prune entries older than the retention window
-        $history[$fileKey] = array_values(array_filter(
-            $history[$fileKey],
-            fn($entry) => isset($entry['time']) && $entry['time'] >= $cutoffTime
-        ));
-
-        // Limit to retention count, per language
-        $history[$fileKey] = self::limitPerLanguage($history[$fileKey], $retentionCount);
-
-        $this->saveTheUpdatedHistory($editorFile, $history);
+            return $history;
+        });
 
         // Notify once per change, not again for coalesced follow-ups in the same request
         if (!$coalesced) {
@@ -209,18 +249,23 @@ class ChangeTracker
      */
     public function forgetFile(File $file): void
     {
-        $editorFile = dirname($file->root()) . '/.content-watch.json';
-        if (!F::exists($editorFile)) {
-            return;
-        }
+        try {
+            $dirPath = dirname($file->root());
+            if (!F::exists(HistoryStore::path($dirPath))) {
+                return;
+            }
 
-        $history = Data::read($editorFile, 'json') ?: [];
-        if (!array_key_exists($file->filename(), $history)) {
-            return;
-        }
+            HistoryStore::mutate($dirPath, function (array $history) use ($file) {
+                if (!array_key_exists($file->filename(), $history)) {
+                    return null;
+                }
 
-        unset($history[$file->filename()]);
-        $this->saveTheUpdatedHistory($editorFile, $history);
+                unset($history[$file->filename()]);
+                return $history;
+            });
+        } catch (\Throwable $e) {
+            HistoryStore::log('Could not forget a file: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -229,19 +274,19 @@ class ChangeTracker
      */
     public function resetHistory(Page $page): void
     {
-        F::remove($page->root() . '/.content-watch.json');
+        HistoryStore::remove($page->root());
 
         foreach ($page->index(true) as $child) {
-            F::remove($child->root() . '/.content-watch.json');
+            HistoryStore::remove($child->root());
         }
     }
 
     public function saveTheUpdatedHistory(string $editorFile, mixed $history): void
     {
         try {
-            Data::write($editorFile, $history, 'json');
-        } catch (\Exception) {
-            // Silently fail if we can't write the file
+            HistoryStore::write($editorFile, is_array($history) ? $history : []);
+        } catch (\Throwable $e) {
+            HistoryStore::log('Could not save the history: ' . $e->getMessage());
         }
     }
 

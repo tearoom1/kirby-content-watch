@@ -22,6 +22,21 @@ class ContentRestoreTest extends TestCase
         $this->writeContent($this->contentFile, "Title: Current Title\n----\nText: Current text\n");
     }
 
+    private const TEMPLATE_BLUEPRINTS = [
+        'blueprints' => [
+            'pages/article' => [
+                'title'   => 'Article',
+                'options' => ['changeTemplate' => ['article', 'note']],
+                'fields'  => ['text' => ['type' => 'textarea']],
+            ],
+            'pages/note' => [
+                'title'   => 'Note',
+                'options' => ['changeTemplate' => ['article', 'note']],
+                'fields'  => ['text' => ['type' => 'textarea']],
+            ],
+        ],
+    ];
+
     private function seedHistory(array $extraOptions = []): void
     {
         $this->kirby = $this->makeApp(array_replace_recursive([
@@ -188,7 +203,7 @@ class ContentRestoreTest extends TestCase
         $this->assertGreaterThanOrEqual(time() - 5, $newEntry['time']);
     }
 
-    public function testRestoreRemovesOriginalVersionFromHistory(): void
+    public function testRestoreAppendsAnEntryAndKeepsTheHistory(): void
     {
         $this->seedHistory();
         $this->writeHistory($this->pageDir, [
@@ -196,7 +211,7 @@ class ContentRestoreTest extends TestCase
                 [
                     'editor_id' => 'kirby',
                     'uuid'      => 'restore-current',
-                    'time'      => 2000000,
+                    'time'      => time() - 100,
                     'version'   => 2,
                     'type'      => 'page',
                     'language'  => '',
@@ -205,7 +220,7 @@ class ContentRestoreTest extends TestCase
                 [
                     'editor_id' => 'kirby',
                     'uuid'      => 'restore-old',
-                    'time'      => 1000000,
+                    'time'      => time() - 200,
                     'version'   => 1,
                     'type'      => 'page',
                     'language'  => '',
@@ -214,15 +229,15 @@ class ContentRestoreTest extends TestCase
             ],
         ]);
 
-        $restore = new ContentRestore();
-        $restore->restoreContent($this->pageDir, 'article', 'restore-old', 1000000);
+        $this->assertTrue((new ContentRestore())->restoreContent($this->pageDir, 'article', 'restore-old'));
 
-        $history  = $this->readHistory($this->pageDir);
-        $versions = array_column($history['article'], 'version');
+        $history = $this->readHistory($this->pageDir)['article'];
 
-        // Version 1 is removed; the restoration re-adds it tagged with restored_from
-        $restoredEntries = array_filter($history['article'], fn($e) => isset($e['restored_from']));
-        $this->assertCount(1, $restoredEntries);
+        // 2.6: nothing is removed or rewritten, the restore is a new version on top
+        $this->assertSame([3, 2, 1], array_column($history, 'version'));
+        $this->assertSame('restored', $history[0]['action']);
+        $this->assertSame(1, $history[0]['restored_from_version']);
+        $this->assertSame('restore-old', $history[0]['restored_from_id']);
     }
 
     // -------------------------------------------------------------------------
@@ -231,9 +246,10 @@ class ContentRestoreTest extends TestCase
 
     public function testRestoreWritesLanguageSuffixedFile(): void
     {
-        $this->seedHistory();
-        $langFile = $this->pageDir . '/article.en.txt';
-        $this->writeContent($langFile, "Title: English Current\n");
+        $this->writeContent($this->pageDir . '/article.en.txt', "Title: English Current\n");
+        $langFile = $this->pageDir . '/article.de.txt';
+        $this->writeContent($langFile, "Title: Deutsch Aktuell\n");
+        unlink($this->contentFile);
 
         $this->writeHistory($this->pageDir, [
             'article' => [[
@@ -242,21 +258,27 @@ class ContentRestoreTest extends TestCase
                 'time'      => 1000000,
                 'version'   => 1,
                 'type'      => 'page',
-                'language'  => 'en',
-                'content'   => "Title: English Old\n",
+                'language'  => 'de',
+                'content'   => "Title: Deutsch Alt\n",
             ]],
         ]);
+
+        $this->seedHistory(['languages' => [
+            ['code' => 'en', 'name' => 'English', 'default' => true],
+            ['code' => 'de', 'name' => 'Deutsch'],
+        ]]);
 
         $restore = new ContentRestore();
         $result  = $restore->restoreContent($this->pageDir, 'article', 'restore-lang', 1000000);
 
-        $this->assertTrue($result);
-        $this->assertStringContainsString('English Old', file_get_contents($langFile));
+        $this->assertTrue($result, (string)$restore->error());
+        $this->assertStringContainsString('Deutsch Alt', file_get_contents($langFile));
+        $this->assertStringContainsString('English Current', file_get_contents($this->pageDir . '/article.en.txt'));
     }
 
     public function testRestoreRestoresSlugTemplateAndTitle(): void
     {
-        $this->seedHistory();
+        $this->seedHistory(self::TEMPLATE_BLUEPRINTS);
         $snapshot = "Title: Restored Title\n----\nText: Old body\n";
 
         $this->writeHistory($this->pageDir, [
@@ -327,7 +349,7 @@ class ContentRestoreTest extends TestCase
 
     public function testRestoreSupportsLegacyInlineSnapshotMetadata(): void
     {
-        $this->seedHistory();
+        $this->seedHistory(self::TEMPLATE_BLUEPRINTS);
         $legacySnapshot = implode('', [
             "Path: restored-page\n----\n",
             "Slug: restored-page\n----\n",

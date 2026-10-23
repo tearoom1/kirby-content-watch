@@ -71,7 +71,7 @@ class ContentWatchController
 
             if ($file->getBasename() === '.content-watch.json') {
                 try {
-                    $history  = Data::read($file->getPathname(), 'json') ?: [];
+                    $history  = HistoryStore::read(dirname($file->getPathname()));
                     $dirPath  = dirname($file->getPathname());
                     $historyFiles[$dirPath] = $history;
                 } catch (\Exception) {
@@ -226,7 +226,7 @@ class ContentWatchController
         }
 
         try {
-            $history = Data::read($dirPath . '/.content-watch.json', 'json') ?: [];
+            $history = HistoryStore::read($dirPath);
         } catch (\Exception) {
             return [];
         }

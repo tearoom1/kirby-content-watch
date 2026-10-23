@@ -2,207 +2,358 @@
 
 namespace TearoomOne\ContentWatch;
 
+use Kirby\Cms\ModelWithContent;
 use Kirby\Cms\Page;
-use Kirby\Data\Data;
-use Kirby\Filesystem\F;
+use Kirby\Cms\Site;
+use Kirby\Data\Txt;
+use Kirby\Exception\Exception as KirbyException;
+use Throwable;
 
+/**
+ * Restores a page or the site to a history snapshot through Kirby's own
+ * actions (`changeTemplate`, `changeSlug`, `changeStatus`, `update`), run as
+ * the current user: permissions, validation, hooks and caches all apply.
+ *
+ * Everything that can be checked upfront is checked before anything changes.
+ * If a Kirby action still fails, the steps done so far are undone.
+ */
 class ContentRestore
 {
     use ResolvesContentModels;
+
+    /** Content keys that are not restored as fields */
+    protected const IGNORED_KEYS = ['uuid', 'slug'];
+
+    protected ?string $error = null;
 
     /**
      * Restore content from a history snapshot.
      *
      * @param string $dirPath  Directory path where .content-watch.json lives
      * @param string $fileKey  File key in the history (template name or filename)
-     * @param int|null    $timestamp Unix timestamp of the history entry to restore
+     * @param int|null    $timestamp Unix timestamp of the history entry to restore (legacy entries without id)
      */
     public function restoreContent(
         string $dirPath,
         string $fileKey,
         ?string $entryId = null,
         ?int $timestamp = null
-    ): bool
-    {
-        if (option('tearoom1.kirby-content-watch.enableRestore') !== true) {
-            return false;
-        }
-
-        $dirPath = $this->resolveContentDirectory($dirPath);
-        if ($dirPath === null || $this->isSafeFileKey($fileKey) === false) {
-            return false;
-        }
-
-        $editorFile = $dirPath . '/.content-watch.json';
-
-        if (!F::exists($editorFile)) {
-            return false;
-        }
-
+    ): bool {
         try {
-            $history = Data::read($editorFile, 'json') ?: [];
-
-            if (!isset($history[$fileKey]) || !is_array($history[$fileKey])) {
-                return false;
-            }
-
-            $entryToRestore = $this->findHistoryEntry($history[$fileKey], $entryId, $timestamp);
-
-            if (!$entryToRestore || empty($entryToRestore['content'])) {
-                return false;
-            }
-
-            $snapshot      = SnapshotSerializer::split(
-                $entryToRestore['content'],
-                $entryToRestore['meta'] ?? null
-            );
-            $snapshotMeta  = $snapshot['meta'] ?? [];
-            if ($this->isSafeSnapshotMeta($snapshotMeta) === false) {
-                return false;
-            }
-
-            if (!empty($entryToRestore['language']) && preg_match('/\A[A-Za-z0-9_-]+\z/', (string)$entryToRestore['language']) !== 1) {
-                return false;
-            }
-
-            $languagePart  = empty($entryToRestore['language']) ? '' : '.' . $entryToRestore['language'];
-            $targetDirPath = $dirPath;
-            $targetFileKey = $fileKey;
-
-            $page = $this->findContentModelByRoot($dirPath);
-
-            // Enforce per-model write permissions so a user allowed to access the
-            // plugin can still only restore content for models they can update.
-            // Directories without a resolvable model are rejected.
-            if ($page === null || !$page->permissions()->can('update')) {
-                return false;
-            }
-
-            if ($page instanceof Page) {
-                $targetDirPath = $this->restorePageStructure($page, $dirPath, $snapshotMeta);
-                $targetFileKey = $snapshotMeta['template'] ?? $fileKey;
-            }
-
-            $contentFile = $targetDirPath . '/' . $targetFileKey . $languagePart . '.txt';
-            if (empty($contentFile)) {
-                return false;
-            }
-
-            F::write($contentFile, $snapshot['content']);
-
-            // Record the restoration in history
-            $user = kirby()->user();
-            if ($user) {
-                if ($targetFileKey !== $fileKey && isset($history[$fileKey]) === true) {
-                    $history[$targetFileKey] = array_values(array_merge(
-                        $history[$targetFileKey] ?? [],
-                        $history[$fileKey]
-                    ));
-                    unset($history[$fileKey]);
-                    $fileKey = $targetFileKey;
-                }
-
-                // Remove the original version (it will be re-added tagged as a restore)
-                if (isset($entryToRestore['version'])) {
-                    $history[$fileKey] = array_values(array_filter(
-                        $history[$fileKey],
-                        fn($entry) => !isset($entry['version']) || $entry['version'] !== $entryToRestore['version']
-                    ));
-                }
-
-                $record = [
-                    'editor_id'    => $user->id(),
-                    'uuid'         => bin2hex(random_bytes(16)),
-                    'time'         => time(),
-                    'restored_from' => $timestamp,
-                    'restored_from_id' => $entryToRestore['uuid'] ?? null,
-                    'content'      => $snapshot['content'],
-                    'language'     => $entryToRestore['language'],
-                    'version'      => $entryToRestore['version'],
-                ];
-
-                if ($snapshotMeta !== []) {
-                    $record['meta'] = $snapshotMeta;
-                }
-
-                array_unshift($history[$fileKey], $record);
-                $this->saveTheUpdatedHistory($targetDirPath . '/.content-watch.json', $history);
-            }
+            $this->restore($dirPath, $fileKey, $entryId, $timestamp);
+            $this->error = null;
 
             return true;
-        } catch (\Exception) {
+        } catch (Throwable $e) {
+            $this->error = $e->getMessage();
+
             return false;
         }
     }
 
-    public function saveTheUpdatedHistory(string $editorFile, mixed $history): void
+    /**
+     * Message of the last failed restoreContent() call
+     */
+    public function error(): ?string
     {
-        try {
-            Data::write($editorFile, $history, 'json');
-        } catch (\Exception) {
-            // Silently fail if we can't write the file
+        return $this->error;
+    }
+
+    /**
+     * @throws RestoreException with a message for the Panel when the restore is not possible
+     */
+    public function restore(
+        string $dirPath,
+        string $fileKey,
+        ?string $entryId = null,
+        ?int $timestamp = null
+    ): ModelWithContent {
+        if (option('tearoom1.kirby-content-watch.enableRestore') !== true) {
+            throw new RestoreException('Restore functionality is disabled', 403);
         }
+
+        $dirPath = $this->resolveContentDirectory($dirPath);
+        if ($dirPath === null || $this->isSafeFileKey($fileKey) === false) {
+            throw new RestoreException('History file not found', 404);
+        }
+
+        $entries = HistoryStore::read($dirPath)[$fileKey] ?? null;
+        $entry   = is_array($entries) ? $this->findHistoryEntry($entries, $entryId, $timestamp) : null;
+
+        if ($entry === null || empty($entry['content'])) {
+            throw new RestoreException('This version has no content to restore', 404);
+        }
+
+        $model = $this->findContentModelByRoot($dirPath);
+        if (!$model instanceof Page && !$model instanceof Site) {
+            throw new RestoreException('Only pages and the site can be restored', 400);
+        }
+
+        $language = $this->resolveLanguage((string)($entry['language'] ?? ''));
+        $snapshot = SnapshotSerializer::split($entry['content'], $entry['meta'] ?? null);
+        $data     = $this->contentData($model, $snapshot['content'], $language);
+        $plan     = $this->plan($model, $snapshot['meta'], $data, $language);
+
+        $this->checkPermissions($model, $plan);
+        $this->checkUnsavedChanges($model, $language);
+
+        $restored = ChangeTracker::withoutTracking(fn () => $this->apply($model, $plan, $data, $language));
+
+        // one new entry for the whole restore, the history itself stays as it is
+        (new ChangeTracker())->trackContentChange($restored, [
+            'action'                => 'restored',
+            'restored_from'         => $entry['time'] ?? null,
+            'restored_from_id'      => $entry['uuid'] ?? null,
+            'restored_from_version' => $entry['version'] ?? null,
+            // the history moves along with a changed template
+            'previous_file_key'     => $fileKey,
+        ]);
+
+        return $restored;
+    }
+
+    /**
+     * Whether the current user may restore versions of the model at all
+     */
+    public static function canRestore(?ModelWithContent $model): bool
+    {
+        return option('tearoom1.kirby-content-watch.enableRestore') === true
+            && ContentWatchController::canAccess()
+            && ($model instanceof Page || $model instanceof Site)
+            && $model->permissions()->can('update') === true;
+    }
+
+    /**
+     * Structure changes the snapshot needs. Only snapshots of the default
+     * language change template, slug and status; a translation restores
+     * its content and its translated slug.
+     */
+    protected function plan(ModelWithContent $model, array $meta, array $data, ?string $language): array
+    {
+        $plan = ['template' => null, 'slug' => null, 'status' => null, 'translatedSlug' => null];
+
+        if (!$model instanceof Page) {
+            return $plan;
+        }
+
+        $default   = kirby()->defaultLanguage()?->code();
+        $isDefault = $language === null || $default === $language;
+
+        if ($isDefault === false) {
+            $slug = $this->translatedSlug;
+            if (is_string($slug) && $slug !== '' && $slug !== $model->slug($language)) {
+                $plan['translatedSlug'] = $slug;
+            }
+
+            return $plan;
+        }
+
+        $template = $meta['template'] ?? null;
+        if (is_string($template) && $template !== '' && $template !== $model->intendedTemplate()->name()) {
+            $plan['template'] = $template;
+        }
+
+        $slug = $meta['slug'] ?? null;
+        if (is_string($slug) && $slug !== '' && $slug !== $model->slug($default)) {
+            $plan['slug'] = $slug;
+        }
+
+        $status = $meta['status'] ?? null;
+        if (in_array($status, ['draft', 'listed', 'unlisted'], true) && $status !== $model->status()) {
+            $plan['status'] = $status;
+        }
+
+        return $plan;
+    }
+
+    protected function checkPermissions(ModelWithContent $model, array $plan): void
+    {
+        $permissions = $model->permissions();
+
+        if ($permissions->can('update') !== true) {
+            throw new RestoreException('You are not allowed to update this page', 403);
+        }
+
+        if (!$model instanceof Page) {
+            return;
+        }
+
+        if ($plan['template'] !== null) {
+            if ($permissions->can('changeTemplate') !== true) {
+                throw new RestoreException('This version has a different template, and you are not allowed to change the template', 403);
+            }
+
+            $allowed = array_column($model->blueprints(), 'name');
+            if (!in_array($plan['template'], $allowed, true)) {
+                throw new RestoreException('This version has the template "' . $plan['template'] . '", which this page cannot switch to', 400);
+            }
+        }
+
+        if (($plan['slug'] !== null || $plan['translatedSlug'] !== null) && $permissions->can('changeSlug') !== true) {
+            throw new RestoreException('This version has a different URL appendix, and you are not allowed to change it', 403);
+        }
+
+        if ($plan['slug'] !== null) {
+            $other = $model->parentModel()->childrenAndDrafts()->find($plan['slug']);
+
+            if ($other !== null && $other->id() !== $model->id()) {
+                throw new RestoreException('Another page already uses the URL appendix "' . $plan['slug'] . '"', 409);
+            }
+        }
+
+        if ($plan['status'] !== null && $permissions->can('changeStatus') !== true) {
+            throw new RestoreException('This version has a different status, and you are not allowed to change the status', 403);
+        }
+    }
+
+    /**
+     * Kirby 5 keeps unsaved Panel changes in a separate version. A restore
+     * below them would be overwritten by the next "Save", so the restore
+     * waits until the changes are saved or discarded.
+     */
+    protected function checkUnsavedChanges(ModelWithContent $model, ?string $language): void
+    {
+        $code = $language ?? 'default';
+
+        if (method_exists($model, 'version')) {
+            try {
+                $hasChanges = $model->version('changes')->exists($code) === true;
+            } catch (Throwable) {
+                $hasChanges = false;
+            }
+
+            if ($hasChanges) {
+                throw new RestoreException('This page has unsaved changes. Save or discard them first, then restore.', 409);
+            }
+
+            return;
+        }
+
+        // Kirby 4: someone else is editing the page right now
+        try {
+            $locked = $model->lock()?->isLocked() === true;
+        } catch (Throwable) {
+            $locked = false;
+        }
+
+        if ($locked) {
+            throw new RestoreException('This page is being edited by someone else. Try again when they are done.', 409);
+        }
+    }
+
+    protected function apply(ModelWithContent $model, array $plan, array $data, ?string $language): ModelWithContent
+    {
+        $undo    = [];
+        $default = kirby()->defaultLanguage()?->code();
+
+        try {
+            if ($model instanceof Page) {
+                if ($plan['template'] !== null) {
+                    $previous = $model->intendedTemplate()->name();
+                    $model    = $model->changeTemplate($plan['template']);
+                    $undo[]   = fn (Page $page) => $page->changeTemplate($previous);
+                }
+
+                if ($plan['slug'] !== null) {
+                    $previous = $model->slug($default);
+                    $model    = $model->changeSlug($plan['slug'], $default);
+                    $undo[]   = fn (Page $page) => $page->changeSlug($previous, $default);
+                }
+
+                if ($plan['translatedSlug'] !== null) {
+                    $previous = $model->slug($language);
+                    $model    = $model->changeSlug($plan['translatedSlug'], $language);
+                    $undo[]   = fn (Page $page) => $page->changeSlug($previous, $language);
+                }
+
+                if ($plan['status'] !== null) {
+                    $previous = $model->status();
+                    $num      = $model->num();
+                    $model    = $model->changeStatus($plan['status']);
+                    $undo[]   = fn (Page $page) => $page->changeStatus($previous, $previous === 'listed' ? $num : null);
+                }
+            }
+
+            return $model->update($data, $language, true);
+        } catch (Throwable $e) {
+            // undo the structure changes done so far, newest first
+            foreach (array_reverse($undo) as $step) {
+                try {
+                    $model = $step($model);
+                } catch (Throwable $undoError) {
+                    HistoryStore::log('Could not undo a restore step: ' . $undoError->getMessage());
+                }
+            }
+
+            $message = $e instanceof KirbyException || $e instanceof RestoreException
+                ? $e->getMessage()
+                : 'The version could not be restored: ' . $e->getMessage();
+
+            throw new RestoreException($message, 400, $e);
+        }
+    }
+
+    /** Slug field of a translated snapshot, see contentData() */
+    protected ?string $translatedSlug = null;
+
+    /**
+     * Field values of the snapshot. Fields that exist now but not in the
+     * snapshot are emptied, so the content matches the restored version.
+     */
+    protected function contentData(ModelWithContent $model, string $content, ?string $language): array
+    {
+        $data = Txt::decode($content);
+
+        $this->translatedSlug = is_string($data['slug'] ?? null) ? $data['slug'] : null;
+
+        $current = $model->content($language)->toArray();
+        foreach (array_keys($current) as $key) {
+            if (!array_key_exists($key, $data)) {
+                $data[$key] = null;
+            }
+        }
+
+        foreach (self::IGNORED_KEYS as $key) {
+            unset($data[$key]);
+        }
+
+        return $data;
+    }
+
+    protected function resolveLanguage(string $code): ?string
+    {
+        if ($code === '' || kirby()->multilang() !== true) {
+            return null;
+        }
+
+        if (kirby()->language($code) === null) {
+            throw new RestoreException('The language "' . $code . '" of this version does not exist anymore', 400);
+        }
+
+        return $code;
     }
 
     protected function findHistoryEntry(array $history, ?string $entryId, ?int $timestamp): ?array
     {
         if (is_string($entryId) && $entryId !== '') {
             foreach ($history as $entry) {
-                if (($entry['uuid'] ?? null) === $entryId) {
+                if (is_array($entry) && ($entry['uuid'] ?? null) === $entryId) {
                     return $entry;
                 }
             }
         }
 
+        if ($timestamp === null) {
+            return null;
+        }
+
         foreach ($history as $entry) {
-            if (isset($entry['time']) && $entry['time'] == $timestamp) {
+            if (is_array($entry) && isset($entry['time']) && $entry['time'] == $timestamp) {
                 return $entry;
             }
         }
 
         return null;
-    }
-
-    protected function restorePageStructure(Page $page, string $dirPath, array $snapshot): string
-    {
-        $targetDirPath = $dirPath;
-        $targetSlug    = $snapshot['slug'] ?? $page->slug();
-        $targetStatus  = $snapshot['status'] ?? $page->status();
-        $targetTemplate = $snapshot['template'] ?? $page->intendedTemplate()->name();
-
-        $parentRoot = $page->parent()?->root() ?? kirby()->root('content');
-        $listedNum  = $page->num() ?? 1;
-
-        $targetDirPath = match ($targetStatus) {
-            'draft' => $parentRoot . '/_drafts/' . $targetSlug,
-            'listed' => $parentRoot . '/' . $listedNum . '_' . $targetSlug,
-            default => $parentRoot . '/' . $targetSlug,
-        };
-
-        if ($targetDirPath !== $dirPath) {
-            $targetParent = dirname($targetDirPath);
-            if (is_dir($targetParent) === false) {
-                mkdir($targetParent, 0755, true);
-            }
-            F::move($dirPath, $targetDirPath);
-        }
-
-        $this->renameTemplateFiles($targetDirPath, $page->intendedTemplate()->name(), $targetTemplate);
-
-        return $targetDirPath;
-    }
-
-    protected function renameTemplateFiles(string $dirPath, string $currentTemplate, string $targetTemplate): void
-    {
-        if ($currentTemplate === $targetTemplate) {
-            return;
-        }
-
-        foreach (glob($dirPath . '/' . $currentTemplate . '*.txt') ?: [] as $file) {
-            $basename = basename($file);
-            $suffix   = substr($basename, strlen($currentTemplate));
-            F::move($file, $dirPath . '/' . $targetTemplate . $suffix);
-        }
     }
 
     protected function resolveContentDirectory(string $dirPath): ?string
@@ -226,25 +377,5 @@ class ContentRestore
     {
         return preg_match('/\A[A-Za-z0-9._-]+\z/', $fileKey) === 1
             && str_contains($fileKey, '..') === false;
-    }
-
-    protected function isSafeSnapshotMeta(array $meta): bool
-    {
-        $slug = $meta['slug'] ?? null;
-        if ($slug !== null && preg_match('/\A[[:alnum:]][[:alnum:]._~-]*\z/u', $slug) !== 1) {
-            return false;
-        }
-
-        $status = $meta['status'] ?? null;
-        if ($status !== null && !in_array($status, ['draft', 'listed', 'unlisted'], true)) {
-            return false;
-        }
-
-        $template = $meta['template'] ?? null;
-        if ($template !== null && $this->isSafeFileKey($template) === false) {
-            return false;
-        }
-
-        return true;
     }
 }

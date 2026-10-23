@@ -2,6 +2,8 @@
 
 error_reporting(E_ALL);
 ini_set('display_errors', 'on');
+// the plugin logs recoverable problems (e.g. a corrupt history file), keep test output clean
+ini_set('error_log', '/dev/null');
 
 // Suppress Kirby's PHP version check (we run on 8.5 which is above Kirby's checked upper bound)
 define('KIRBY_PHP_VERSION_CHECK', false);

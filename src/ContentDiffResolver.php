@@ -140,7 +140,7 @@ class ContentDiffResolver
             throw new RuntimeException('History file not found', 404);
         }
 
-        $history = Data::read($historyFile, 'json') ?: [];
+        $history = HistoryStore::read($dirPath);
         if (isset($history[$fileKey]) !== true || is_array($history[$fileKey]) !== true) {
             throw new RuntimeException('No history found for this file', 404);
         }

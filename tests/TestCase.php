@@ -17,6 +17,9 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        // Kirby caches loaded blueprints statically across app instances
+        \Kirby\Cms\Blueprint::$loaded = [];
+
         $this->initialErrorHandler     = $this->currentErrorHandler();
         $this->initialExceptionHandler = $this->currentExceptionHandler();
 
