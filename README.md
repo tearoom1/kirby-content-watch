@@ -95,7 +95,7 @@ return [
 | `retentionDays` | `int` | `30` | Number of days to keep history entries before they are pruned |
 | `retentionCount` | `int` | `10` | Maximum number of history entries to keep per file and language |
 | `defaultPageSize` | `int` | `20` | Default number of items per page in the panel view. Possible values: `10`, `20`, `50` |
-| `defaultView` | `string` | `'page'` | View the area opens with: `'page'` (changes grouped by page) or `'timeline'` (all changes, newest first). Editors can switch with the toggle next to the support link; their choice is remembered per user in the browser and wins over this option |
+| `defaultView` | `string` | `'page'` | View the area opens with: `'page'` (changes grouped by page) or `'timeline'` (all changes, newest first). Editors can switch with the toggle in the toolbar; their choice is remembered per user in the browser and wins over this option |
 | `layoutStyle` | `string` | `'compact'` | **Deprecated.** The list always uses the compact layout; `'relaxed'` and `'default'` are still accepted but have no effect |
 | `enableLockedPages` | `bool\|null` | `null` | Whether to show the locked pages view. `null` shows it on Kirby 4 only, since Kirby 5 has its own "Changes" overview |
 | `enableRestore` | `bool` | `false` | Enable content restore functionality. When enabled, full content snapshots are saved — increases disk usage |
