@@ -37,7 +37,7 @@
               :class="{'k-button-active': view === 'page'}"
               :variant="view === 'page' ? 'filled' : null"
               icon="list-bullet"
-              :title="$t('tearoom1.content-watch.view.page')"
+              v-cw-tooltip="$t('tearoom1.content-watch.view.page')"
               :aria-label="$t('tearoom1.content-watch.view.page')"
               :aria-pressed="view === 'page' ? 'true' : 'false'"
               @click="setView('page')"
@@ -47,7 +47,7 @@
               :class="{'k-button-active': view === 'timeline'}"
               :variant="view === 'timeline' ? 'filled' : null"
               icon="clock"
-              :title="$t('tearoom1.content-watch.view.timeline')"
+              v-cw-tooltip="$t('tearoom1.content-watch.view.timeline')"
               :aria-label="$t('tearoom1.content-watch.view.timeline')"
               :aria-pressed="view === 'timeline' ? 'true' : 'false'"
               @click="setView('timeline')"
@@ -61,14 +61,14 @@
             >{{ $t('tearoom1.content-watch.filters') }}<template v-if="activeFilterCount"> ({{ activeFilterCount }})</template></k-button>
             <k-button
               icon="download"
-              :title="$t('tearoom1.content-watch.export')"
+              v-cw-tooltip="$t('tearoom1.content-watch.export')"
               :aria-label="$t('tearoom1.content-watch.export')"
               :disabled="!filteredFiles.length"
               @click="exportCsv"
             />
             <k-button
               icon="refresh"
-              :title="$t('tearoom1.content-watch.reload')"
+              v-cw-tooltip="$t('tearoom1.content-watch.reload')"
               :aria-label="$t('tearoom1.content-watch.reload')"
               @click="refresh"
             />
@@ -138,20 +138,21 @@
                     class="k-content-watch-status-icon"
                     :class="'k-content-watch-status-icon-' + file.page_status"
                     :type="'status-' + file.page_status"
-                    :title="file.page_status"
+                    v-cw-tooltip="file.page_status"
+                    :alt="file.page_status"
                   />
                   {{ file.title }}
                 </strong> ~ {{ file.path_short }}
               </span>
               <span class="k-content-watch-file-editor">
-                 {{ formatRelative(file.modified) }} by <strong :title="editorHelp(file.editor)">{{ editorLabel(file.editor) }}</strong>
+                 {{ formatRelative(file.modified) }} by <strong v-cw-tooltip="editorHelp(file.editor)">{{ editorLabel(file.editor) }}</strong>
               </span>
             </div>
             <div class="k-content-watch-file-actions">
               <k-button icon="angle-down"
-                        :title="expandedFiles.includes(file.id) ? 'Hide history' : 'Show history'"
+                        v-cw-tooltip="expandedFiles.includes(file.id) ? 'Hide history' : 'Show history'"
                         :class="{'k-button-rotated': expandedFiles.includes(file.id), 'k-button-disabled': !file.history || file.history.length === 0}"/>
-              <k-button @click.stop="openFile(file)" icon="edit" title="Edit in panel"/>
+              <k-button @click.stop="openFile(file)" icon="edit" v-cw-tooltip="'Edit in panel'"/>
             </div>
           </div>
 
@@ -172,7 +173,7 @@
                   class="k-timeline-item-tag"
                   :class="'k-timeline-item-tag-' + entryAction(entry)"
                 >{{ entryAction(entry) }}</span>
-                <span class="k-timeline-item-editor" :title="editorHelp(entry.editor)">{{ entryEditor(entry) }}</span>
+                <span class="k-timeline-item-editor" v-cw-tooltip="editorHelp(entry.editor)">{{ entryEditor(entry) }}</span>
                 <span class="k-timeline-item-when">
                   {{ formatRelative(entry.time) }}
                   <span class="k-timeline-item-when-absolute">{{ formatAbsolute(entry.time) }}</span>
@@ -185,7 +186,7 @@
                     icon="split"
                     class="k-diff-button"
                     :class="{'k-cw-diff-same': isSame(entry, entryIndex)}"
-                    :title="isSame(entry, entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
+                    v-cw-tooltip="isSame(entry, entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
                     :aria-label="isSame(entry, entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
                     @click.stop="viewDiff(file, entry, entryIndex)"
                   />
@@ -194,14 +195,14 @@
                     icon="check"
                     style="cursor: default"
                     class="k-restore-button"
-                    title="Current version"
+                    v-cw-tooltip="'Current version'"
                   />
                   <k-button
                     v-else-if="enableRestore"
                     v-bind="slotAttrs(canRestoreEntry(entry, entryIndex))"
                     icon="undo"
                     class="k-restore-button"
-                    title="Restore this version"
+                    v-cw-tooltip="'Restore this version'"
                     @click.stop="confirmRestore(file, entry)"
                   />
                 </div>
@@ -229,14 +230,14 @@
                 <div class="k-content-watch-file-header k-content-watch-timeline-row k-content-watch-timeline-group" @click="toggleOutsideGroup(item)">
                   <span class="k-content-watch-timeline-time">{{ formatTime(item.time) }}</span>
                   <span class="k-content-watch-timeline-main k-content-watch-timeline-main-wide">
-                    <strong :title="$t('tearoom1.content-watch.editor.outside.help')">{{ $t('tearoom1.content-watch.editor.outside') }}</strong>
+                    <strong v-cw-tooltip="$t('tearoom1.content-watch.editor.outside.help')">{{ $t('tearoom1.content-watch.editor.outside') }}</strong>
                     · {{ outsideGroupLabel(item) }}
                   </span>
                   <!-- in the actions column, right edge on the restore slot -->
                   <span class="k-timeline-item-actions">
                     <k-button
                       icon="angle-down"
-                      :title="expandedGroups.includes(groupKey(item)) ? 'Hide' : 'Show'"
+                      v-cw-tooltip="expandedGroups.includes(groupKey(item)) ? 'Hide' : 'Show'"
                       :class="{'k-button-rotated': expandedGroups.includes(groupKey(item))}"
                     />
                   </span>
@@ -266,7 +267,7 @@
                           icon="split"
                           class="k-diff-button"
                           :class="{'k-cw-diff-same': isSame(row.entry, row.entryIndex)}"
-                          :title="isSame(row.entry, row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
+                          v-cw-tooltip="isSame(row.entry, row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
                           :aria-label="isSame(row.entry, row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
                           @click.stop="viewDiff(row.file, row.entry, row.entryIndex)"
                         />
@@ -275,7 +276,7 @@
                           v-bind="slotAttrs(canRestoreEntry(row.entry, row.entryIndex))"
                           icon="undo"
                           class="k-restore-button"
-                          title="Restore this version"
+                          v-cw-tooltip="'Restore this version'"
                           @click.stop="confirmRestore(row.file, row.entry)"
                         />
                       </span>
@@ -296,7 +297,7 @@
                     class="k-timeline-item-tag"
                     :class="'k-timeline-item-tag-' + entryAction(item.row.entry)"
                   >{{ entryAction(item.row.entry) }}</span>
-                  <span class="k-content-watch-timeline-editor" :title="editorHelp(item.row.editor) || editorLabel(item.row.editor)">{{ editorLabel(item.row.editor) }}</span>
+                  <span class="k-content-watch-timeline-editor" v-cw-tooltip="editorHelp(item.row.editor) || editorLabel(item.row.editor)">{{ editorLabel(item.row.editor) }}</span>
                   <span class="k-timeline-item-actions">
                     <k-button
                       v-if="enableDiff"
@@ -304,7 +305,7 @@
                       icon="split"
                       class="k-diff-button"
                       :class="{'k-cw-diff-same': isSame(item.row.entry, item.row.entryIndex)}"
-                      :title="isSame(item.row.entry, item.row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
+                      v-cw-tooltip="isSame(item.row.entry, item.row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
                       :aria-label="isSame(item.row.entry, item.row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
                       @click.stop="viewDiff(item.row.file, item.row.entry, item.row.entryIndex)"
                     />
@@ -313,7 +314,7 @@
                       v-bind="slotAttrs(canRestoreEntry(item.row.entry, item.row.entryIndex))"
                       icon="undo"
                       class="k-restore-button"
-                      title="Restore this version"
+                      v-cw-tooltip="'Restore this version'"
                       @click.stop="confirmRestore(item.row.file, item.row.entry)"
                     />
                   </span>
@@ -373,7 +374,7 @@
                       icon="file-document">All
               files
             </k-button>
-            <k-button icon="refresh" title="Reload" @click="refresh"/>
+            <k-button icon="refresh" v-cw-tooltip="'Reload'" @click="refresh"/>
           </k-button-group>
       </div>
 
@@ -391,7 +392,8 @@
                     v-if="lock.page_status"
                     class="k-content-watch-status-glyph"
                     :class="'k-content-watch-status-glyph-' + lock.page_status"
-                    :title="lock.page_status"
+                    v-cw-tooltip="lock.page_status"
+                    role="img"
                   ></span>
                   {{ lock.title }}
                 </strong> ~ {{ lock.id }}
@@ -401,7 +403,7 @@
               </span>
             </div>
             <div class="k-content-watch-file-actions">
-              <k-button @click.stop="openLockedPage(lock)" icon="edit" title="Edit in panel"/>
+              <k-button @click.stop="openLockedPage(lock)" icon="edit" v-cw-tooltip="'Edit in panel'"/>
             </div>
           </div>
         </div>

@@ -27,7 +27,7 @@
             icon="split"
             size="xs"
             :class="{'k-cw-diff-same': index > 0 && entry.same_as_current}"
-            :title="index > 0 && entry.same_as_current ? $t('tearoom1.content-watch.equal') : 'View changes'"
+            v-cw-tooltip="index > 0 && entry.same_as_current ? $t('tearoom1.content-watch.equal') : 'View changes'"
             :aria-label="index > 0 && entry.same_as_current ? $t('tearoom1.content-watch.equal') : 'View changes'"
             @click="openDiff(entry)"
           />
@@ -36,13 +36,13 @@
             v-bind="slotAttrs(canRestore(entry, index))"
             icon="undo"
             size="xs"
-            title="Restore this version"
+            v-cw-tooltip="'Restore this version'"
             @click="confirmRestore(entry)"
           />
         </span>
         <span class="k-cw-section-meta">
-          <span class="k-cw-section-editor" :title="editorHelp(entry.editor)">{{ entryEditor(entry) }}</span>
-          <span class="k-cw-section-time" :title="formatAbsolute(entry.time)">
+          <span class="k-cw-section-editor" v-cw-tooltip="editorHelp(entry.editor)">{{ entryEditor(entry) }}</span>
+          <span class="k-cw-section-time" v-cw-tooltip="formatAbsolute(entry.time)">
             · {{ formatRelative(entry.time) }}
           </span>
         </span>
