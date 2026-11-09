@@ -1,6 +1,7 @@
 <?php
 
-@include_once __DIR__ . '/vendor/autoload.php';
+// Own classes are listed below; the plugin's vendor/ folder is not loaded,
+// as in a development checkout it holds a second copy of Kirby
 
 load([
     'TearoomOne\\ContentWatch\\ContentWatchController' => 'src/ContentWatchController.php',
