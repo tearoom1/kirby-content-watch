@@ -955,6 +955,15 @@ export default {
       this.currentPage = 1;
     },
 
+    // Select inputs hand over a plain value or an option object
+    normalizeFilterValue(value) {
+      if (value && typeof value === 'object') {
+        return value.value !== undefined ? String(value.value) : '';
+      }
+
+      return value === null || value === undefined ? '' : String(value);
+    },
+
     changeAuthorFilter(value) {
       this.selectedAuthor = this.normalizeFilterValue(value);
       this.filterFiles();
