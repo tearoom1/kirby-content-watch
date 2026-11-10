@@ -5,6 +5,7 @@
 
 load([
     'TearoomOne\\ContentWatch\\ContentWatchController' => 'src/ContentWatchController.php',
+    'TearoomOne\\ContentWatch\\ContentWatchField'      => 'src/ContentWatchField.php',
     'TearoomOne\\ContentWatch\\ResolvesContentModels'  => 'src/ResolvesContentModels.php',
     'TearoomOne\\ContentWatch\\ContentRestore'         => 'src/ContentRestore.php',
     'TearoomOne\\ContentWatch\\ChangeTracker'          => 'src/ChangeTracker.php',
@@ -19,15 +20,13 @@ load([
     'TearoomOne\\ContentWatch\\RestoreException'       => 'src/RestoreException.php',
 ], __DIR__);
 
-use Kirby\Cms\File;
-use Kirby\Cms\Site;
 use Kirby\Filesystem\F;
-use Kirby\Toolkit\I18n;
 use Kirby\Http\Response;
 use TearoomOne\ContentWatch\ChangeTracker;
 use TearoomOne\ContentWatch\ContentDiffResolver;
 use TearoomOne\ContentWatch\ContentRestore;
 use TearoomOne\ContentWatch\ContentWatchController;
+use TearoomOne\ContentWatch\ContentWatchField;
 use TearoomOne\ContentWatch\RestoreException;
 
 // Don't load plugin if disabled in config
@@ -244,67 +243,9 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
     'areas' => [
         'content-watch' => require __DIR__ . '/src/areas/content-watch.php',
     ],
-    'sections' => [
-        'contentwatch' => [
-            'props' => [
-                'headline' => fn ($headline = 'Recent changes') => I18n::translate($headline, $headline),
-                'limit'    => fn (int $limit = 5) => $limit,
-            ],
-            'computed' => [
-                'canAccess' => fn () => ContentWatchController::canAccess(),
-                'entries'   => function () {
-                    if (!ContentWatchController::canAccess()) {
-                        return [];
-                    }
-
-                    $entries = (new ContentWatchController())->getModelHistory($this->model());
-
-                    // the diff of the last shown entry needs the one before it
-                    foreach ($entries as $index => $entry) {
-                        $previous = $entries[$index + 1] ?? null;
-
-                        $entries[$index]['previous'] = $previous ? [
-                            'entry_id'     => $previous['entry_id'],
-                            'time'         => $previous['time'],
-                            'version'      => $previous['version'],
-                            'has_snapshot' => $previous['has_snapshot'],
-                        ] : null;
-                    }
-
-                    return array_slice($entries, 0, max(1, $this->limit));
-                },
-                'history'   => function () {
-                    if (!ContentWatchController::canAccess()) {
-                        return null;
-                    }
-
-                    [$dirPath, $fileKey] = (new ContentWatchController())->modelHistoryLocation($this->model());
-
-                    // same rules as in the Content Watch area: diffs are part of restoring
-                    $enableRestore = option('tearoom1.kirby-content-watch.enableRestore') === true;
-
-                    return [
-                        'dirPath'       => $dirPath,
-                        'fileKey'       => $fileKey,
-                        'enableDiff'    => $enableRestore && option('tearoom1.kirby-content-watch.enableDiff', true) === true,
-                        'enableRestore' => $enableRestore,
-                    ];
-                },
-                'areaUrl'   => function () {
-                    $model  = $this->model();
-                    $search = match (true) {
-                        $model instanceof File => $model->filename(),
-                        $model instanceof Site => 'Site',
-                        default                => $model->title()->value(),
-                    };
-
-                    return 'content-watch?' . http_build_query([
-                        'search' => $search,
-                        'all'    => $model instanceof File ? 1 : null,
-                    ]);
-                },
-            ],
-        ],
+    'fields' => [
+        // until Kirby 5 this was a section of the same name
+        'contentwatch' => ContentWatchField::class,
     ],
     'pageMethods' => [
         'contentHistory' => function (?string $language = null) {

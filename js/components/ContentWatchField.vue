@@ -1,13 +1,13 @@
 <template>
   <k-section
-    v-if="canAccess"
-    :headline="headline"
+    v-if="state.canAccess"
+    :headline="state.headline"
     :buttons="buttons"
     class="k-content-watch-history-section"
   >
-    <ul v-if="entries.length" class="k-cw-section-list">
+    <ul v-if="state.entries.length" class="k-cw-section-list">
       <li
-        v-for="(entry, index) in entries"
+        v-for="(entry, index) in state.entries"
         :key="entry.entry_id || entry.version"
         class="k-cw-section-item"
         :class="{'k-cw-section-item-current': index === 0}"
@@ -19,10 +19,10 @@
           class="k-cw-section-tag"
           :class="'k-cw-section-tag-' + entryAction(entry)"
         >{{ entryAction(entry) }}</span>
-        <span v-if="history?.enableDiff || history?.enableRestore" class="k-cw-section-actions">
+        <span v-if="state.history?.enableDiff || state.history?.enableRestore" class="k-cw-section-actions">
           <!-- fixed slots: diff, restore; empty slots keep their width -->
           <k-button
-            v-if="history?.enableDiff"
+            v-if="state.history?.enableDiff"
             v-bind="slotAttrs(canDiff(entry))"
             icon="split"
             size="xs"
@@ -32,7 +32,7 @@
             @click="openDiff(entry)"
           />
           <k-button
-            v-if="history?.enableRestore"
+            v-if="state.history?.enableRestore"
             v-bind="slotAttrs(canRestore(entry, index))"
             icon="undo"
             size="xs"
@@ -49,81 +49,41 @@
       </li>
     </ul>
     <k-empty v-else icon="clock" text="No changes recorded yet"/>
-
-    <k-dialog
-      v-if="history?.enableRestore"
-      ref="restoreDialog"
-      :submit-button="restoreTarget ? $t('tearoom1.content-watch.restore.confirm.submit', {version: restoreTarget.version}) : $t('restore')"
-      theme="positive"
-      icon="undo"
-      @submit="restore"
-    >
-      <k-text v-if="restoreTarget">
-        <p>
-          <strong>{{ $t('tearoom1.content-watch.restore.confirm.title', {version: restoreTarget.version}) }}</strong>
-          {{ restoreTarget.language
-            ? $t('tearoom1.content-watch.restore.confirm.text.language', {version: restoreTarget.version, language: languageName(restoreTarget.language)})
-            : $t('tearoom1.content-watch.restore.confirm.text', {version: restoreTarget.version}) }}
-        </p>
-        <ul>
-          <li>{{ $t('tearoom1.content-watch.restore.confirm.history') }}</li>
-          <li v-if="restoreTarget.language">{{ $t('tearoom1.content-watch.restore.confirm.languages') }}</li>
-        </ul>
-      </k-text>
-    </k-dialog>
-
-    <k-dialog
-      v-if="history?.enableDiff"
-      ref="diffDialog"
-      size="huge"
-      cancel-button=""
-      :submit-button="$t('close')"
-      class="k-content-watch-diff-dialog"
-      @submit="$refs.diffDialog.close()"
-      @close="diff = null"
-    >
-      <header v-if="diff" class="k-cw-section-diff-header">
-        <strong>v{{ diff.entry.previous.version }} → v{{ diff.entry.version }}</strong>
-        <span>{{ entryEditor(diff.entry) }} · {{ formatAbsolute(diff.entry.time) }}</span>
-        <k-button-group>
-          <k-button
-            icon="angle-left"
-            size="xs"
-            variant="filled"
-            :disabled="!diffNeighbour(1)"
-            @click="openDiff(diffNeighbour(1))"
-          >Older</k-button>
-          <k-button
-            icon="angle-right"
-            icon-after
-            size="xs"
-            variant="filled"
-            :disabled="!diffNeighbour(-1)"
-            @click="openDiff(diffNeighbour(-1))"
-          >Newer</k-button>
-        </k-button-group>
-      </header>
-      <k-loader v-if="diff?.loading"/>
-      <div v-else-if="diff?.html" class="k-content-watch-diff-content" v-html="diff.html"></div>
-      <k-empty v-else icon="document" text="No diff available"/>
-    </k-dialog>
   </k-section>
 </template>
 
 <script>
 import {formatDistance} from 'date-fns';
 import {editorHelp, editorLabel} from '../editor.js';
+import {formatAbsolute} from '../time.js';
 
+/**
+ * The `contentwatch` field: the section of the same name until Kirby 5.
+ * Its props come from ContentWatchField::state() in PHP. After a save
+ * the field asks its own endpoint again, as the history is no form value.
+ */
 export default {
+  inheritAttrs: false,
+
+  props: {
+    areaUrl: String,
+    canAccess: Boolean,
+    endpoints: Object,
+    entries: {
+      type: Array,
+      default: () => []
+    },
+    headline: String,
+    history: {
+      type: Object,
+      default: null
+    }
+  },
+
   data() {
     return {
-      headline: null,
-      canAccess: false,
-      entries: [],
-      areaUrl: null,
-      history: null,
-      restoreTarget: null,
-      diff: null
+      // answer of the field endpoint, replaces the props until they change
+      loaded: null
     };
   },
 
@@ -134,35 +94,58 @@ export default {
         text: 'All changes',
         click: this.openArea
       }];
+    },
+
+    state() {
+      return this.loaded ?? {
+        areaUrl: this.areaUrl,
+        canAccess: this.canAccess,
+        entries: this.entries,
+        headline: this.headline,
+        history: this.history
+      };
     }
   },
 
-  async created() {
-    await this.fetch();
+  watch: {
+    // a view reload brings fresh props
+    entries() {
+      this.loaded = null;
+    }
+  },
+
+  created() {
     // saving the page adds a new entry
     this.$events.on('model.update', this.fetch);
   },
 
-  destroyed() {
+  unmounted() {
     this.$events.off('model.update', this.fetch);
   },
 
   methods: {
     async fetch() {
-      const response = await this.load();
-      this.headline = response.headline;
-      this.canAccess = response.canAccess;
-      this.entries = response.entries || [];
-      this.areaUrl = response.areaUrl;
-      this.history = response.history;
+      if (!this.endpoints?.field) {
+        return;
+      }
+
+      const response = await this.$api.get(this.endpoints.field);
+
+      this.loaded = {
+        areaUrl: response.areaUrl,
+        canAccess: response.canAccess,
+        entries: response.entries || [],
+        headline: response.headline,
+        history: response.history
+      };
     },
 
     canDiff(entry) {
-      return this.history?.enableDiff && entry.has_snapshot && entry.previous?.has_snapshot;
+      return this.state.history?.enableDiff && entry.has_snapshot && entry.previous?.has_snapshot;
     },
 
     canRestore(entry, index) {
-      return this.history?.enableRestore && entry.has_snapshot && index > 0 && !entry.same_as_current;
+      return this.state.history?.enableRestore && entry.has_snapshot && index > 0 && !entry.same_as_current;
     },
 
     // a button slot that doesn't apply stays in place, invisible and inert
@@ -176,17 +159,23 @@ export default {
     },
 
     confirmRestore(entry) {
-      this.restoreTarget = entry;
-      this.$refs.restoreDialog.open();
+      this.$panel.dialog.open({
+        component: 'k-content-watch-restore-dialog',
+        props: {
+          version: entry.version,
+          language: entry.language ? this.languageName(entry.language) : null
+        },
+        on: {
+          submit: () => this.restore(entry)
+        }
+      });
     },
 
-    async restore() {
-      const entry = this.restoreTarget;
-
+    async restore(entry) {
       try {
         const response = await this.$api.post('/content-watch/restore', {
-          dirPath: this.history.dirPath,
-          fileKey: this.history.fileKey,
+          dirPath: this.state.history.dirPath,
+          fileKey: this.state.history.fileKey,
           entryId: entry.entry_id ?? null,
           timestamp: entry.time
         });
@@ -195,7 +184,7 @@ export default {
           throw new Error(response.message);
         }
 
-        this.$refs.restoreDialog.close();
+        this.$panel.dialog.close();
         window.panel.notification.success(this.$t('tearoom1.content-watch.restore.done', {version: entry.version}));
 
         // reload the form with the restored content and the new history entry
@@ -203,50 +192,23 @@ export default {
         await this.fetch();
       } catch (error) {
         window.panel.notification.error(error.message || 'Failed to restore content');
-      } finally {
-        this.restoreTarget = null;
       }
     },
 
-    async openDiff(entry) {
-      const isOpen = this.diff !== null;
-      this.diff = {entry, html: null, loading: true};
-
-      if (!isOpen) {
-        this.$refs.diffDialog.open();
-      }
-
-      try {
-        const response = await this.$api.post('/content-watch/diff', {
-          dirPath: this.history.dirPath,
-          fileKey: this.history.fileKey,
-          fromEntryId: entry.previous.entry_id ?? null,
-          toEntryId: entry.entry_id ?? null,
-          fromTimestamp: entry.previous.time,
-          toTimestamp: entry.time
-        });
-
-        // ignore late answers when the user moved on to another version
-        if (this.diff?.entry === entry) {
-          this.diff = {entry, html: response.diff, loading: false};
+    openDiff(entry) {
+      this.$panel.dialog.open({
+        component: 'k-content-watch-field-diff-dialog',
+        props: {
+          entry,
+          entries: this.state.entries,
+          history: this.state.history
         }
-      } catch (error) {
-        this.diff = {entry, html: null, loading: false};
-        window.panel.notification.error('Error loading diff: ' + (error.message || 'Unknown error'));
-      }
-    },
-
-    // direction 1 = older, -1 = newer
-    diffNeighbour(direction) {
-      const index = this.entries.indexOf(this.diff?.entry) + direction;
-      const entry = this.entries[index];
-
-      return entry && this.canDiff(entry) ? entry : null;
+      });
     },
 
     openArea() {
       // Navigate inside the panel instead of a full page reload
-      this.$go(this.areaUrl);
+      this.$go(this.state.areaUrl);
     },
 
     entryAction(entry) {
@@ -278,18 +240,11 @@ export default {
       return formatDistance(new Date(time * 1000), new Date(), {addSuffix: true});
     },
 
-    formatAbsolute(time) {
-      const panel = window.panel || {};
-      const language = (panel.language && panel.language.code) || window.navigator.language || 'en';
-
-      return new Date(time * 1000).toLocaleString(language, {
-        dateStyle: 'medium',
-        timeStyle: 'short'
-      });
-    }
+    formatAbsolute
   }
 };
 </script>
+
 
 <style>
 .k-cw-section-list {

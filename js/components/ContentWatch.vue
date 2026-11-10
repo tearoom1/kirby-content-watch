@@ -28,8 +28,8 @@
             class="k-content-watch-search"
             type="text"
             :placeholder="$t('search') + '...'"
-            v-model="search"
-            @input="filterFiles"
+            :value="search"
+            @input="search = $event ?? ''; filterFiles()"
             icon="search"
           />
           <k-button-group class="k-content-watch-buttons">
@@ -221,10 +221,12 @@
         <section v-for="day in timelineDays" :key="day.day" class="k-content-watch-timeline-day">
           <h3 class="k-content-watch-timeline-day-label">{{ dayLabel(day.day) }}</h3>
           <div class="k-content-watch-files">
-            <template v-for="item in day.items">
+            <template
+              v-for="item in day.items"
+              :key="item.type === 'outside' ? 'outside-' + item.time + '-' + item.rows.length : item.row.key"
+            >
               <div
                 v-if="item.type === 'outside'"
-                :key="'outside-' + item.time + '-' + item.rows.length"
                 class="k-content-watch-file"
               >
                 <div class="k-content-watch-file-header k-content-watch-timeline-row k-content-watch-timeline-group" @click="toggleOutsideGroup(item)">
@@ -285,7 +287,7 @@
                 </div>
               </div>
 
-              <div v-else :key="item.row.key" class="k-content-watch-file">
+              <div v-else class="k-content-watch-file">
                 <div class="k-content-watch-file-header k-content-watch-timeline-row">
                   <span class="k-content-watch-timeline-time">{{ formatTime(item.row.time) }}</span>
                   <span class="k-content-watch-timeline-main">
@@ -362,8 +364,8 @@
             class="k-content-watch-search"
             type="text"
             :placeholder="$t('search') + '...'"
-            v-model="lockedSearch"
-            @input="filterLockedPages"
+            :value="lockedSearch"
+            @input="lockedSearch = $event ?? ''; filterLockedPages()"
             icon="search"
           />
           <k-button-group class="k-content-watch-buttons">
@@ -412,96 +414,6 @@
       <k-empty v-else icon="lock" text="No locked pages found"/>
     </section>
 
-    <!-- Diff dialog for comparing versions -->
-    <k-dialog
-      class="k-content-watch-diff-dialog"
-      ref="diffDialog"
-      size="huge"
-      @close="closeDiff"
-      @submit="$refs.diffDialog.close()"
-    >
-      <div v-if="diffTarget" class="k-content-watch-diff-header">
-        <div class="k-content-watch-diff-file-info">
-          <strong>{{ diffTarget.file?.title }}</strong>
-          <span class="k-content-watch-diff-path"> ~ {{ diffTarget.file?.path_short }}</span>
-        </div>
-
-        <div class="k-content-watch-diff-compare-versions">
-          <k-select-field
-            :label="$t('tearoom1.content-watch.diff.version')"
-            :options="diffFromOptions"
-            :value="diffFromVersionId"
-            :empty="false"
-            @input="changeFromVersion"
-          />
-          <k-select-field
-            :label="$t('tearoom1.content-watch.diff.compare')"
-            :options="diffToOptions"
-            :value="diffToVersionId"
-            :empty="false"
-            @input="changeToVersion"
-          />
-        </div>
-
-        <p v-if="diffSummaryText" class="k-content-watch-diff-summary">{{ diffSummaryText }}</p>
-      </div>
-
-      <k-loader v-if="isDiffLoading"/>
-
-      <div v-else-if="diffContent" class="k-content-watch-diff-content"
-      >
-        <div v-html="diffContent"></div>
-      </div>
-
-      <k-empty v-else icon="document" text="No diff available"/>
-
-      <template #footer>
-        <!-- inline confirmation before restoring the version -->
-        <div v-if="diffRestoreConfirm && diffFromEntry" class="k-content-watch-diff-confirm">
-          <k-text>
-            <p>
-              <strong>{{ t('restore.confirm.title', {version: diffFromEntry.version}) }}</strong>
-              {{ diffFromEntry.language
-                ? t('restore.confirm.text.language', {version: diffFromEntry.version, language: languageName(diffFromEntry.language)})
-                : t('restore.confirm.text', {version: diffFromEntry.version}) }}
-            </p>
-            <ul>
-              <li>{{ t('restore.confirm.history') }}</li>
-              <li v-if="diffFromEntry.language">{{ t('restore.confirm.languages') }}</li>
-            </ul>
-          </k-text>
-          <k-button-group>
-            <k-button variant="filled" :disabled="isRestoringFromDiff" @click="diffRestoreConfirm = false">{{ $t('cancel') }}</k-button>
-            <k-button
-              variant="filled"
-              theme="positive"
-              icon="undo"
-              :disabled="isRestoringFromDiff"
-              @click="restoreFromDiff"
-            >{{ t('restore.confirm.submit', {version: diffFromEntry.version}) }}</k-button>
-          </k-button-group>
-        </div>
-
-        <k-dialog-footer class="k-content-watch-diff-footer">
-          <span v-if="canRestoreFromDiff" class="k-content-watch-diff-hint">
-            {{ diffFromEntry.language
-              ? t('restore.hint.language', {language: diffFromEntry.language.toUpperCase()})
-              : t('restore.hint') }}
-          </span>
-          <k-button-group>
-            <k-button variant="filled" @click="$refs.diffDialog.close()">{{ $t('close') }}</k-button>
-            <k-button
-              v-if="canRestoreFromDiff"
-              variant="filled"
-              theme="positive"
-              icon="undo"
-              :disabled="diffRestoreConfirm"
-              @click="diffRestoreConfirm = true"
-            >{{ t('restore.button') }}</k-button>
-          </k-button-group>
-        </k-dialog-footer>
-      </template>
-    </k-dialog>
   </k-panel-inside>
 </template>
 
@@ -575,7 +487,6 @@ export default {
       showFilters: false,
       lockedShowOnlyPages: true,
       expandedFiles: [],
-      diffConfirmOnLoad: false,
       showOnlyPages: !this.initialShowAll,
       currentPage: 1,
       view: this.storedView() || (this.defaultView === 'timeline' ? 'timeline' : 'page'),
@@ -585,17 +496,7 @@ export default {
         {text: '10 per page', value: 10},
         {text: '20 per page', value: 20},
         {text: '50 per page', value: 50}
-      ],
-      diffTarget: null,
-      diffVersionOptions: [],
-      diffFromVersionId: null,
-      diffToVersionId: null,
-      diffContent: null,
-      diffSummary: null,
-      diffCanRestore: false,
-      diffRestoreConfirm: false,
-      isRestoringFromDiff: false,
-      isDiffLoading: false
+      ]
     };
   },
 
@@ -772,58 +673,6 @@ export default {
         text: language.toUpperCase(),
         value: language
       }));
-    },
-
-    diffFromOptions() {
-      return this.diffVersionOptions;
-    },
-
-    diffToOptions() {
-      return [
-        {text: this.$t('tearoom1.content-watch.diff.current'), value: 'current'},
-        ...this.diffVersionOptions
-      ];
-    },
-
-    diffFromEntry() {
-      if (!this.diffTarget || this.diffFromVersionId === null) {
-        return null;
-      }
-
-      return this.diffTarget.file.history[parseInt(this.diffFromVersionId, 10)] || null;
-    },
-
-    canRestoreFromDiff() {
-      return this.enableRestore &&
-        this.diffCanRestore &&
-        !this.isDiffLoading &&
-        this.diffFromEntry?.has_snapshot === true &&
-        (this.diffSummary?.changed ?? 0) > 0;
-    },
-
-    diffSummaryText() {
-      if (!this.diffSummary || !this.diffTarget) {
-        return null;
-      }
-
-      const {changed, unchanged} = this.diffSummary;
-      const from = this.diffTarget.file.history[parseInt(this.diffFromVersionId, 10)];
-      const t = (key, data) => this.t(key, data);
-
-      if (!changed) {
-        return t('diff.summary.none', {});
-      }
-
-      const parts = [t(changed === 1 ? 'diff.summary.changed.one' : 'diff.summary.changed', {
-        count: changed,
-        version: from?.version ?? ''
-      })];
-
-      if (unchanged) {
-        parts.push(t(unchanged === 1 ? 'diff.summary.unchanged.one' : 'diff.summary.unchanged', {count: unchanged}));
-      }
-
-      return parts.join(' · ');
     },
 
     // filters that differ from the defaults, "All files" included
@@ -1257,165 +1106,25 @@ export default {
       });
     },
 
-    versionLabel(entry) {
-      return 'v' + entry.version + (entry.language ? ' · ' + entry.language.toUpperCase() : '') + ' · ' +
-        this.formatRelative(entry.time) + ' · ' + this.editorLabel(entry.editor);
-    },
-
     // compare a version with the current content by default
     viewDiff(file, entry, entryIndex, confirmRestore = false) {
-      this.diffTarget = {file, entry, entryIndex};
-      this.diffConfirmOnLoad = confirmRestore;
-      this.diffVersionOptions = file.history.map((historyEntry, historyIndex) => ({
-        text: this.versionLabel(historyEntry),
-        value: String(historyIndex),
-        disabled: !historyEntry.has_snapshot
-      }));
-
-      // the newest version usually is the current content: show what it changed instead
-      const fromIndex = entryIndex === 0 && file.history.length > 1 && !confirmRestore ? 1 : entryIndex;
-      this.diffFromVersionId = String(fromIndex);
-      this.diffToVersionId = 'current';
-
-      this.$refs.diffDialog.open();
-      this.loadDiff();
-    },
-
-    closeDiff() {
-      this.diffTarget = null;
-      this.diffVersionOptions = [];
-      this.diffFromVersionId = null;
-      this.diffToVersionId = null;
-      this.diffContent = null;
-      this.diffSummary = null;
-      this.diffCanRestore = false;
-      this.diffRestoreConfirm = false;
+      this.$panel.dialog.open({
+        component: 'k-content-watch-area-diff-dialog',
+        props: {
+          confirmRestore,
+          enableRestore: this.enableRestore,
+          entryIndex,
+          file
+        },
+        on: {
+          restored: () => this.refresh()
+        }
+      });
     },
 
     // translated plugin string; Kirby's $t fills the {placeholders} from data
     t(key, data = {}) {
       return this.$t('tearoom1.content-watch.' + key, data);
-    },
-
-    languageName(code) {
-      const languages = window.panel?.languages || [];
-      return languages.find(language => language.code === code)?.name || code.toUpperCase();
-    },
-
-    async restoreFromDiff() {
-      const file = this.diffTarget?.file;
-      const entry = this.diffFromEntry;
-
-      if (!file || !entry) {
-        return;
-      }
-
-      this.isRestoringFromDiff = true;
-
-      try {
-        const response = await this.$api.post('/content-watch/restore', {
-          dirPath: file.dir_path,
-          fileKey: file.uid,
-          entryId: entry.entry_id ?? null,
-          timestamp: entry.time
-        });
-
-        if (response.status !== 'success') {
-          throw new Error(response.message);
-        }
-
-        window.panel.notification.success(this.t('restore.done', {version: entry.version}));
-        this.refresh();
-      } catch (error) {
-        window.panel.notification.error(error.message || 'Failed to restore content');
-        this.diffRestoreConfirm = false;
-      } finally {
-        this.isRestoringFromDiff = false;
-      }
-    },
-
-    changeFromVersion(versionId) {
-      this.diffFromVersionId = this.normalizeDiffVersionId(versionId);
-      this.loadDiff();
-    },
-
-    changeToVersion(versionId) {
-      this.diffToVersionId = this.normalizeDiffVersionId(versionId);
-      this.loadDiff();
-    },
-
-    loadDiff() {
-      if (this.diffFromVersionId === null || this.diffToVersionId === null) {
-        this.diffContent = null;
-        this.diffSummary = null;
-        return;
-      }
-
-      this.isDiffLoading = true;
-      this.diffContent = null;
-      this.diffSummary = null;
-      this.diffCanRestore = false;
-      this.diffRestoreConfirm = false;
-
-      const file = this.diffTarget.file;
-      const fromEntry = file.history[parseInt(this.diffFromVersionId, 10)];
-      const toCurrent = this.diffToVersionId === 'current';
-      const toEntry = toCurrent ? null : file.history[parseInt(this.diffToVersionId, 10)];
-
-      this.$api.post('/content-watch/diff', {
-        dirPath: file.dir_path,
-        fileKey: file.uid,
-        fromEntryId: fromEntry?.entry_id ?? null,
-        toEntryId: toCurrent ? 'current' : (toEntry?.entry_id ?? null),
-        fromTimestamp: fromEntry?.time ?? null,
-        toTimestamp: toEntry?.time ?? null
-      })
-        .then(response => {
-          this.diffContent = response.diff;
-          this.diffSummary = response.summary || null;
-          this.isDiffLoading = false;
-          this.diffCanRestore = response.canRestore === true;
-          this.diffRestoreConfirm = this.diffConfirmOnLoad && this.canRestoreFromDiff;
-          this.diffConfirmOnLoad = false;
-        })
-        .catch(error => {
-          window.panel.notification.error('Error loading diff: ' + (error.message || 'Unknown error'));
-        })
-        .finally(() => {
-          this.isDiffLoading = false;
-        });
-    },
-
-    getDiffSelectionLabel(versionId) {
-      if (versionId === null) {
-        return 'None';
-      }
-
-      const file = this.diffTarget.file;
-      const entry = file.history[parseInt(versionId, 10)];
-
-      if (!entry) {
-        return 'Unknown version';
-      }
-
-      return 'v' + entry.version + ' / ' + entry.language + ' / ' +
-        entry.time_formatted + ' (' + this.editorLabel(entry.editor) + ')';
-    },
-
-    normalizeDiffVersionId(versionId) {
-      if (versionId && typeof versionId === 'object') {
-        return versionId.value !== undefined ? String(versionId.value) : null;
-      }
-
-      return versionId === null || versionId === undefined ? null : String(versionId);
-    },
-
-    normalizeFilterValue(value) {
-      if (value && typeof value === 'object') {
-        return value.value !== undefined ? String(value.value) : '';
-      }
-
-      return value === null || value === undefined ? '' : String(value);
     },
 
     fileEditorName(file) {

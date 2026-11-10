@@ -129,10 +129,8 @@ function onFocus(event) {
 }
 
 /**
- * Keeps a trigger usable without a mouse and without the title attribute.
- * k-button derives its aria-label from title and ignores an aria-label attribute,
- * so icon-only triggers get their name here. It also clears the name on each
- * of its renders, see bind().
+ * Keeps a trigger usable without a mouse and without the title attribute:
+ * icon-only triggers without an aria-label of their own get the text as name.
  */
 function update(trigger, text) {
   const state = trigger._cwTooltip;
@@ -160,13 +158,11 @@ function update(trigger, text) {
   }
 }
 
+// Vue 3 directive hooks; on a component such as k-button they act on its root element
 const directive = {
-  bind(el, binding, vnode) {
+  mounted(el, binding) {
     el._cwTooltip = {text: null, named: false, tabStop: false};
     update(el, binding.value);
-
-    // a component renders on its own, after the hooks of this directive
-    vnode.componentInstance?.$on('hook:updated', () => update(el, el._cwTooltip.text));
 
     el.addEventListener('pointerenter', onPointerEnter);
     el.addEventListener('pointerleave', hide);
@@ -175,7 +171,7 @@ const directive = {
     el.addEventListener('click', hide);
   },
 
-  componentUpdated(el, binding) {
+  updated(el, binding) {
     if (binding.value === binding.oldValue) {
       return;
     }
@@ -187,7 +183,7 @@ const directive = {
     }
   },
 
-  unbind(el) {
+  beforeUnmount(el) {
     if (activeTrigger === el) {
       hide();
     }
@@ -201,7 +197,7 @@ const directive = {
 };
 
 export default {
-  install(Vue) {
-    Vue.directive('cw-tooltip', directive);
+  install(app) {
+    app.directive('cw-tooltip', directive);
   }
 };

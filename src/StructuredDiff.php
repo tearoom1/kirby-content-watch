@@ -2,7 +2,7 @@
 
 namespace TearoomOne\ContentWatch;
 
-use Kirby\Cms\Blueprint;
+use Kirby\Blueprint\Blueprint;
 use Kirby\Data\Data;
 use Kirby\Toolkit\I18n;
 use Kirby\Toolkit\Str;
@@ -456,7 +456,7 @@ class StructuredDiff
     protected static function modelName(string $value): string
     {
         try {
-            $model = str_contains($value, '://') ? Uuid::for($value)?->model() : (kirby()->page($value) ?? kirby()->user($value));
+            $model = str_contains($value, '://') ? Uuid::from($value)?->model() : (kirby()->page($value) ?? kirby()->user($value));
             if ($model instanceof \Kirby\Cms\User) {
                 return $model->name()->or($model->email())->value();
             }
@@ -527,7 +527,7 @@ class StructuredDiff
     {
         if (str_starts_with($value, 'file://')) {
             try {
-                $file = Uuid::for($value)?->model();
+                $file = Uuid::from($value)?->model();
                 if ($file !== null) {
                     return $file->filename();
                 }

@@ -24,7 +24,7 @@ Additionally it provides a view to see which pages are currently locked and by w
 - **Version Restore**: Restore previous versions of content with a single click (optional)
 - **Two Views**: Browse changes by page, or as a timeline of all changes grouped by day, where a deploy's changes outside the Panel collapse into one row
 - **Dark Mode**: Supports Kirby 5 dark mode
-- **History Section**: Show recent changes of a page, the site or a file directly in its blueprint, with diff and restore
+- **History Field**: Show recent changes of a page, the site or a file directly in its blueprint, with diff and restore
 - **Page Method**: Access change history programmatically via `$page->contentHistory()`
 
 ## Known Limitations
@@ -170,21 +170,41 @@ When restore functionality is disabled:
 > And when restoring a page, it does not restore its files.
 
 
-### History Section
+### History Field
 
-Show the recent changes of a page, the site or a file right where editors work by adding the `contentwatch` section to its blueprint:
+Show the recent changes of a page, the site or a file right where editors work by adding the `contentwatch` field to its blueprint:
 
-<img src="screenshot-section.jpg" alt="History section in a page sidebar" width="468">
+<img src="screenshot-section.jpg" alt="History field in a page sidebar" width="468">
 
 ```yaml
+fields:
+  history:
+    type: contentwatch
+    label: Recent changes # optional
+    limit: 5              # optional, number of entries
+```
+
+The field lists version, editor, time and language of each change and links to the full history in the Content Watch area. With `enableRestore` (and `enableDiff`) turned on, each change can be compared with the version before it and older versions can be restored right from the field. It is only visible to users who may access the plugin (see Access Control). The field stores nothing in the content file.
+
+#### Upgrading from Kirby 5
+
+Kirby 6 no longer supports custom sections, so the `contentwatch` section of earlier versions is a field now. Move it from `sections` to `fields` in your blueprints; the type name stays `contentwatch`:
+
+```yaml
+# Kirby 4 and 5
 sections:
   history:
     type: contentwatch
-    headline: Recent changes # optional
-    limit: 5                 # optional, number of entries
+    headline: Recent changes
+
+# Kirby 6
+fields:
+  history:
+    type: contentwatch
+    label: Recent changes
 ```
 
-The section lists version, editor, time and language of each change and links to the full history in the Content Watch area. With `enableRestore` (and `enableDiff`) turned on, each change can be compared with the version before it and older versions can be restored right from the section. It is only visible to users who may access the plugin (see Access Control).
+Kirby 6 shows a blueprint that still lists it under `sections` with an "Invalid section type" message in its place. `headline` keeps working as an alias of `label`. As before, the heading is "Recent changes" unless you set one; a `label` that only repeats the field name (e.g. `label: History` for a field called `history`) counts as not set.
 
 ### Page Method
 
@@ -254,8 +274,10 @@ The optional `jfcherng/php-diff` package is no longer used by the Panel.
 
 ## Requirements
 
-- Kirby 4 or 5
-- PHP 8.1+
+- Kirby 6
+- PHP 8.3+
+
+For Kirby 4 and 5, use version 3 of this plugin.
 
 ## Todo
 

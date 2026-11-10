@@ -24,5 +24,21 @@ if (class_exists(\Kirby\Cms\App::class) !== true) {
     throw new RuntimeException('Unable to locate a Composer autoloader with Kirby CMS classes.');
 }
 
+// The site's autoloader doesn't know the plugin classes, as the site
+// loads them through index.php, so map the namespace to src/ here
+spl_autoload_register(function (string $class): void {
+    $prefix = 'TearoomOne\\ContentWatch\\';
+
+    if (str_starts_with($class, $prefix) !== true) {
+        return;
+    }
+
+    $file = __DIR__ . '/../src/' . str_replace('\\', '/', substr($class, strlen($prefix))) . '.php';
+
+    if (is_file($file) === true) {
+        require_once $file;
+    }
+});
+
 // Register the tests namespace manually (no composer autoload-dev available without install)
 require_once __DIR__ . '/TestCase.php';
