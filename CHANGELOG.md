@@ -1,3 +1,10 @@
+## [3.13.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.13.0...v3.13.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* stop loading the plugin's own vendor autoloader ([0f1c62a](https://github.com/tearoom1/kirby-content-watch/commit/0f1c62a8fb783c45ad43c7ffeb24961e70438f75))
+
 ## [3.13.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.12.0...v3.13.0) (2026-10-30)
 
 
@@ -44,12 +51,4 @@
 ### Bug Fixes
 
 * fill in translation placeholders and tidy the timeline layout ([26f62a1](https://github.com/tearoom1/kirby-content-watch/commit/26f62a140230e2a3c7b3f6ebdd2935bf27200a95))
-
-## [3.10.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.9.1...v3.10.0) (2026-10-23)
-
-
-### Features
-
-* restore a version right from the diff dialog ([5301a62](https://github.com/tearoom1/kirby-content-watch/commit/5301a62e4dae974722883a3ab6e210e3397fec2c))
-* switch between a by-page view and a timeline of all changes ([ab3dd51](https://github.com/tearoom1/kirby-content-watch/commit/ab3dd51cdc4149e597b37842c619dadfb76a3ec2))
 
