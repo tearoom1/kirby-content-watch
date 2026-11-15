@@ -23,6 +23,11 @@ class ChangeTracker
     /** Set while a restore runs: its Kirby actions are recorded as one restore entry */
     protected static int $suspended = 0;
 
+    public static function isSuspended(): bool
+    {
+        return self::$suspended > 0;
+    }
+
     /**
      * Run Kirby actions without recording each of them
      */
@@ -123,8 +128,135 @@ class ChangeTracker
             return;
         }
 
+        [$dirPath, $fileKey, $record] = $this->buildRecord($content, $meta, $languageCode, $user->id());
+
+        if (empty($fileKey)) {
+            return;
+        }
+
+        $coalesced = $this->storeRecord($dirPath, $fileKey, $record, $meta);
+
+        // Notify once per change, not again for coalesced follow-ups in the same request
+        if ($coalesced === false) {
+            $this->notify($content, $record, $user);
+        }
+    }
+
+    /**
+     * Record the content on disk as a change made outside the Panel, when it
+     * differs from the newest entry of its language. The comparison is
+     * repeated under the history lock, so parallel requests record it once.
+     *
+     * `$knownEntries` (the entries as last read) skips the lock when
+     * nothing changed, which is the usual case.
+     *
+     * Returns whether an entry was added.
+     */
+    public function recordExternalChange(ModelWithContent $content, ?string $languageCode = null, ?array $knownEntries = null): bool
+    {
+        [$dirPath, $fileKey, $record] = $this->buildRecord($content, [], $languageCode, null);
+
+        if (empty($fileKey) || !is_string($record['hash'] ?? null)) {
+            return false;
+        }
+
+        if ($knownEntries !== null) {
+            $known = self::latestEntryOfLanguage($knownEntries, (string)($record['language'] ?? ''));
+            if ($known === null || self::differsFromEntry($known, $record) !== true) {
+                return false;
+            }
+        }
+
+        $record['source'] = 'external';
+        $contentFile      = $this->contentFilePath($content, $dirPath, $fileKey, $record['language'] ?? '');
+
+        $stored = $this->storeRecord($dirPath, $fileKey, $record, [], function (array $entries, array &$record) use ($contentFile): bool {
+            $latest = self::latestEntryOfLanguage($entries, (string)($record['language'] ?? ''));
+
+            if ($latest === null || self::differsFromEntry($latest, $record) !== true) {
+                return false;
+            }
+
+            // The file's modification time is when it was written (rsync and
+            // most deploys keep the source time). Use it when it falls between
+            // the previous entry and now, otherwise the time of discovery.
+            $mtime = @filemtime($contentFile);
+            if (is_int($mtime) && $mtime > (int)($latest['time'] ?? 0) && $mtime <= time()) {
+                $record['time'] = $mtime;
+            }
+
+            return true;
+        });
+
+        return $stored !== null;
+    }
+
+    /**
+     * Newest entry of a language in a list ordered newest first
+     */
+    public static function latestEntryOfLanguage(array $entries, string $language): ?array
+    {
+        foreach ($entries as $entry) {
+            if (is_array($entry) && (string)($entry['language'] ?? '') === $language) {
+                return $entry;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether the content described by `$current` (a fresh record with
+     * `hash` and, for pages, `meta`) differs from a stored entry.
+     * Null when the entry holds nothing to compare with.
+     */
+    public static function differsFromEntry(array $entry, array $current): ?bool
+    {
+        $currentHash = $current['hash'] ?? null;
+        if (!is_string($currentHash)) {
+            return null;
+        }
+
+        $entryMeta = null;
+
+        if (!empty($entry['content']) && is_string($entry['content'])) {
+            $snapshot  = SnapshotSerializer::split($entry['content'], $entry['meta'] ?? null);
+            $entryMeta = $snapshot['meta'];
+            $entryHash = isset($entry['hash'], $entry['meta']) && is_string($entry['hash'])
+                ? $entry['hash']
+                : CurrentContent::hash($snapshot['content']);
+        } elseif (is_string($entry['hash'] ?? null)) {
+            $entryHash = $entry['hash'];
+        } else {
+            return null;
+        }
+
+        if ($entryHash !== $currentHash) {
+            return true;
+        }
+
+        // template, slug, status and parent count too, when both know them
+        $currentMeta = $current['meta'] ?? null;
+        if (is_array($entryMeta) && $entryMeta !== [] && is_array($currentMeta)) {
+            foreach ($entryMeta as $key => $value) {
+                if (array_key_exists($key, $currentMeta) && (string)$value !== (string)$currentMeta[$key]) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Location and history entry for the current state of a model
+     *
+     * @return array{0: string, 1: string, 2: array}
+     */
+    protected function buildRecord(ModelWithContent $content, array $meta, ?string $languageCode, ?string $editorId): array
+    {
         $record = [
-            'editor_id' => $user->id(),
+            'editor_id' => $editorId,
             'uuid'      => bin2hex(random_bytes(16)),
             'time'      => time(),
         ];
@@ -139,8 +271,9 @@ class ChangeTracker
             }
         }
 
-        $isPage = $content instanceof \Kirby\Cms\Page;
-        $isSite = $content instanceof \Kirby\Cms\Site;
+        $isPage         = $content instanceof Page;
+        $isSite         = $content instanceof Site;
+        $detectExternal = ExternalChanges::isEnabled();
 
         if ($isPage || $isSite) {
             $dirPath = $content->root();
@@ -148,14 +281,16 @@ class ChangeTracker
             $fileKey         = $isPage ? $content->intendedTemplate()->name() : 'site';
             $kirbyLanguage   = $languageCode !== null ? kirby()->language($languageCode) : kirby()->language();
             $record['type']  = 'page';
+            $enableRestore   = option('tearoom1.kirby-content-watch.enableRestore') === true;
 
-            if (option('tearoom1.kirby-content-watch.enableRestore') === true) {
-                $language     = $kirbyLanguage ? $kirbyLanguage->code() : '';
-                $languagePart = $language !== '' ? '.' . $language : '';
-                $contentFile  = $dirPath . '/' . $fileKey . $languagePart . '.txt';
-                $fileContent  = F::read($contentFile) ?: '';
+            if ($enableRestore || $detectExternal) {
+                $language    = $kirbyLanguage ? $kirbyLanguage->code() : '';
+                $fileContent = F::read($this->contentFilePath($content, $dirPath, $fileKey, $language)) ?: '';
 
-                $record['content']  = $fileContent;
+                if ($enableRestore) {
+                    $record['content'] = $fileContent;
+                }
+
                 $record['hash']     = CurrentContent::hash($fileContent);
                 $record['language'] = $language;
 
@@ -173,16 +308,49 @@ class ChangeTracker
             $dirPath         = dirname($content->root());
             $fileKey         = $content->filename();
             $record['type']  = 'file';
+
+            // a hash of the metadata file is enough to notice changes outside the Panel
+            if ($detectExternal) {
+                $file = $this->contentFilePath($content, $dirPath, $fileKey, '');
+                if (is_file($file)) {
+                    $record['hash'] = CurrentContent::hash((string)F::read($file));
+                }
+            }
         }
 
-        if (empty($fileKey)) {
-            return;
+        return [$dirPath, $fileKey, $record];
+    }
+
+    /**
+     * Content file of a model in one language. Files have one history per
+     * file, compared against the metadata of the default language.
+     */
+    protected function contentFilePath(ModelWithContent $content, string $dirPath, string $fileKey, string $language): string
+    {
+        if ($content instanceof File) {
+            $default = kirby()->multilang() ? kirby()->defaultLanguage()?->code() : null;
+
+            return $content->root() . ($default ? '.' . $default : '') . '.txt';
         }
 
+        return $dirPath . '/' . $fileKey . ($language !== '' ? '.' . $language : '') . '.txt';
+    }
+
+    /**
+     * Add a record to the history of a folder, prune, and write it back
+     *
+     * @param callable|null $guard runs under the lock with the entries of the
+     *                             file key and the record (by reference);
+     *                             returning false stores nothing
+     * @return bool|null null when nothing was stored, true when the record
+     *                   replaced the previous entry (coalesced), false when added
+     */
+    protected function storeRecord(string $dirPath, string $fileKey, array &$record, array $meta, ?callable $guard = null): ?bool
+    {
         $editorFile = HistoryStore::path($dirPath);
-        $coalesced  = false;
+        $coalesced  = null;
 
-        HistoryStore::mutate($dirPath, function (array $history) use (&$record, &$coalesced, $meta, $fileKey, $editorFile) {
+        HistoryStore::mutate($dirPath, function (array $history) use (&$record, &$coalesced, $meta, $fileKey, $editorFile, $guard) {
             $previousFileKey = $meta['previous_file_key'] ?? null;
             if (
                 is_string($previousFileKey) &&
@@ -200,6 +368,10 @@ class ChangeTracker
 
             if (!isset($history[$fileKey]) || !is_array($history[$fileKey])) {
                 $history[$fileKey] = [];
+            }
+
+            if ($guard !== null && $guard($history[$fileKey], $record) !== true) {
+                return null;
             }
 
             // Increment version from the highest existing version number
@@ -241,10 +413,7 @@ class ChangeTracker
             return $history;
         });
 
-        // Notify once per change, not again for coalesced follow-ups in the same request
-        if (!$coalesced) {
-            $this->notify($content, $record, $user);
-        }
+        return $coalesced;
     }
 
     /**

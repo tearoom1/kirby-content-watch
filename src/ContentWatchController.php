@@ -157,6 +157,15 @@ class ContentWatchController
             }
         }
 
+        // Record changes made outside the Panel first, so the list shows them
+        if (ExternalChanges::isEnabled() && !empty($historyFiles[$dirPath][$fileKey])) {
+            $model = $isMediaFile ? $owner->file($fileKey) : $owner;
+
+            if ($model !== null && (new ExternalChanges())->check($model, $historyFiles[$dirPath])) {
+                $historyFiles[$dirPath] = HistoryStore::read($dirPath);
+            }
+        }
+
         // Resolve history for this file
         $historyEntries = $this->applyRetention($historyFiles[$dirPath][$fileKey] ?? []);
 
@@ -238,6 +247,10 @@ class ContentWatchController
 
         try {
             $history = HistoryStore::read($dirPath);
+
+            if ((new ExternalChanges())->check($model, $history)) {
+                $history = HistoryStore::read($dirPath);
+            }
         } catch (\Exception) {
             return [];
         }

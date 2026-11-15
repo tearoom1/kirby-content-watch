@@ -84,6 +84,7 @@ return [
         'enableRestore'    => false,
         'enableDiff'       => true,
         'notify'           => null,
+        'detectExternal'   => false,
         'disable'          => false,
     ]
 ];
@@ -101,6 +102,7 @@ return [
 | `enableRestore` | `bool` | `false` | Enable content restore functionality. When enabled, full content snapshots are saved — increases disk usage |
 | `enableDiff` | `bool` | `true` | Enable content diff view. Requires `enableRestore` to be `true` |
 | `notify` | `string\|Closure\|null` | `null` | Webhook URL (JSON `POST`) or closure called after every tracked change. See Notifications |
+| `detectExternal` | `bool` | `false` | Record content changed outside the Panel (deploy, rsync, FTP, git, scripts) as a history entry "Outside the Panel". See Changes Outside the Panel |
 | `disable` | `bool` | `false` | Completely disable the plugin without uninstalling it |
 
 ### Notifications
@@ -125,6 +127,33 @@ Get notified whenever content changes, e.g. in Slack, Matrix or by mail. Set `no
 ```
 
 The payload contains `event`, `type` (`page`/`file`), `action` (`edited`, `moved`, `duplicated`), `id`, `title`, `version`, `language`, `time`, `editor` (`id`, `name`, `email`) and `panel_url`. Content snapshots are never sent. Webhook requests time out after 3 seconds, and failing notifications never block saving.
+
+### Changes Outside the Panel
+
+Content Watch records changes through Kirby's hooks, so content files written directly (a deploy that uploads content, rsync, FTP, git, a script) leave no entry. A later Panel save that sets a field back then looks like no change at all. Turn on `detectExternal` to see these changes too:
+
+```php
+'tearoom1.kirby-content-watch' => [
+    'detectExternal' => true,
+],
+```
+
+Content Watch then compares the newest entry of a page, the site or a file with its content file on disk. When they differ, it adds an entry without a user, shown as "Outside the Panel". The comparison runs
+
+- when the Content Watch area or a history section is opened,
+- before Kirby writes a Panel change (update, title, slug, status, template, file changes), so the outside version is kept and the diff of the Panel change only shows what was changed in the Panel,
+- before a restore, so the version it replaces stays in the history.
+
+Details:
+
+- Only pages, files and the site that already have a history are compared, each language on its own. Nothing is crawled on normal page requests, and no history file is created for content that was never changed in the Panel.
+- The comparison uses a hash of the content file (and template, slug, status and parent, when restore is on). With `enableRestore` the entry has a snapshot, so it can be compared and restored like any other. Without it the entry only shows that and when the content changed.
+- Entries from before the option was turned on have no hash when `enableRestore` is off; detection for such a page starts with its next Panel change.
+- Files are compared by the metadata of the default language.
+- The time of the entry is the modification time of the content file when it lies between the previous entry and now (rsync and most deploys keep it), otherwise the time the change was noticed.
+- One outside change gives one entry, however often the area is opened. Several uploads between two checks show as one entry.
+- No notification is sent for outside changes.
+- With the option off, nothing changes: no comparison, and entries are stored as before.
 
 ### Access Control
 
@@ -204,7 +233,8 @@ Each entry is an array with the following keys:
 |-----|-------------|
 | `version` | Incrementing version number |
 | `time` | Unix timestamp of the change |
-| `editor_id` | ID of the Kirby user who made the change |
+| `editor_id` | ID of the Kirby user who made the change, `null` for a change outside the Panel |
+| `source` | `external` for a change outside the Panel (see `detectExternal`), otherwise not set |
 | `type` | Always `page` for page content |
 | `language` | Language code (multilang only, requires `enableRestore`) |
 | `content` | Raw content snapshot (only present when `enableRestore` is `true`) |
