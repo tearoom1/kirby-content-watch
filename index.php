@@ -40,18 +40,19 @@ if (option('tearoom1.kirby-content-watch.disable', false)) {
 Kirby::plugin('tearoom1/kirby-content-watch', [
     'hooks' => [
         // With `detectExternal`, record changes made outside the Panel before
-        // Kirby writes a Panel change, so they are kept and the diff is right
-        'page.update:before'         => fn ($page) => (new ExternalChanges())->check($page),
-        'page.changeTitle:before'    => fn ($page) => (new ExternalChanges())->check($page),
-        'page.changeSlug:before'     => fn ($page) => (new ExternalChanges())->check($page),
-        'page.changeStatus:before'   => fn ($page) => (new ExternalChanges())->check($page),
-        'page.changeTemplate:before' => fn ($page) => (new ExternalChanges())->check($page),
-        'site.update:before'         => fn ($site) => (new ExternalChanges())->check($site),
-        'file.update:before'         => fn ($file) => (new ExternalChanges())->check($file),
-        'file.changeName:before'     => fn ($file) => (new ExternalChanges())->check($file),
-        'file.changeSort:before'     => fn ($file) => (new ExternalChanges())->check($file),
-        'file.changeTemplate:before' => fn ($file) => (new ExternalChanges())->check($file),
-        'file.replace:before'        => fn ($file) => (new ExternalChanges())->check($file),
+        // Kirby writes a Panel change, so they are kept and the diff is right.
+        // They must return nothing: Kirby takes a returned value as the new model.
+        'page.update:before'         => function ($page): void { (new ExternalChanges())->check($page); },
+        'page.changeTitle:before'    => function ($page): void { (new ExternalChanges())->check($page); },
+        'page.changeSlug:before'     => function ($page): void { (new ExternalChanges())->check($page); },
+        'page.changeStatus:before'   => function ($page): void { (new ExternalChanges())->check($page); },
+        'page.changeTemplate:before' => function ($page): void { (new ExternalChanges())->check($page); },
+        'site.update:before'         => function ($site): void { (new ExternalChanges())->check($site); },
+        'file.update:before'         => function ($file): void { (new ExternalChanges())->check($file); },
+        'file.changeName:before'     => function ($file): void { (new ExternalChanges())->check($file); },
+        'file.changeSort:before'     => function ($file): void { (new ExternalChanges())->check($file); },
+        'file.changeTemplate:before' => function ($file): void { (new ExternalChanges())->check($file); },
+        'file.replace:before'        => function ($file): void { (new ExternalChanges())->check($file); },
 
         'page.create:after' => function ($page) {
             (new ChangeTracker())->trackContentChange($page);

@@ -150,6 +150,7 @@ Details:
 - The comparison uses a hash of the content file (and template, slug, status and parent, when restore is on). With `enableRestore` the entry has a snapshot, so it can be compared and restored like any other. Without it the entry only shows that and when the content changed.
 - Entries from before the option was turned on have no hash when `enableRestore` is off; detection for such a page starts with its next Panel change.
 - Files are compared by the metadata of the default language.
+- Template, slug, status and parent belong to the page, not to a language: they are compared once, in the default language. A content file renamed outside the Panel (a template change) keeps its history.
 - The time of the entry is the modification time of the content file when it lies between the previous entry and now (rsync and most deploys keep it), otherwise the time the change was noticed.
 - One outside change gives one entry, however often the area is opened. Several uploads between two checks show as one entry.
 - No notification is sent for outside changes.

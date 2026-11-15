@@ -7,7 +7,11 @@ use TearoomOne\ContentWatch\ContentDiffResolver;
 use TearoomOne\ContentWatch\ContentRestore;
 use TearoomOne\ContentWatch\ContentWatchController;
 use TearoomOne\ContentWatch\ExternalChanges;
+use TearoomOne\ContentWatch\HistoryStore;
 use TearoomOne\ContentWatch\Tests\TestCase;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use Kirby\Cms\ModelWithContent;
 
 class ExternalChangesTest extends TestCase
 {
@@ -357,5 +361,149 @@ class ExternalChangesTest extends TestCase
         $this->assertSame('restored', $entries[0]['action']);
         $this->assertNull($entries[1]['editor_id']);
         $this->assertStringContainsString('Deployed', $entries[1]['content']);
+    }
+
+    // -------------------------------------------------------------------------
+    // Review findings
+    // -------------------------------------------------------------------------
+
+    /**
+     * The plugin's own hooks: a Panel save keeps working with the option
+     * off and on, and records the outside version before the save
+     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testPluginHooksKeepSavingWorking(): void
+    {
+        require dirname(__DIR__, 2) . '/index.php';
+
+        foreach ([false, true] as $enabled) {
+            $this->writeContent($this->contentFile, "Title: Test Page\n----\nText: Hello\n");
+            @unlink($this->pageDir . '/.content-watch.json');
+            $this->app(['tearoom1.kirby-content-watch.detectExternal' => $enabled]);
+
+            $page = kirby()->page('test-page')->update(['text' => 'First save']);
+            ChangeTracker::resetRequestTrackedEntries();
+            $this->editOutside("Title: Test Page\n----\nText: Deployed\n");
+
+            $page = kirby()->page('test-page')->update(['title' => 'Second save']);
+
+            $this->assertSame('Second save', $page->title()->value());
+            $this->assertSame(
+                $enabled ? ['kirby', null, 'kirby'] : ['kirby', 'kirby'],
+                array_column($this->entries(), 'editor_id')
+            );
+        }
+    }
+
+    public function testPanelStructureChangeInOneLanguageIsNoOutsideChange(): void
+    {
+        $this->writeContent($this->pageDir . '/article.en.txt', "Title: English\n");
+        $this->writeContent($this->pageDir . '/article.de.txt', "Title: Deutsch\n");
+        unlink($this->contentFile);
+        $this->app([], ['languages' => [
+            ['code' => 'en', 'name' => 'English', 'default' => true],
+            ['code' => 'de', 'name' => 'Deutsch'],
+        ]]);
+
+        (new ChangeTracker())->trackContentChange(kirby()->page('test-page'), ['languages' => ['en', 'de']]);
+
+        // a status change in the Panel, recorded in the current language only
+        $page = kirby()->page('test-page')->changeStatus('unlisted');
+        ChangeTracker::resetRequestTrackedEntries();
+        (new ChangeTracker())->trackContentChange($page);
+
+        $this->pageDir = $page->root();
+        $this->assertCount(3, $this->entries());
+
+        $this->assertFalse((new ExternalChanges())->check($page));
+        $this->assertCount(3, $this->entries());
+    }
+
+    public function testStructureChangedOutsideIsRecordedOnce(): void
+    {
+        $this->app();
+        $this->panelEntry();
+
+        // a deploy renames the folder: the page is unlisted now
+        rename($this->pageDir, $this->contentDir . '/test-page');
+        $this->pageDir = $this->contentDir . '/test-page';
+        $this->app();
+
+        $page = kirby()->page('test-page');
+        $this->assertTrue((new ExternalChanges())->check($page));
+        $this->assertFalse((new ExternalChanges())->check($page));
+        $this->assertSame('unlisted', $this->entries()[0]['meta']['status']);
+    }
+
+    public function testComparesTheContentAsItIsWhenTheLockIsTaken(): void
+    {
+        $this->app();
+        $this->panelEntry();
+        $this->editOutside("Title: Test Page\n----\nText: Deployed\n");
+
+        $page = kirby()->page('test-page');
+
+        // another request records the outside change and a Panel save in between
+        $tracker = new class extends ChangeTracker {
+            public $interleave;
+
+            protected function storeRecord(string $dirPath, string $fileKey, array &$record, array $meta, ?callable $guard = null): ?bool
+            {
+                if ($this->interleave !== null) {
+                    $interleave = $this->interleave;
+                    $this->interleave = null;
+                    $interleave();
+                }
+
+                return parent::storeRecord($dirPath, $fileKey, $record, $meta, $guard);
+            }
+        };
+        $tracker->interleave = function () use ($page) {
+            (new ExternalChanges())->check($page);
+            file_put_contents($this->contentFile, "Title: Test Page\n----\nText: Saved in the Panel\n");
+            clearstatcache();
+            ChangeTracker::resetRequestTrackedEntries();
+            (new ChangeTracker())->trackContentChange($page);
+        };
+
+        $this->assertFalse($tracker->recordExternalChange($page, ''));
+        $this->assertSame(['kirby', null, 'kirby'], array_column($this->entries(), 'editor_id'));
+        $this->assertFalse((new ExternalChanges())->check($page));
+    }
+
+    public function testFollowsATemplateRenamedOutside(): void
+    {
+        $this->app();
+        $this->panelEntry();
+
+        rename($this->contentFile, $this->pageDir . '/note.txt');
+        $this->app();
+
+        $page = kirby()->page('test-page');
+        $this->assertSame('note', $page->intendedTemplate()->name());
+        $this->assertTrue((new ExternalChanges())->check($page));
+        $this->assertFalse((new ExternalChanges())->check($page));
+
+        $history = $this->readHistory($this->pageDir);
+        $this->assertArrayNotHasKey('article', $history);
+        $this->assertCount(2, $history['note']);
+        $this->assertNull($history['note'][0]['editor_id']);
+        $this->assertSame('note', $history['note'][0]['meta']['template']);
+    }
+
+    public function testAreaFollowsATemplateRenamedOutside(): void
+    {
+        $this->app(['tearoom1.kirby-content-watch.enableRestore' => false]);
+        $this->panelEntry();
+
+        rename($this->contentFile, $this->pageDir . '/note.txt');
+        $this->app(['tearoom1.kirby-content-watch.enableRestore' => false]);
+
+        $files = (new ContentWatchController())->getContentFiles();
+        $page  = array_values(array_filter($files, fn ($file) => $file['id'] === 'test-page'))[0];
+
+        $this->assertCount(2, $page['history']);
+        $this->assertTrue($page['editor']['outside']);
     }
 }

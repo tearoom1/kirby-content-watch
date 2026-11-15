@@ -63,7 +63,17 @@ class ExternalChanges
             return false;
         }
 
-        $entries = ($history ?? HistoryStore::read($dirPath))[$fileKey] ?? [];
+        $history     ??= HistoryStore::read($dirPath);
+        $entries       = $history[$fileKey] ?? [];
+        $previousKey   = null;
+
+        // the content file was renamed outside the Panel (template change):
+        // continue the history of the former template
+        if ($model instanceof Page && (!is_array($entries) || $entries === [])) {
+            $previousKey = $this->formerTemplateKey($dirPath, $fileKey, $history);
+            $entries     = $previousKey !== null ? $history[$previousKey] : [];
+        }
+
         if (!is_array($entries) || $entries === []) {
             return false;
         }
@@ -80,12 +90,47 @@ class ExternalChanges
                 continue;
             }
 
-            if ($tracker->recordExternalChange($model, $language, $entries)) {
+            if ($tracker->recordExternalChange($model, $language, $entries, $previousKey)) {
                 $recorded = true;
+
+                // the history has moved to the new key with the first entry
+                $previousKey = null;
             }
         }
 
         return $recorded;
+    }
+
+    /**
+     * History key of a former page template: a key holding page entries
+     * whose content file no longer exists in the folder. The newest one wins.
+     */
+    protected function formerTemplateKey(string $dirPath, string $fileKey, array $history): ?string
+    {
+        $default = kirby()->multilang() ? '.' . kirby()->defaultLanguage()?->code() : '';
+        $found   = null;
+        $newest  = -1;
+
+        foreach ($history as $key => $entries) {
+            $key = (string)$key;
+            $first = is_array($entries) ? ($entries[0] ?? null) : null;
+
+            if (
+                $key === $fileKey ||
+                !is_array($first) ||
+                ($first['type'] ?? null) !== 'page' ||
+                is_file($dirPath . '/' . $key . $default . '.txt')
+            ) {
+                continue;
+            }
+
+            if ((int)($first['time'] ?? 0) > $newest) {
+                $newest = (int)($first['time'] ?? 0);
+                $found  = $key;
+            }
+        }
+
+        return $found;
     }
 
     /**
@@ -100,7 +145,13 @@ class ExternalChanges
             return [$model instanceof File ? null : ''];
         }
 
-        return kirby()->languages()->codes();
+        // the default language first: it carries the page structure and,
+        // after a template change, moves the history to the new key
+        $default = kirby()->defaultLanguage()?->code();
+        $codes   = kirby()->languages()->codes();
+        usort($codes, fn ($a, $b) => ($b === $default) <=> ($a === $default));
+
+        return $codes;
     }
 
     protected function comparable(array $entry): bool

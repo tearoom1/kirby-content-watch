@@ -158,7 +158,11 @@ class ContentWatchController
         }
 
         // Record changes made outside the Panel first, so the list shows them
-        if (ExternalChanges::isEnabled() && !empty($historyFiles[$dirPath][$fileKey])) {
+        // pages look at the whole folder: a template renamed outside the Panel
+        // leaves its history under the former template's key
+        $hasHistory = $isMediaFile ? !empty($historyFiles[$dirPath][$fileKey]) : !empty($historyFiles[$dirPath]);
+
+        if (ExternalChanges::isEnabled() && $hasHistory) {
             $model = $isMediaFile ? $owner->file($fileKey) : $owner;
 
             if ($model !== null && (new ExternalChanges())->check($model, $historyFiles[$dirPath])) {

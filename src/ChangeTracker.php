@@ -144,43 +144,60 @@ class ChangeTracker
 
     /**
      * Record the content on disk as a change made outside the Panel, when it
-     * differs from the newest entry of its language. The comparison is
-     * repeated under the history lock, so parallel requests record it once.
+     * differs from the newest entry of its language. Content is read again
+     * and compared under the history lock, so parallel requests record a
+     * change once and never record a state another request already moved past.
      *
      * `$knownEntries` (the entries as last read) skips the lock when
-     * nothing changed, which is the usual case.
+     * nothing changed, which is the usual case. `$previousFileKey` names the
+     * history of the former template after the content file was renamed
+     * outside the Panel; the history moves to the new key with this entry.
      *
      * Returns whether an entry was added.
      */
-    public function recordExternalChange(ModelWithContent $content, ?string $languageCode = null, ?array $knownEntries = null): bool
-    {
+    public function recordExternalChange(
+        ModelWithContent $content,
+        ?string $languageCode = null,
+        ?array $knownEntries = null,
+        ?string $previousFileKey = null
+    ): bool {
         [$dirPath, $fileKey, $record] = $this->buildRecord($content, [], $languageCode, null);
 
         if (empty($fileKey) || !is_string($record['hash'] ?? null)) {
             return false;
         }
 
-        if ($knownEntries !== null) {
-            $known = self::latestEntryOfLanguage($knownEntries, (string)($record['language'] ?? ''));
-            if ($known === null || self::differsFromEntry($known, $record) !== true) {
-                return false;
-            }
+        $templateChanged = $previousFileKey !== null && $previousFileKey !== $fileKey;
+
+        if ($knownEntries !== null && !$templateChanged && self::changedOutside($knownEntries, $record) === null) {
+            return false;
         }
 
-        $record['source'] = 'external';
-        $contentFile      = $this->contentFilePath($content, $dirPath, $fileKey, $record['language'] ?? '');
+        $meta = $templateChanged ? ['previous_file_key' => $previousFileKey] : [];
 
-        $stored = $this->storeRecord($dirPath, $fileKey, $record, [], function (array $entries, array &$record) use ($contentFile): bool {
-            $latest = self::latestEntryOfLanguage($entries, (string)($record['language'] ?? ''));
-
-            if ($latest === null || self::differsFromEntry($latest, $record) !== true) {
+        $stored = $this->storeRecord($dirPath, $fileKey, $record, $meta, function (array $entries, array &$record) use ($content, $languageCode, $templateChanged): bool {
+            // the content may have changed since it was read: read it again
+            [$dirPath, $fileKey, $fresh] = $this->buildRecord($content, [], $languageCode, null);
+            if (!is_string($fresh['hash'] ?? null)) {
                 return false;
             }
+
+            $latest = $templateChanged
+                ? self::latestEntryOfLanguage($entries, (string)($fresh['language'] ?? ''))
+                : self::changedOutside($entries, $fresh);
+
+            if ($latest === null) {
+                return false;
+            }
+
+            $record           = $fresh;
+            $record['source'] = 'external';
 
             // The file's modification time is when it was written (rsync and
             // most deploys keep the source time). Use it when it falls between
             // the previous entry and now, otherwise the time of discovery.
-            $mtime = @filemtime($contentFile);
+            $contentFile = $this->contentFilePath($content, $dirPath, $fileKey, $record['language'] ?? '');
+            $mtime       = @filemtime($contentFile);
             if (is_int($mtime) && $mtime > (int)($latest['time'] ?? 0) && $mtime <= time()) {
                 $record['time'] = $mtime;
             }
@@ -189,6 +206,37 @@ class ChangeTracker
         });
 
         return $stored !== null;
+    }
+
+    /**
+     * The newest entry of the record's language when the record (the content
+     * on disk) differs from what the history knows, otherwise null.
+     *
+     * Content is compared per language. Template, slug, status and parent
+     * belong to the page, not to a language: they are compared once, in the
+     * default language, against the newest entry of any language that knows
+     * them, so a Panel status change recorded in one language doesn't look
+     * like a change outside the Panel in the others.
+     */
+    public static function changedOutside(array $entries, array $record): ?array
+    {
+        $language = (string)($record['language'] ?? '');
+        $latest   = self::latestEntryOfLanguage($entries, $language);
+
+        if ($latest === null) {
+            return null;
+        }
+
+        $differs = self::differsFromEntry($latest, $record);
+        if ($differs === null) {
+            return null;
+        }
+
+        if ($differs === false && self::isStructureLanguage($language)) {
+            $differs = self::structureDiffers($entries, $record);
+        }
+
+        return $differs ? $latest : null;
     }
 
     /**
@@ -206,9 +254,9 @@ class ChangeTracker
     }
 
     /**
-     * Whether the content described by `$current` (a fresh record with
-     * `hash` and, for pages, `meta`) differs from a stored entry.
-     * Null when the entry holds nothing to compare with.
+     * Whether the stored content of `$current` (a fresh record with `hash`)
+     * differs from a stored entry. Null when the entry holds nothing to
+     * compare with.
      */
     public static function differsFromEntry(array $entry, array $current): ?bool
     {
@@ -217,11 +265,8 @@ class ChangeTracker
             return null;
         }
 
-        $entryMeta = null;
-
         if (!empty($entry['content']) && is_string($entry['content'])) {
             $snapshot  = SnapshotSerializer::split($entry['content'], $entry['meta'] ?? null);
-            $entryMeta = $snapshot['meta'];
             $entryHash = isset($entry['hash'], $entry['meta']) && is_string($entry['hash'])
                 ? $entry['hash']
                 : CurrentContent::hash($snapshot['content']);
@@ -231,21 +276,48 @@ class ChangeTracker
             return null;
         }
 
-        if ($entryHash !== $currentHash) {
-            return true;
+        return $entryHash !== $currentHash;
+    }
+
+    /**
+     * Whether template, slug, status or parent of `$current` differ from
+     * the newest entry (any language) that stored them
+     */
+    protected static function structureDiffers(array $entries, array $current): bool
+    {
+        $currentMeta = $current['meta'] ?? null;
+        if (!is_array($currentMeta)) {
+            return false;
         }
 
-        // template, slug, status and parent count too, when both know them
-        $currentMeta = $current['meta'] ?? null;
-        if (is_array($entryMeta) && $entryMeta !== [] && is_array($currentMeta)) {
+        foreach ($entries as $entry) {
+            if (!is_array($entry) || empty($entry['content']) || !is_string($entry['content'])) {
+                continue;
+            }
+
+            $entryMeta = SnapshotSerializer::split($entry['content'], $entry['meta'] ?? null)['meta'];
+            if ($entryMeta === []) {
+                continue;
+            }
+
             foreach ($entryMeta as $key => $value) {
                 if (array_key_exists($key, $currentMeta) && (string)$value !== (string)$currentMeta[$key]) {
                     return true;
                 }
             }
+
+            return false;
         }
 
         return false;
+    }
+
+    /**
+     * Single-language sites and the default language carry the page structure
+     */
+    protected static function isStructureLanguage(string $language): bool
+    {
+        return $language === '' || $language === kirby()->defaultLanguage()?->code();
     }
 
     /**
