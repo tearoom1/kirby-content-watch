@@ -247,6 +247,7 @@ With `enableRestore` and `enableDiff` turned on, each history entry has a "View 
 - Inside changed lines only the changed words are marked. Long texts show the changed lines with one line of context.
 - Blocks and layouts are compared block by block (matched by their id): each changed, added, removed or moved block shows its type and position, changed blocks list their changed properties. Unchanged blocks collapse to one line. Structure fields are compared entry by entry.
 - Files, pages and users show their names instead of their ids.
+- The newest version has no diff button, since it is the current content. It only gets one when the content was changed after it, e.g. outside the Panel.
 - Older versions that equal the current content show a grey diff button ("Same as the current version – no differences") and no restore button.
 - Users who may update the page can restore the compared version right from the dialog ("Restore this version", with a confirmation). Only the language of that version is affected; files and other languages stay unchanged.
 

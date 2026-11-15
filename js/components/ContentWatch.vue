@@ -182,7 +182,7 @@
                   <!-- fixed slots: diff, restore; empty slots keep their width -->
                   <k-button
                     v-if="enableDiff"
-                    v-bind="slotAttrs(canDiff(file, entry))"
+                    v-bind="slotAttrs(canDiff(entry, entryIndex))"
                     icon="split"
                     class="k-diff-button"
                     :class="{'k-cw-diff-same': isSame(entry, entryIndex)}"
@@ -263,7 +263,7 @@
                       <span class="k-timeline-item-actions">
                         <k-button
                           v-if="enableDiff"
-                          v-bind="slotAttrs(canDiff(row.file, row.entry))"
+                          v-bind="slotAttrs(canDiff(row.entry, row.entryIndex))"
                           icon="split"
                           class="k-diff-button"
                           :class="{'k-cw-diff-same': isSame(row.entry, row.entryIndex)}"
@@ -301,7 +301,7 @@
                   <span class="k-timeline-item-actions">
                     <k-button
                       v-if="enableDiff"
-                      v-bind="slotAttrs(canDiff(item.row.file, item.row.entry))"
+                      v-bind="slotAttrs(canDiff(item.row.entry, item.row.entryIndex))"
                       icon="split"
                       class="k-diff-button"
                       :class="{'k-cw-diff-same': isSame(item.row.entry, item.row.entryIndex)}"
@@ -868,8 +868,10 @@ export default {
   },
 
   methods: {
-    canDiff(file, entry) {
-      return Boolean(entry?.has_snapshot && file.history.length > 1);
+    // a diff compares a version with the current content; the newest version
+    // only gets one when the content changed after it (e.g. outside the Panel)
+    canDiff(entry, entryIndex) {
+      return Boolean(entry?.has_snapshot && (entryIndex > 0 || !entry.same_as_current));
     },
 
     canRestoreEntry(entry, entryIndex) {
@@ -1272,9 +1274,7 @@ export default {
         disabled: !historyEntry.has_snapshot
       }));
 
-      // the newest version usually is the current content: show what it changed instead
-      const fromIndex = entryIndex === 0 && file.history.length > 1 && !confirmRestore ? 1 : entryIndex;
-      this.diffFromVersionId = String(fromIndex);
+      this.diffFromVersionId = String(entryIndex);
       this.diffToVersionId = 'current';
 
       this.$refs.diffDialog.open();
