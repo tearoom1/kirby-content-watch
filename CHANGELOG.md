@@ -1,3 +1,10 @@
+## [3.15.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.14.0...v3.15.0) (2026-11-15)
+
+
+### Features
+
+* diff shows what a version changed, switch to the current version in the dialog ([1c4d860](https://github.com/tearoom1/kirby-content-watch/commit/1c4d8608ff4f1781e98d285f5d9a0fd3d31a7ea7))
+
 ## [3.14.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.13.1...v3.14.0) (2026-11-15)
 
 
@@ -42,19 +49,4 @@
 * resolve references inside blocks and structures, mark deleted ones ([5fb2c6f](https://github.com/tearoom1/kirby-content-watch/commit/5fb2c6f043b471e80d50763a3893ad88d9680b36))
 * stronger colours for changed lines in the diff ([61a8f6b](https://github.com/tearoom1/kirby-content-watch/commit/61a8f6be8a0923618763f63b86ca35cd2a0ecdef))
 * versions equal to the current content keep a muted diff button ([76dfa85](https://github.com/tearoom1/kirby-content-watch/commit/76dfa85e9e73817f0aa2a92aafc8f0dd38bf0f62))
-
-## [3.11.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.10.1...v3.11.0) (2026-10-23)
-
-
-### Features
-
-* calmer toolbar with the page/file switch inside the filters ([9c0fce9](https://github.com/tearoom1/kirby-content-watch/commit/9c0fce95834cd43ee40dd9e46dcceb97ea46c856))
-* native Kirby view header with title, header buttons and tabs ([c863b9f](https://github.com/tearoom1/kirby-content-watch/commit/c863b9f59dc04fb1738ef92961cb5b1c382bb8aa))
-* view switch moves into the toolbar of the content changes tab ([68aacf4](https://github.com/tearoom1/kirby-content-watch/commit/68aacf4b83e3b0dab51b7a5738c417731f7d6a45))
-
-
-### Bug Fixes
-
-* list restore buttons use the diff confirmation, align timeline columns ([02b5aec](https://github.com/tearoom1/kirby-content-watch/commit/02b5aeca8c271317e9de141d0e0510c9cdea83e5))
-* restore translations without fallbacks, record the written language ([75e7b07](https://github.com/tearoom1/kirby-content-watch/commit/75e7b078f40479747db181b6b4436013676b4538))
 
