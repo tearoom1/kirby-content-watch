@@ -272,15 +272,19 @@ This gives you full Kirby field method access (`.html()`, `.kirbytext()`, `.valu
 
 ### Comparing Versions
 
-With `enableRestore` and `enableDiff` turned on, each history entry has a "View changes" button. The dialog compares the chosen version with the current content by default; pick another version under "Compare with" to compare two versions.
+With `enableRestore` and `enableDiff` turned on, each history entry has a "View changes" button. It shows what that version changed, compared with the version before it in the same language; the oldest version has no button. Both in the Content Watch area and in the history section, the dialog switches between two comparisons:
+
+- **Previous version**: what the shown version changed.
+- **Current version**: the shown version against the content as it is now, e.g. everything that changed since your own edit a few days ago.
+
+"Older" and "Newer" (or the left and right arrow keys) step through the versions in the chosen comparison. In the Content Watch area, the "Older" and "Newer" selects also allow any other pair. The restore button of an entry opens the dialog with the comparison to the current version.
 
 - Only changed fields are shown, with the field label from the blueprint and the raw key next to it. A summary line tells how many fields changed and how many unchanged fields are hidden.
 - Inside changed lines only the changed words are marked. Long texts show the changed lines with one line of context.
 - Blocks and layouts are compared block by block (matched by their id): each changed, added, removed or moved block shows its type and position, changed blocks list their changed properties. Unchanged blocks collapse to one line. Structure fields are compared entry by entry.
 - Files, pages and users show their names instead of their ids.
-- The newest version has no diff button, since it is the current content. It only gets one when the content was changed after it, e.g. outside the Panel.
-- Older versions that equal the current content show a grey diff button ("Same as the current version – no differences") and no restore button.
-- Users who may update the page can restore the compared version right from the dialog ("Restore this version", with a confirmation). Only the language of that version is affected; files and other languages stay unchanged.
+- Versions that equal the current content have no restore button.
+- While comparing with the current version, users who may update the page can restore the compared version right from the dialog ("Restore this version", with a confirmation). Only the language of that version is affected; files and other languages stay unchanged.
 
 The optional `jfcherng/php-diff` package is no longer used by the Panel.
 

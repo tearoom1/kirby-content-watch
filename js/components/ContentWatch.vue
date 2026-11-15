@@ -182,12 +182,11 @@
                   <!-- fixed slots: diff, restore; empty slots keep their width -->
                   <k-button
                     v-if="enableDiff"
-                    v-bind="slotAttrs(canDiff(entry, entryIndex))"
+                    v-bind="slotAttrs(canDiff(file, entryIndex))"
                     icon="split"
                     class="k-diff-button"
-                    :class="{'k-cw-diff-same': isSame(entry, entryIndex)}"
-                    v-cw-tooltip="isSame(entry, entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
-                    :aria-label="isSame(entry, entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
+                    v-cw-tooltip="$t('tearoom1.content-watch.diff.view')"
+                    :aria-label="$t('tearoom1.content-watch.diff.view')"
                     @click.stop="viewDiff(file, entry, entryIndex)"
                   />
                   <k-button
@@ -263,12 +262,11 @@
                       <span class="k-timeline-item-actions">
                         <k-button
                           v-if="enableDiff"
-                          v-bind="slotAttrs(canDiff(row.entry, row.entryIndex))"
+                          v-bind="slotAttrs(canDiff(row.file, row.entryIndex))"
                           icon="split"
                           class="k-diff-button"
-                          :class="{'k-cw-diff-same': isSame(row.entry, row.entryIndex)}"
-                          v-cw-tooltip="isSame(row.entry, row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
-                          :aria-label="isSame(row.entry, row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
+                          v-cw-tooltip="$t('tearoom1.content-watch.diff.view')"
+                          :aria-label="$t('tearoom1.content-watch.diff.view')"
                           @click.stop="viewDiff(row.file, row.entry, row.entryIndex)"
                         />
                         <k-button
@@ -301,12 +299,11 @@
                   <span class="k-timeline-item-actions">
                     <k-button
                       v-if="enableDiff"
-                      v-bind="slotAttrs(canDiff(item.row.entry, item.row.entryIndex))"
+                      v-bind="slotAttrs(canDiff(item.row.file, item.row.entryIndex))"
                       icon="split"
                       class="k-diff-button"
-                      :class="{'k-cw-diff-same': isSame(item.row.entry, item.row.entryIndex)}"
-                      v-cw-tooltip="isSame(item.row.entry, item.row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
-                      :aria-label="isSame(item.row.entry, item.row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
+                      v-cw-tooltip="$t('tearoom1.content-watch.diff.view')"
+                      :aria-label="$t('tearoom1.content-watch.diff.view')"
                       @click.stop="viewDiff(item.row.file, item.row.entry, item.row.entryIndex)"
                     />
                     <k-button
@@ -426,6 +423,40 @@
           <span class="k-content-watch-diff-path"> ~ {{ diffTarget.file?.path_short }}</span>
         </div>
 
+        <!-- the two usual comparisons, and stepping through versions (also with the arrow keys);
+             the dialog starts on the active comparison, not in a select that would keep the arrow keys -->
+        <div class="k-cw-diff-toolbar">
+          <k-button-group class="k-cw-diff-modes" role="group" :aria-label="t('diff.mode.label')">
+            <k-button
+              v-for="mode in ['previous', 'current']"
+              :key="mode"
+              size="sm"
+              :variant="diffMode === mode ? 'filled' : null"
+              :current="diffMode === mode"
+              :autofocus="diffMode === mode"
+              :disabled="!canSetDiffMode(mode)"
+              @click="setDiffMode(mode)"
+            >{{ t('diff.mode.' + mode) }}</k-button>
+          </k-button-group>
+          <k-button-group>
+            <k-button
+              icon="angle-left"
+              size="sm"
+              variant="filled"
+              :disabled="diffStepTarget(1) < 0"
+              @click="diffStep(1)"
+            >{{ t('diff.step.older') }}</k-button>
+            <k-button
+              icon="angle-right"
+              icon-after
+              size="sm"
+              variant="filled"
+              :disabled="diffStepTarget(-1) < 0"
+              @click="diffStep(-1)"
+            >{{ t('diff.step.newer') }}</k-button>
+          </k-button-group>
+        </div>
+
         <div class="k-content-watch-diff-compare-versions">
           <k-select-field
             :label="$t('tearoom1.content-watch.diff.version')"
@@ -509,6 +540,7 @@
 import {formatDistance} from 'date-fns';
 import {editorHelp, editorLabel} from '../editor.js';
 import {buildTimeline, groupByDay, relativeDay} from '../timeline.js';
+import {CURRENT, PREVIOUS, canCompare, focusOf, isTypingTarget, modeOf, pairFor, step} from '../diff-pairs.js';
 
 export default {
   props: {
@@ -609,6 +641,14 @@ export default {
     if (this.initialSearch && this.filteredFiles.length === 1) {
       this.expandedFiles.push(this.filteredFiles[0].id);
     }
+  },
+
+  mounted() {
+    window.addEventListener('keydown', this.onDiffKeydown);
+  },
+
+  destroyed() {
+    window.removeEventListener('keydown', this.onDiffKeydown);
   },
 
   computed: {
@@ -785,6 +825,28 @@ export default {
       ];
     },
 
+    // 'previous', 'current' or null when the selects show any other pair
+    diffMode() {
+      if (!this.diffTarget || this.diffFromVersionId === null || this.diffToVersionId === null) {
+        return null;
+      }
+
+      return modeOf(this.diffTarget.file.history, this.diffIndex(this.diffFromVersionId), this.diffIndex(this.diffToVersionId));
+    },
+
+    // the version the dialog is about, the starting point for mode switches and steps
+    diffFocusIndex() {
+      if (!this.diffTarget || this.diffFromVersionId === null || this.diffToVersionId === null) {
+        return null;
+      }
+
+      const from = this.diffIndex(this.diffFromVersionId);
+      const to = this.diffIndex(this.diffToVersionId);
+
+      // a free choice: the newer side when it is a version, otherwise the older one
+      return this.diffMode ? focusOf(from, to) : (to === CURRENT ? from : to);
+    },
+
     diffFromEntry() {
       if (!this.diffTarget || this.diffFromVersionId === null) {
         return null;
@@ -793,8 +855,10 @@ export default {
       return this.diffTarget.file.history[parseInt(this.diffFromVersionId, 10)] || null;
     },
 
+    // restoring is offered while comparing with the current content: that is what it changes
     canRestoreFromDiff() {
       return this.enableRestore &&
+        this.diffToVersionId === CURRENT &&
         this.diffCanRestore &&
         !this.isDiffLoading &&
         this.diffFromEntry?.has_snapshot === true &&
@@ -868,19 +932,13 @@ export default {
   },
 
   methods: {
-    // a diff compares a version with the current content; the newest version
-    // only gets one when the content changed after it (e.g. outside the Panel)
-    canDiff(entry, entryIndex) {
-      return Boolean(entry?.has_snapshot && (entryIndex > 0 || !entry.same_as_current));
+    // the diff button shows what a version changed: the oldest version has nothing before it
+    canDiff(file, entryIndex) {
+      return canCompare(file?.history || [], entryIndex, PREVIOUS);
     },
 
     canRestoreEntry(entry, entryIndex) {
       return Boolean(entry?.has_snapshot && entryIndex > 0 && !entry.same_as_current);
-    },
-
-    // an older version that equals the current content: nothing to compare or restore
-    isSame(entry, entryIndex) {
-      return Boolean(entryIndex > 0 && entry?.same_as_current);
     },
 
     // a button slot that doesn't apply stays in place, invisible and inert
@@ -1264,7 +1322,7 @@ export default {
         this.formatRelative(entry.time) + ' · ' + this.editorLabel(entry.editor);
     },
 
-    // compare a version with the current content by default
+    // the diff button shows what a version changed; restoring compares with the current content
     viewDiff(file, entry, entryIndex, confirmRestore = false) {
       this.diffTarget = {file, entry, entryIndex};
       this.diffConfirmOnLoad = confirmRestore;
@@ -1274,11 +1332,61 @@ export default {
         disabled: !historyEntry.has_snapshot
       }));
 
-      this.diffFromVersionId = String(entryIndex);
-      this.diffToVersionId = 'current';
-
+      this.showDiffPair(entryIndex, confirmRestore ? CURRENT : PREVIOUS);
       this.$refs.diffDialog.open();
+    },
+
+    showDiffPair(index, mode) {
+      const {from, to} = pairFor(this.diffTarget.file.history, index, mode);
+      this.diffFromVersionId = String(from);
+      this.diffToVersionId = String(to);
       this.loadDiff();
+    },
+
+    // the mode button is off while the version can't be shown that way
+    canSetDiffMode(mode) {
+      return this.diffFocusIndex !== null && canCompare(this.diffTarget.file.history, this.diffFocusIndex, mode);
+    },
+
+    setDiffMode(mode) {
+      if (mode !== this.diffMode && this.canSetDiffMode(mode)) {
+        this.showDiffPair(this.diffFocusIndex, mode);
+      }
+    },
+
+    // direction 1 = older, -1 = newer; only in one of the two modes
+    diffStepTarget(direction) {
+      if (!this.diffTarget || !this.diffMode || this.diffFocusIndex === null) {
+        return -1;
+      }
+
+      return step(this.diffTarget.file.history, this.diffFocusIndex, this.diffMode, direction);
+    },
+
+    diffStep(direction) {
+      const index = this.diffStepTarget(direction);
+
+      if (index >= 0) {
+        this.showDiffPair(index, this.diffMode);
+      }
+    },
+
+    // arrow keys step through versions while the diff dialog is open
+    onDiffKeydown(event) {
+      if (!this.diffTarget || this.diffRestoreConfirm || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return;
+      }
+
+      if (isTypingTarget(event.target)) {
+        return;
+      }
+
+      const direction = {ArrowLeft: 1, ArrowRight: -1}[event.key];
+
+      if (direction && this.diffStepTarget(direction) >= 0) {
+        event.preventDefault();
+        this.diffStep(direction);
+      }
     },
 
     closeDiff() {
@@ -1400,6 +1508,11 @@ export default {
 
       return 'v' + entry.version + ' / ' + entry.language + ' / ' +
         entry.time_formatted + ' (' + this.editorLabel(entry.editor) + ')';
+    },
+
+    // select value to history index, 'current' stays as it is
+    diffIndex(versionId) {
+      return versionId === CURRENT ? CURRENT : parseInt(versionId, 10);
     },
 
     normalizeDiffVersionId(versionId) {
@@ -1680,11 +1793,6 @@ export default {
 
   .k-cw-slot-empty {
     visibility: hidden;
-  }
-
-  /* the version equals the current content: the diff only says "No changes" */
-  .k-diff-button.k-cw-diff-same {
-    color: var(--color-text-dimmed) !important;
   }
 
   .k-restore-button {

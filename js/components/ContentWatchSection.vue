@@ -23,13 +23,12 @@
           <!-- fixed slots: diff, restore; empty slots keep their width -->
           <k-button
             v-if="history?.enableDiff"
-            v-bind="slotAttrs(canDiff(entry))"
+            v-bind="slotAttrs(canDiff(entry, 'previous'))"
             icon="split"
             size="xs"
-            :class="{'k-cw-diff-same': index > 0 && entry.same_as_current}"
-            v-cw-tooltip="index > 0 && entry.same_as_current ? $t('tearoom1.content-watch.equal') : 'View changes'"
-            :aria-label="index > 0 && entry.same_as_current ? $t('tearoom1.content-watch.equal') : 'View changes'"
-            @click="openDiff(entry)"
+            v-cw-tooltip="$t('tearoom1.content-watch.diff.view')"
+            :aria-label="$t('tearoom1.content-watch.diff.view')"
+            @click="openDiff(entry, 'previous')"
           />
           <k-button
             v-if="history?.enableRestore"
@@ -83,25 +82,42 @@
       @close="diff = null"
     >
       <header v-if="diff" class="k-cw-section-diff-header">
-        <strong>v{{ diff.entry.previous.version }} → v{{ diff.entry.version }}</strong>
+        <strong v-if="diff.mode === 'current'">v{{ diff.entry.version }} → {{ $t('tearoom1.content-watch.diff.current') }}</strong>
+        <strong v-else>v{{ diff.entry.previous.version }} → v{{ diff.entry.version }}</strong>
         <span>{{ entryEditor(diff.entry) }} · {{ formatAbsolute(diff.entry.time) }}</span>
-        <k-button-group>
-          <k-button
-            icon="angle-left"
-            size="xs"
-            variant="filled"
-            :disabled="!diffNeighbour(1)"
-            @click="openDiff(diffNeighbour(1))"
-          >Older</k-button>
-          <k-button
-            icon="angle-right"
-            icon-after
-            size="xs"
-            variant="filled"
-            :disabled="!diffNeighbour(-1)"
-            @click="openDiff(diffNeighbour(-1))"
-          >Newer</k-button>
-        </k-button-group>
+
+        <!-- same toolbar as in the Content Watch area, the arrow keys step too -->
+        <div class="k-cw-diff-toolbar">
+          <k-button-group class="k-cw-diff-modes" role="group" :aria-label="$t('tearoom1.content-watch.diff.mode.label')">
+            <k-button
+              v-for="mode in ['previous', 'current']"
+              :key="mode"
+              size="sm"
+              :variant="diff.mode === mode ? 'filled' : null"
+              :current="diff.mode === mode"
+              :autofocus="diff.mode === mode"
+              :disabled="!canDiff(diff.entry, mode)"
+              @click="mode !== diff.mode && openDiff(diff.entry, mode)"
+            >{{ $t('tearoom1.content-watch.diff.mode.' + mode) }}</k-button>
+          </k-button-group>
+          <k-button-group>
+            <k-button
+              icon="angle-left"
+              size="sm"
+              variant="filled"
+              :disabled="!diffNeighbour(1)"
+              @click="openDiff(diffNeighbour(1), diff.mode)"
+            >{{ $t('tearoom1.content-watch.diff.step.older') }}</k-button>
+            <k-button
+              icon="angle-right"
+              icon-after
+              size="sm"
+              variant="filled"
+              :disabled="!diffNeighbour(-1)"
+              @click="openDiff(diffNeighbour(-1), diff.mode)"
+            >{{ $t('tearoom1.content-watch.diff.step.newer') }}</k-button>
+          </k-button-group>
+        </div>
       </header>
       <k-loader v-if="diff?.loading"/>
       <div v-else-if="diff?.html" class="k-content-watch-diff-content" v-html="diff.html"></div>
@@ -113,6 +129,7 @@
 <script>
 import {formatDistance} from 'date-fns';
 import {editorHelp, editorLabel} from '../editor.js';
+import {CURRENT, PREVIOUS, isTypingTarget} from '../diff-pairs.js';
 
 export default {
   data() {
@@ -141,10 +158,12 @@ export default {
     await this.fetch();
     // saving the page adds a new entry
     this.$events.on('model.update', this.fetch);
+    window.addEventListener('keydown', this.onDiffKeydown);
   },
 
   destroyed() {
     this.$events.off('model.update', this.fetch);
+    window.removeEventListener('keydown', this.onDiffKeydown);
   },
 
   methods: {
@@ -157,8 +176,13 @@ export default {
       this.history = response.history;
     },
 
-    canDiff(entry) {
-      return this.history?.enableDiff && entry.has_snapshot && entry.previous?.has_snapshot;
+    // 'previous': what the version changed, 'current': the version against the content as it is now
+    canDiff(entry, mode = PREVIOUS) {
+      if (!this.history?.enableDiff || !entry?.has_snapshot) {
+        return false;
+      }
+
+      return mode === CURRENT || Boolean(entry.previous?.has_snapshot);
     },
 
     canRestore(entry, index) {
@@ -208,30 +232,32 @@ export default {
       }
     },
 
-    async openDiff(entry) {
+    async openDiff(entry, mode = PREVIOUS) {
       const isOpen = this.diff !== null;
-      this.diff = {entry, html: null, loading: true};
+      const diff = {entry, mode, html: null, loading: true};
+      this.diff = diff;
 
       if (!isOpen) {
         this.$refs.diffDialog.open();
       }
 
+      const pair = mode === CURRENT
+        ? {fromEntryId: entry.entry_id ?? null, toEntryId: CURRENT, fromTimestamp: entry.time, toTimestamp: null}
+        : {fromEntryId: entry.previous.entry_id ?? null, toEntryId: entry.entry_id ?? null, fromTimestamp: entry.previous.time, toTimestamp: entry.time};
+
       try {
         const response = await this.$api.post('/content-watch/diff', {
           dirPath: this.history.dirPath,
           fileKey: this.history.fileKey,
-          fromEntryId: entry.previous.entry_id ?? null,
-          toEntryId: entry.entry_id ?? null,
-          fromTimestamp: entry.previous.time,
-          toTimestamp: entry.time
+          ...pair
         });
 
-        // ignore late answers when the user moved on to another version
-        if (this.diff?.entry === entry) {
-          this.diff = {entry, html: response.diff, loading: false};
+        // ignore late answers when the user moved on to another version or mode
+        if (this.diff === diff) {
+          this.diff = {entry, mode, html: response.diff, loading: false};
         }
       } catch (error) {
-        this.diff = {entry, html: null, loading: false};
+        this.diff = {entry, mode, html: null, loading: false};
         window.panel.notification.error('Error loading diff: ' + (error.message || 'Unknown error'));
       }
     },
@@ -241,7 +267,22 @@ export default {
       const index = this.entries.indexOf(this.diff?.entry) + direction;
       const entry = this.entries[index];
 
-      return entry && this.canDiff(entry) ? entry : null;
+      return entry && this.canDiff(entry, this.diff?.mode) ? entry : null;
+    },
+
+    // arrow keys step through versions while the diff dialog is open
+    onDiffKeydown(event) {
+      if (!this.diff || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || isTypingTarget(event.target)) {
+        return;
+      }
+
+      const direction = {ArrowLeft: 1, ArrowRight: -1}[event.key];
+      const entry = direction ? this.diffNeighbour(direction) : null;
+
+      if (entry) {
+        event.preventDefault();
+        this.openDiff(entry, this.diff.mode);
+      }
     },
 
     openArea() {
@@ -365,13 +406,6 @@ export default {
   visibility: hidden;
 }
 
-/* the version equals the current content: the diff only says "No changes" */
-.k-cw-section-actions .k-cw-diff-same {
-  --button-color-text: var(--color-text-dimmed);
-  --button-color-icon: var(--color-text-dimmed);
-  opacity: 0.6;
-}
-
 .k-cw-section-actions .k-button {
   --button-color-text: var(--color-text-dimmed);
 }
@@ -394,9 +428,6 @@ export default {
   font-size: var(--text-sm);
 }
 
-.k-cw-section-diff-header .k-button-group {
-  margin-inline-start: auto;
-}
 
 .k-cw-section-meta {
   flex-basis: 100%;
