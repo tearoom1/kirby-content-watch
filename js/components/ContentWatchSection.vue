@@ -119,9 +119,10 @@
           </k-button-group>
         </div>
       </header>
-      <k-loader v-if="diff?.loading"/>
-      <div v-else-if="diff?.html" class="k-content-watch-diff-content" v-html="diff.html"></div>
-      <k-empty v-else icon="document" text="No diff available"/>
+      <!-- while the next pair loads, the last result stays dimmed so the dialog doesn't jump -->
+      <k-loader v-if="diff?.loading && !diff.loaded"/>
+      <div v-else-if="diff?.html" class="k-content-watch-diff-content" :class="{'k-cw-diff-stale': diff.loading}" v-html="diff.html"></div>
+      <k-empty v-else icon="document" text="No diff available" :class="{'k-cw-diff-stale': diff?.loading}"/>
     </k-dialog>
   </k-section>
 </template>
@@ -234,7 +235,8 @@ export default {
 
     async openDiff(entry, mode = PREVIOUS) {
       const isOpen = this.diff !== null;
-      const diff = {entry, mode, html: null, loading: true};
+      // keep the last result on screen until the new one is there
+      const diff = {entry, mode, html: this.diff?.html ?? null, loaded: this.diff?.loaded ?? false, loading: true};
       this.diff = diff;
 
       if (!isOpen) {
@@ -254,10 +256,12 @@ export default {
 
         // ignore late answers when the user moved on to another version or mode
         if (this.diff === diff) {
-          this.diff = {entry, mode, html: response.diff, loading: false};
+          this.diff = {entry, mode, html: response.diff, loaded: true, loading: false};
         }
       } catch (error) {
-        this.diff = {entry, mode, html: null, loading: false};
+        if (this.diff === diff) {
+          this.diff = {entry, mode, html: null, loaded: true, loading: false};
+        }
         window.panel.notification.error('Error loading diff: ' + (error.message || 'Unknown error'));
       }
     },

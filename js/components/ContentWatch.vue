@@ -80,7 +80,8 @@
           :label="$t('tearoom1.content-watch.filter.show')"
           :value="showOnlyPages ? 'pages' : 'all'"
           :options="showFilterOptions"
-          :empty="false"
+          class="k-cw-select-plain"
+          required
           @input="changeShowFilter"
         />
         <k-select-field
@@ -462,14 +463,16 @@
             :label="$t('tearoom1.content-watch.diff.version')"
             :options="diffFromOptions"
             :value="diffFromVersionId"
-            :empty="false"
+            class="k-cw-select-plain"
+            required
             @input="changeFromVersion"
           />
           <k-select-field
             :label="$t('tearoom1.content-watch.diff.compare')"
             :options="diffToOptions"
             :value="diffToVersionId"
-            :empty="false"
+            class="k-cw-select-plain"
+            required
             @input="changeToVersion"
           />
         </div>
@@ -477,14 +480,14 @@
         <p v-if="diffSummaryText" class="k-content-watch-diff-summary">{{ diffSummaryText }}</p>
       </div>
 
-      <k-loader v-if="isDiffLoading"/>
+      <!-- while the next pair loads, the last result stays dimmed so the dialog doesn't jump -->
+      <k-loader v-if="isDiffLoading && diffContent === null && diffSummary === null"/>
 
-      <div v-else-if="diffContent" class="k-content-watch-diff-content"
-      >
+      <div v-else-if="diffContent" class="k-content-watch-diff-content" :class="{'k-cw-diff-stale': isDiffLoading}">
         <div v-html="diffContent"></div>
       </div>
 
-      <k-empty v-else icon="document" text="No diff available"/>
+      <k-empty v-else icon="document" text="No diff available" :class="{'k-cw-diff-stale': isDiffLoading}"/>
 
       <template #footer>
         <!-- inline confirmation before restoring the version -->
@@ -627,7 +630,8 @@ export default {
       diffCanRestore: false,
       diffRestoreConfirm: false,
       isRestoringFromDiff: false,
-      isDiffLoading: false
+      isDiffLoading: false,
+      diffRequest: 0
     };
   },
 
@@ -818,9 +822,16 @@ export default {
       return this.diffVersionOptions;
     },
 
+    // "Current version = v8" while the newest version in that language equals the current content
     diffToOptions() {
+      const language = this.diffFromEntry?.language || '';
+      const newest = this.diffTarget?.file.history.find(entry => (entry.language || '') === language);
+      const current = newest?.same_as_current
+        ? this.t('diff.current.same', {version: newest.version})
+        : this.$t('tearoom1.content-watch.diff.current');
+
       return [
-        {text: this.$t('tearoom1.content-watch.diff.current'), value: 'current'},
+        {text: current, value: 'current'},
         ...this.diffVersionOptions
       ];
     },
@@ -870,8 +881,7 @@ export default {
         return null;
       }
 
-      const {changed, unchanged} = this.diffSummary;
-      const from = this.diffTarget.file.history[parseInt(this.diffFromVersionId, 10)];
+      const {changed, unchanged, version} = this.diffSummary;
       const t = (key, data) => this.t(key, data);
 
       if (!changed) {
@@ -880,7 +890,7 @@ export default {
 
       const parts = [t(changed === 1 ? 'diff.summary.changed.one' : 'diff.summary.changed', {
         count: changed,
-        version: from?.version ?? ''
+        version
       })];
 
       if (unchanged) {
@@ -1390,6 +1400,9 @@ export default {
     },
 
     closeDiff() {
+      // answers still on their way belong to the closed dialog
+      this.diffRequest++;
+      this.isDiffLoading = false;
       this.diffTarget = null;
       this.diffVersionOptions = [];
       this.diffFromVersionId = null;
@@ -1459,9 +1472,9 @@ export default {
         return;
       }
 
+      // the last result stays until the new one is there; later requests win
+      const request = ++this.diffRequest;
       this.isDiffLoading = true;
-      this.diffContent = null;
-      this.diffSummary = null;
       this.diffCanRestore = false;
       this.diffRestoreConfirm = false;
 
@@ -1479,18 +1492,31 @@ export default {
         toTimestamp: toEntry?.time ?? null
       })
         .then(response => {
+          if (request !== this.diffRequest) {
+            return;
+          }
+
           this.diffContent = response.diff;
-          this.diffSummary = response.summary || null;
+          // the version travels with the counts, the select may already show the next pair
+          this.diffSummary = response.summary ? {...response.summary, version: fromEntry?.version ?? ''} : null;
           this.isDiffLoading = false;
           this.diffCanRestore = response.canRestore === true;
           this.diffRestoreConfirm = this.diffConfirmOnLoad && this.canRestoreFromDiff;
           this.diffConfirmOnLoad = false;
         })
         .catch(error => {
+          if (request !== this.diffRequest) {
+            return;
+          }
+
+          this.diffContent = null;
+          this.diffSummary = null;
           window.panel.notification.error('Error loading diff: ' + (error.message || 'Unknown error'));
         })
         .finally(() => {
-          this.isDiffLoading = false;
+          if (request === this.diffRequest) {
+            this.isDiffLoading = false;
+          }
         });
     },
 
