@@ -80,6 +80,18 @@ export function step (history, index, mode, direction) {
   return -1;
 }
 
+// next entry in that direction for which `canShow(entry)` holds, skipping
+// the ones in between that can't be shown; null if none
+export function nextShowable (entries, index, direction, canShow) {
+  for (let i = index + direction; index >= 0 && i >= 0 && i < entries.length; i += direction) {
+    if (canShow(entries[i])) {
+      return entries[i];
+    }
+  }
+
+  return null;
+}
+
 // arrow keys step through versions unless the user is typing or choosing in a field
 export function isTypingTarget (element) {
   if (!element) {

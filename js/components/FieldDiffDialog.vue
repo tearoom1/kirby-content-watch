@@ -58,7 +58,7 @@
 <script>
 import {editorLabel} from '../editor.js';
 import {formatAbsolute} from '../time.js';
-import {CURRENT, PREVIOUS, isTypingTarget} from '../diff-pairs.js';
+import {CURRENT, PREVIOUS, isTypingTarget, nextShowable} from '../diff-pairs.js';
 
 /**
  * Diff of one version against the one before it ('previous') or against
@@ -143,12 +143,12 @@ export default {
       }
     },
 
-    // direction 1 = older, -1 = newer
+    // direction 1 = older, -1 = newer; skips versions that can't be compared in this mode,
+    // e.g. the first version of a translation between two versions of another language
     diffNeighbour(direction) {
-      const index = this.entries.indexOf(this.diff?.entry) + direction;
-      const entry = this.entries[index];
+      const index = this.entries.indexOf(this.diff?.entry);
 
-      return entry && this.canDiff(entry, this.diff?.mode) ? entry : null;
+      return nextShowable(this.entries, index, direction, entry => this.canDiff(entry, this.diff?.mode));
     },
 
     // arrow keys step through versions while the dialog is open

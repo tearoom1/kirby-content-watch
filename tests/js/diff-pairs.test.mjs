@@ -1,7 +1,7 @@
 // Run with: npm test (node's built-in test runner, no dependencies)
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {CURRENT, PREVIOUS, canCompare, focusOf, isTypingTarget, modeOf, pairFor, previousIndex, step} from '../../js/diff-pairs.js';
+import {CURRENT, PREVIOUS, canCompare, focusOf, isTypingTarget, modeOf, nextShowable, pairFor, previousIndex, step} from '../../js/diff-pairs.js';
 
 // newest first, two languages mixed
 const history = [
@@ -60,4 +60,22 @@ test('isTypingTarget spares fields', () => {
   assert.equal(isTypingTarget({tagName: 'DIV', isContentEditable: true}), true);
   assert.equal(isTypingTarget({tagName: 'BUTTON'}), false);
   assert.equal(isTypingTarget(null), false);
+});
+
+test('nextShowable skips entries that cannot be compared', () => {
+  // two German versions with a first French version in between, as in the history field
+  const entries = [
+    {version: 2, language: 'de', previous: {has_snapshot: true}},
+    {version: 1, language: 'fr', previous: null},
+    {version: 1, language: 'de', previous: {has_snapshot: true}},
+    {version: 0, language: 'de', previous: null}
+  ];
+  const canShow = entry => Boolean(entry.previous?.has_snapshot);
+
+  assert.equal(nextShowable(entries, 0, 1, canShow), entries[2]);
+  assert.equal(nextShowable(entries, 2, -1, canShow), entries[0]);
+  assert.equal(nextShowable(entries, 2, 1, canShow), null);
+  assert.equal(nextShowable(entries, 0, -1, canShow), null);
+  // an entry that is not in the list has no neighbours
+  assert.equal(nextShowable(entries, -1, 1, canShow), null);
 });
