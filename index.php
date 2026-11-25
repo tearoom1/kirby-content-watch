@@ -288,9 +288,17 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
 
                     $entries = (new ContentWatchController())->getModelHistory($this->model());
 
-                    // the diff of the last shown entry needs the one before it
+                    // the diff of the last shown entry needs the one before it,
+                    // in the same language as in the Content Watch area (js/diff-pairs.js)
                     foreach ($entries as $index => $entry) {
-                        $previous = $entries[$index + 1] ?? null;
+                        $previous = null;
+
+                        foreach (array_slice($entries, $index + 1) as $older) {
+                            if (($older['language'] ?? '') === ($entry['language'] ?? '')) {
+                                $previous = $older;
+                                break;
+                            }
+                        }
 
                         $entries[$index]['previous'] = $previous ? [
                             'entry_id'     => $previous['entry_id'],
