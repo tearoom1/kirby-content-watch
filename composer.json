@@ -42,14 +42,14 @@
     "url": "https://github.com/tearoom1/kirby-content-watch.git"
   },
   "require": {
-    "php": "^8.3",
+    "php": "~8.3.0 || ~8.4.0 || ~8.5.0 || ~8.6.0",
     "getkirby/composer-installer": "^1.2"
   },
   "conflict": {
     "getkirby/cms": "<6.0"
   },
   "require-dev": {
-    "getkirby/cms": "^6.0@beta",
+    "getkirby/cms": "^6.0",
     "phpunit/phpunit": "^11.0 || ^12.0"
   },
   "autoload": {
