@@ -330,3 +330,24 @@
   color: var(--color-text-dimmed);
   background: color-mix(in srgb, var(--color-blue-500) 12%, transparent);
 }
+
+/* comparison mode on the left, stepping through versions on the right */
+.k-content-watch-diff-dialog .k-cw-diff-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  flex-basis: 100%;
+  margin-top: var(--spacing-3);
+}
+
+/* the last result while the next pair loads */
+.k-content-watch-diff-dialog .k-cw-diff-stale {
+  opacity: 0.5;
+}
+
+/* selects that always have a value: no required marker */
+.k-cw-select-plain .k-label abbr {
+  display: none;
+}

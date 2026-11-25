@@ -23,13 +23,12 @@
           <!-- fixed slots: diff, restore; empty slots keep their width -->
           <k-button
             v-if="state.history?.enableDiff"
-            v-bind="slotAttrs(canDiff(entry))"
+            v-bind="slotAttrs(canDiff(entry, 'previous'))"
             icon="split"
             size="xs"
-            :class="{'k-cw-diff-same': index > 0 && entry.same_as_current}"
-            v-cw-tooltip="index > 0 && entry.same_as_current ? $t('tearoom1.content-watch.equal') : 'View changes'"
-            :aria-label="index > 0 && entry.same_as_current ? $t('tearoom1.content-watch.equal') : 'View changes'"
-            @click="openDiff(entry)"
+            v-cw-tooltip="$t('tearoom1.content-watch.diff.view')"
+            :aria-label="$t('tearoom1.content-watch.diff.view')"
+            @click="openDiff(entry, 'previous')"
           />
           <k-button
             v-if="state.history?.enableRestore"
@@ -56,6 +55,7 @@
 import {formatDistance} from 'date-fns';
 import {editorHelp, editorLabel} from '../editor.js';
 import {formatAbsolute} from '../time.js';
+import {CURRENT, PREVIOUS} from '../diff-pairs.js';
 
 /**
  * The `contentwatch` field: the section of the same name until Kirby 5.
@@ -140,8 +140,13 @@ export default {
       };
     },
 
-    canDiff(entry) {
-      return this.state.history?.enableDiff && entry.has_snapshot && entry.previous?.has_snapshot;
+    // 'previous': what the version changed, 'current': the version against the content as it is now
+    canDiff(entry, mode = PREVIOUS) {
+      if (!this.state.history?.enableDiff || !entry?.has_snapshot) {
+        return false;
+      }
+
+      return mode === CURRENT || Boolean(entry.previous?.has_snapshot);
     },
 
     canRestore(entry, index) {
@@ -195,11 +200,13 @@ export default {
       }
     },
 
-    openDiff(entry) {
+    // the dialog steps through the versions itself, also with the arrow keys
+    openDiff(entry, mode = PREVIOUS) {
       this.$panel.dialog.open({
         component: 'k-content-watch-field-diff-dialog',
         props: {
           entry,
+          mode,
           entries: this.state.entries,
           history: this.state.history
         }
@@ -320,13 +327,6 @@ export default {
   visibility: hidden;
 }
 
-/* the version equals the current content: the diff only says "No changes" */
-.k-cw-section-actions .k-cw-diff-same {
-  --button-color-text: var(--color-text-dimmed);
-  --button-color-icon: var(--color-text-dimmed);
-  opacity: 0.6;
-}
-
 .k-cw-section-actions .k-button {
   --button-color-text: var(--color-text-dimmed);
 }
@@ -349,9 +349,6 @@ export default {
   font-size: var(--text-sm);
 }
 
-.k-cw-section-diff-header .k-button-group {
-  margin-inline-start: auto;
-}
 
 .k-cw-section-meta {
   flex-basis: 100%;

@@ -95,6 +95,9 @@ class ContentRestore
         $this->checkPermissions($model, $plan);
         $this->checkUnsavedChanges($model, $language);
 
+        // keep a version changed outside the Panel before it gets overwritten
+        (new ExternalChanges())->check($model);
+
         $restored = ChangeTracker::withoutTracking(fn () => $this->apply($model, $plan, $data, $language));
 
         // one new entry for the whole restore, the history itself stays as it is

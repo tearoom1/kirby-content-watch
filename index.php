@@ -18,6 +18,7 @@ load([
     'TearoomOne\\ContentWatch\\HistoryStore'           => 'src/HistoryStore.php',
     'TearoomOne\\ContentWatch\\CurrentContent'         => 'src/CurrentContent.php',
     'TearoomOne\\ContentWatch\\RestoreException'       => 'src/RestoreException.php',
+    'TearoomOne\\ContentWatch\\ExternalChanges'        => 'src/ExternalChanges.php',
 ], __DIR__);
 
 use Kirby\Filesystem\F;
@@ -27,6 +28,7 @@ use TearoomOne\ContentWatch\ContentDiffResolver;
 use TearoomOne\ContentWatch\ContentRestore;
 use TearoomOne\ContentWatch\ContentWatchController;
 use TearoomOne\ContentWatch\ContentWatchField;
+use TearoomOne\ContentWatch\ExternalChanges;
 use TearoomOne\ContentWatch\RestoreException;
 
 // Don't load plugin if disabled in config
@@ -36,6 +38,21 @@ if (option('tearoom1.kirby-content-watch.disable', false)) {
 
 Kirby::plugin('tearoom1/kirby-content-watch', [
     'hooks' => [
+        // With `detectExternal`, record changes made outside the Panel before
+        // Kirby writes a Panel change, so they are kept and the diff is right.
+        // They must return nothing: Kirby takes a returned value as the new model.
+        'page.update:before'         => function ($page): void { (new ExternalChanges())->check($page); },
+        'page.changeTitle:before'    => function ($page): void { (new ExternalChanges())->check($page); },
+        'page.changeSlug:before'     => function ($page): void { (new ExternalChanges())->check($page); },
+        'page.changeStatus:before'   => function ($page): void { (new ExternalChanges())->check($page); },
+        'page.changeTemplate:before' => function ($page): void { (new ExternalChanges())->check($page); },
+        'site.update:before'         => function ($site): void { (new ExternalChanges())->check($site); },
+        'file.update:before'         => function ($file): void { (new ExternalChanges())->check($file); },
+        'file.changeName:before'     => function ($file): void { (new ExternalChanges())->check($file); },
+        'file.changeSort:before'     => function ($file): void { (new ExternalChanges())->check($file); },
+        'file.changeTemplate:before' => function ($file): void { (new ExternalChanges())->check($file); },
+        'file.replace:before'        => function ($file): void { (new ExternalChanges())->check($file); },
+
         'page.create:after' => function ($page) {
             (new ChangeTracker())->trackContentChange($page);
         },
@@ -115,7 +132,6 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             'tearoom1.content-watch.support'        => 'Support this plugin',
             'tearoom1.content-watch.tab.content'    => 'Content Changes',
             'tearoom1.content-watch.filters'        => 'Filters',
-            'tearoom1.content-watch.equal'          => 'Same as the current version – no differences',
             'tearoom1.content-watch.export'         => 'Export filtered changes as CSV',
             'tearoom1.content-watch.reload'         => 'Reload',
             'tearoom1.content-watch.filter.show'    => 'Show',
@@ -146,9 +162,16 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             'tearoom1.content-watch.editor.outside.help' => 'Changed directly in the file system, e.g. by a deploy, FTP or git',
             'tearoom1.content-watch.editor.deleted' => 'Deleted user',
             'tearoom1.content-watch.field.path'     => 'Parent page',
-            'tearoom1.content-watch.diff.version'           => 'Version',
-            'tearoom1.content-watch.diff.compare'           => 'Compare with',
+            'tearoom1.content-watch.diff.view'              => 'View changes',
+            'tearoom1.content-watch.diff.version'           => 'Older',
+            'tearoom1.content-watch.diff.compare'           => 'Newer',
             'tearoom1.content-watch.diff.current'           => 'Current version',
+            'tearoom1.content-watch.diff.current.same'      => 'Current version = v{version}',
+            'tearoom1.content-watch.diff.mode.label'        => 'Compare with',
+            'tearoom1.content-watch.diff.mode.previous'     => 'Previous version',
+            'tearoom1.content-watch.diff.mode.current'      => 'Current version',
+            'tearoom1.content-watch.diff.step.older'        => 'Older',
+            'tearoom1.content-watch.diff.step.newer'        => 'Newer',
             'tearoom1.content-watch.diff.summary.changed'   => '{count} fields changed since v{version}',
             'tearoom1.content-watch.diff.summary.changed.one' => '1 field changed since v{version}',
             'tearoom1.content-watch.diff.summary.unchanged' => '{count} unchanged fields hidden',
@@ -179,7 +202,6 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             'tearoom1.content-watch.support'        => 'Plugin unterstützen',
             'tearoom1.content-watch.tab.content'    => 'Inhaltsänderungen',
             'tearoom1.content-watch.filters'        => 'Filter',
-            'tearoom1.content-watch.equal'          => 'Gleich wie die aktuelle Version – keine Unterschiede',
             'tearoom1.content-watch.export'         => 'Gefilterte Änderungen als CSV exportieren',
             'tearoom1.content-watch.reload'         => 'Neu laden',
             'tearoom1.content-watch.filter.show'    => 'Anzeigen',
@@ -210,9 +232,16 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             'tearoom1.content-watch.editor.outside.help' => 'Direkt im Dateisystem geändert, z. B. durch ein Deployment, FTP oder Git',
             'tearoom1.content-watch.editor.deleted' => 'Gelöschter Benutzer',
             'tearoom1.content-watch.field.path'     => 'Übergeordnete Seite',
-            'tearoom1.content-watch.diff.version'           => 'Version',
-            'tearoom1.content-watch.diff.compare'           => 'Vergleichen mit',
+            'tearoom1.content-watch.diff.view'              => 'Änderungen ansehen',
+            'tearoom1.content-watch.diff.version'           => 'Älter',
+            'tearoom1.content-watch.diff.compare'           => 'Neuer',
             'tearoom1.content-watch.diff.current'           => 'Aktuelle Version',
+            'tearoom1.content-watch.diff.current.same'      => 'Aktuelle Version = v{version}',
+            'tearoom1.content-watch.diff.mode.label'        => 'Vergleichen mit',
+            'tearoom1.content-watch.diff.mode.previous'     => 'Vorherige Version',
+            'tearoom1.content-watch.diff.mode.current'      => 'Aktuelle Version',
+            'tearoom1.content-watch.diff.step.older'        => 'Älter',
+            'tearoom1.content-watch.diff.step.newer'        => 'Neuer',
             'tearoom1.content-watch.diff.summary.changed'   => '{count} Felder seit v{version} geändert',
             'tearoom1.content-watch.diff.summary.changed.one' => '1 Feld seit v{version} geändert',
             'tearoom1.content-watch.diff.summary.unchanged' => '{count} unveränderte Felder ausgeblendet',
@@ -275,6 +304,7 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
         'layoutStyle'        => 'compact', // deprecated: the list is always compact, 'relaxed' and 'default' are ignored
         'defaultView'        => 'page', // 'page' or 'timeline'
         'notify'             => null, // Webhook URL (JSON POST) or callable receiving the change payload
+        'detectExternal'     => false, // Record content changed outside the Panel (deploy, FTP, git) as entries without a user
     ],
     'api' => [
         'routes' => [

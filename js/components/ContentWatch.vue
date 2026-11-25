@@ -80,7 +80,8 @@
           :label="$t('tearoom1.content-watch.filter.show')"
           :value="showOnlyPages ? 'pages' : 'all'"
           :options="showFilterOptions"
-          :empty="false"
+          class="k-cw-select-plain"
+          required
           @input="changeShowFilter"
         />
         <k-select-field
@@ -182,12 +183,11 @@
                   <!-- fixed slots: diff, restore; empty slots keep their width -->
                   <k-button
                     v-if="enableDiff"
-                    v-bind="slotAttrs(canDiff(file, entry))"
+                    v-bind="slotAttrs(canDiff(file, entryIndex))"
                     icon="split"
                     class="k-diff-button"
-                    :class="{'k-cw-diff-same': isSame(entry, entryIndex)}"
-                    v-cw-tooltip="isSame(entry, entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
-                    :aria-label="isSame(entry, entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
+                    v-cw-tooltip="$t('tearoom1.content-watch.diff.view')"
+                    :aria-label="$t('tearoom1.content-watch.diff.view')"
                     @click.stop="viewDiff(file, entry, entryIndex)"
                   />
                   <k-button
@@ -265,12 +265,11 @@
                       <span class="k-timeline-item-actions">
                         <k-button
                           v-if="enableDiff"
-                          v-bind="slotAttrs(canDiff(row.file, row.entry))"
+                          v-bind="slotAttrs(canDiff(row.file, row.entryIndex))"
                           icon="split"
                           class="k-diff-button"
-                          :class="{'k-cw-diff-same': isSame(row.entry, row.entryIndex)}"
-                          v-cw-tooltip="isSame(row.entry, row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
-                          :aria-label="isSame(row.entry, row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
+                          v-cw-tooltip="$t('tearoom1.content-watch.diff.view')"
+                          :aria-label="$t('tearoom1.content-watch.diff.view')"
                           @click.stop="viewDiff(row.file, row.entry, row.entryIndex)"
                         />
                         <k-button
@@ -303,12 +302,11 @@
                   <span class="k-timeline-item-actions">
                     <k-button
                       v-if="enableDiff"
-                      v-bind="slotAttrs(canDiff(item.row.file, item.row.entry))"
+                      v-bind="slotAttrs(canDiff(item.row.file, item.row.entryIndex))"
                       icon="split"
                       class="k-diff-button"
-                      :class="{'k-cw-diff-same': isSame(item.row.entry, item.row.entryIndex)}"
-                      v-cw-tooltip="isSame(item.row.entry, item.row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
-                      :aria-label="isSame(item.row.entry, item.row.entryIndex) ? $t('tearoom1.content-watch.equal') : 'View changes'"
+                      v-cw-tooltip="$t('tearoom1.content-watch.diff.view')"
+                      :aria-label="$t('tearoom1.content-watch.diff.view')"
                       @click.stop="viewDiff(item.row.file, item.row.entry, item.row.entryIndex)"
                     />
                     <k-button
@@ -421,6 +419,7 @@
 import {formatDistance} from 'date-fns';
 import {editorHelp, editorLabel} from '../editor.js';
 import {buildTimeline, groupByDay, relativeDay} from '../timeline.js';
+import {PREVIOUS, canCompare} from '../diff-pairs.js';
 
 export default {
   props: {
@@ -717,17 +716,13 @@ export default {
   },
 
   methods: {
-    canDiff(file, entry) {
-      return Boolean(entry?.has_snapshot && file.history.length > 1);
+    // the diff button shows what a version changed: the oldest version has nothing before it
+    canDiff(file, entryIndex) {
+      return canCompare(file?.history || [], entryIndex, PREVIOUS);
     },
 
     canRestoreEntry(entry, entryIndex) {
       return Boolean(entry?.has_snapshot && entryIndex > 0 && !entry.same_as_current);
-    },
-
-    // an older version that equals the current content: nothing to compare or restore
-    isSame(entry, entryIndex) {
-      return Boolean(entryIndex > 0 && entry?.same_as_current);
     },
 
     // a button slot that doesn't apply stays in place, invisible and inert
@@ -1115,7 +1110,7 @@ export default {
       });
     },
 
-    // compare a version with the current content by default
+    // the diff button shows what a version changed; restoring compares with the current content
     viewDiff(file, entry, entryIndex, confirmRestore = false) {
       this.$panel.dialog.open({
         component: 'k-content-watch-area-diff-dialog',
@@ -1398,11 +1393,6 @@ export default {
 
   .k-cw-slot-empty {
     visibility: hidden;
-  }
-
-  /* the version equals the current content: the diff only says "No changes" */
-  .k-diff-button.k-cw-diff-same {
-    color: var(--color-text-dimmed) !important;
   }
 
   .k-restore-button {
