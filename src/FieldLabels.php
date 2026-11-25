@@ -87,6 +87,16 @@ class FieldLabels
     }
 
     /**
+     * Kirby 6 normalises the `files`, `pages` and `users` fields to these
+     * picker types; the diff knows them by their classic names
+     */
+    public const PICKER_TYPES = [
+        'filepicker' => 'files',
+        'pagepicker' => 'pages',
+        'userpicker' => 'users',
+    ];
+
+    /**
      * @return array<string, string> content key => blueprint field type
      */
     public static function typesForModel(?ModelWithContent $model): array
@@ -120,7 +130,8 @@ class FieldLabels
             }
 
             if (is_string($field['type'] ?? null)) {
-                $types[static::normalizeKey((string)($field['name'] ?? $name))] = $field['type'];
+                $type = $field['type'];
+                $types[static::normalizeKey((string)($field['name'] ?? $name))] = static::PICKER_TYPES[$type] ?? $type;
             }
         }
 

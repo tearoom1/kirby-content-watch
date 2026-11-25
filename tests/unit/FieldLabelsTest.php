@@ -96,4 +96,52 @@ class FieldLabelsTest extends TestCase
         $this->assertStringContainsString('Share description', $diff);
         $this->assertStringContainsString('ogdescription', $diff);
     }
+    public function testKirby6PickerTypesKeepTheirClassicNames(): void
+    {
+        $this->kirby = $this->makeApp([
+            'blueprints' => [
+                'pages/article' => [
+                    'fields' => [
+                        'related' => ['type' => 'pages'],
+                        'gallery' => ['type' => 'files'],
+                        'authors' => ['type' => 'users'],
+                    ],
+                ],
+            ],
+            'site' => [
+                'children' => [
+                    ['slug' => 'test', 'template' => 'article'],
+                ],
+            ],
+        ]);
+        $this->kirby->impersonate('kirby');
+
+        $types = FieldLabels::typesForModel($this->kirby->page('test'));
+
+        $this->assertSame(['related' => 'pages', 'gallery' => 'files', 'authors' => 'users'], $types);
+        $this->assertSame(['pics' => 'files'], FieldLabels::typesFromFields(['pics' => ['type' => 'filepicker']]));
+    }
+
+    public function testResolverShowsPageTitlesForAPagesField(): void
+    {
+        $pageDir = $this->contentDir . '/1_test';
+        $this->writeContent($pageDir . '/article.txt', "Title: T\n----\nRelated: - about\n");
+        $this->writeContent($this->contentDir . '/2_about/default.txt', "Title: About us\n");
+        $this->writeHistory($pageDir, ['article' => [
+            ['editor_id' => 'kirby', 'uuid' => 'b', 'time' => 2000000, 'version' => 2, 'content' => "Title: T\n----\nRelated:\n\n- about\n"],
+            ['editor_id' => 'kirby', 'uuid' => 'a', 'time' => 1000000, 'version' => 1, 'content' => "Title: T\n----\nRelated:\n"],
+        ]]);
+
+        $this->kirby = $this->makeApp([
+            'blueprints' => [
+                'pages/article' => ['fields' => ['related' => ['type' => 'pages', 'label' => 'Related']]],
+            ],
+        ]);
+        $this->kirby->impersonate('kirby');
+
+        $diff = (new ContentDiffResolver())->compare($pageDir, 'article', 'a', 'b')['html'];
+
+        $this->assertStringContainsString('About us', $diff);
+        $this->assertStringNotContainsString('- about', $diff);
+    }
 }
