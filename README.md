@@ -220,6 +220,14 @@ The field lists version, editor, time and language of each change and links to t
 
 Version 4 of this plugin requires Kirby 6 and PHP 8.3 or newer; for Kirby 4 and 5 keep version 3. Options, history files and snapshots stay the same, so the history of a site carries over.
 
+Update Kirby and the plugin together, since version 3 refuses Kirby 6 and version 4 refuses Kirby 4 and 5:
+
+```bash
+composer require getkirby/cms:^6.0 tearoom1/kirby-content-watch:^4.0 --with-all-dependencies
+```
+
+Without Composer, replace the `kirby` folder and the plugin folder in the same step.
+
 Kirby 6 no longer supports custom sections, so the `contentwatch` section of earlier versions is a field now. Move it from `sections` to `fields` in your blueprints; the type name stays `contentwatch`:
 
 ```yaml
