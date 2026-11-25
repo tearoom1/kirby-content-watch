@@ -23,7 +23,7 @@ Additionally it provides a view to see which pages are currently locked and by w
 - **Customizable Retention**: Configure how long history is kept
 - **Version Restore**: Restore previous versions of content with a single click (optional)
 - **Two Views**: Browse changes by page, or as a timeline of all changes grouped by day, where a deploy's changes outside the Panel collapse into one row
-- **Dark Mode**: Supports Kirby 5 dark mode
+- **Dark Mode**: Supports the Panel's dark mode
 - **History Field**: Show recent changes of a page, the site or a file directly in its blueprint, with diff and restore
 - **Page Method**: Access change history programmatically via `$page->contentHistory()`
 
@@ -38,7 +38,7 @@ The restore feature also has some limitations
 - when restoring a page, its files are not restored
 - only pages and the site can be restored; directories without a Kirby model (e.g. `_drafts`) are rejected
 - a page is not moved back to a former parent page
-- in Kirby 5, a page with unsaved changes in the Panel cannot be restored until the changes are saved or discarded
+- a page with unsaved changes in the Panel cannot be restored until the changes are saved or discarded
 - a version that fails the current blueprint validation (e.g. an empty required field) cannot be restored as a published page
 
 Restore runs through Kirby's own page actions as the current user, so the user's permissions, blueprint validation, hooks and the page cache all apply. Each restore adds a new entry to the history, so it can be undone. As with any tool that changes content, keep regular backups.
@@ -98,7 +98,7 @@ return [
 | `defaultPageSize` | `int` | `20` | Default number of items per page in the panel view. Possible values: `10`, `20`, `50` |
 | `defaultView` | `string` | `'page'` | View the area opens with: `'page'` (changes grouped by page) or `'timeline'` (all changes, newest first). Editors can switch with the toggle in the toolbar; their choice is remembered per user in the browser and wins over this option |
 | `layoutStyle` | `string` | `'compact'` | **Deprecated.** The list always uses the compact layout; `'relaxed'` and `'default'` are still accepted but have no effect |
-| `enableLockedPages` | `bool\|null` | `null` | Whether to show the locked pages view. `null` shows it on Kirby 4 only, since Kirby 5 has its own "Changes" overview |
+| `enableLockedPages` | `bool\|null` | `null` | Whether to show the locked pages view. `null` hides it, since Kirby has its own "Changes" overview |
 | `enableRestore` | `bool` | `false` | Enable content restore functionality. When enabled, full content snapshots are saved — increases disk usage |
 | `enableDiff` | `bool` | `true` | Enable content diff view. Requires `enableRestore` to be `true` |
 | `notify` | `string\|Closure\|null` | `null` | Webhook URL (JSON `POST`) or closure called after every tracked change. See Notifications |
@@ -140,7 +140,7 @@ Content Watch records changes through Kirby's hooks, so content files written di
 
 Content Watch then compares the newest entry of a page, the site or a file with its content file on disk. When they differ, it adds an entry without a user, shown as "Outside the Panel". The comparison runs
 
-- when the Content Watch area or a history section is opened,
+- when the Content Watch area or a history field is opened,
 - before Kirby writes a Panel change (update, title, slug, status, template, file changes), so the outside version is kept and the diff of the Panel change only shows what was changed in the Panel,
 - before a restore, so the version it replaces stays in the history.
 
@@ -218,6 +218,8 @@ The field lists version, editor, time and language of each change and links to t
 
 #### Upgrading from Kirby 5
 
+Version 4 of this plugin requires Kirby 6 and PHP 8.3 or newer; for Kirby 4 and 5 keep version 3. Options, history files and snapshots stay the same, so the history of a site carries over.
+
 Kirby 6 no longer supports custom sections, so the `contentwatch` section of earlier versions is a field now. Move it from `sections` to `fields` in your blueprints; the type name stays `contentwatch`:
 
 ```yaml
@@ -292,7 +294,7 @@ This gives you full Kirby field method access (`.html()`, `.kirbytext()`, `.valu
 
 ### Comparing Versions
 
-With `enableRestore` and `enableDiff` turned on, each history entry has a "View changes" button. It shows what that version changed, compared with the version before it in the same language; the oldest version has no button. Both in the Content Watch area and in the history section, the dialog switches between two comparisons:
+With `enableRestore` and `enableDiff` turned on, each history entry has a "View changes" button. It shows what that version changed, compared with the version before it in the same language; the oldest version has no button. Both in the Content Watch area and in the history field, the dialog switches between two comparisons:
 
 - **Previous version**: what the shown version changed.
 - **Current version**: the shown version against the content as it is now, e.g. everything that changed since your own edit a few days ago.
@@ -311,7 +313,7 @@ The optional `jfcherng/php-diff` package is no longer used by the Panel.
 ## Requirements
 
 - Kirby 6
-- PHP 8.3+
+- PHP 8.3 to 8.6 (as supported by Kirby 6)
 
 For Kirby 4 and 5, use version 3 of this plugin.
 
@@ -344,4 +346,4 @@ Screenshots use sample content at 1408 × 902 pixels. Panel views are cropped to
 | View | Light | Dark |
 | --- | --- | --- |
 | Overview | [Light](screenshot.jpg) | [Dark](screenshot-dark.jpg) |
-| Page history section | [Light](screenshot-section.jpg) | [Dark](screenshot-section-dark.jpg) |
+| Page history field | [Light](screenshot-section.jpg) | [Dark](screenshot-section-dark.jpg) |
