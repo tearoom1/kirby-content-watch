@@ -53,6 +53,24 @@ class ContentWatchFieldTest extends TestCase
         $this->assertSame(1, $entries[1]['previous']['version']);
     }
 
+    public function testThePreviousVersionIsInTheSameLanguage(): void
+    {
+        $time = time();
+        $this->writeHistory($this->contentDir . '/1_tea', ['article' => [
+            ['uuid' => 'd', 'editor_id' => 'kirby', 'time' => $time - 10, 'version' => 4, 'language' => 'de', 'content' => "Title: Tee\n"],
+            ['uuid' => 'c', 'editor_id' => 'kirby', 'time' => $time - 20, 'version' => 3, 'language' => 'en', 'content' => "Title: Tea\n"],
+            ['uuid' => 'b', 'editor_id' => 'kirby', 'time' => $time - 30, 'version' => 2, 'language' => 'de', 'content' => "Title: Tee 2\n"],
+            ['uuid' => 'a', 'editor_id' => 'kirby', 'time' => $time - 40, 'version' => 1, 'language' => 'en', 'content' => "Title: Tea 1\n"],
+        ]]);
+
+        $entries = $this->field()->entries();
+
+        $this->assertSame(2, $entries[0]['previous']['version']);
+        $this->assertSame(1, $entries[1]['previous']['version']);
+        $this->assertNull($entries[2]['previous']);
+        $this->assertNull($entries[3]['previous']);
+    }
+
     public function testPropsCarryTheStateForTheVueComponent(): void
     {
         $props = $this->field()->toArray();
