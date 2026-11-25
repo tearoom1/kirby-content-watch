@@ -91,3 +91,20 @@ export function groupByDay(items) {
 
   return days;
 }
+
+/**
+ * Whether a single change passes the period, language and author filters.
+ * The timeline and the CSV export apply it to every entry, so both list
+ * the same changes. `editorKey` maps an editor to its author filter value.
+ */
+export function entryMatches(entry, {since = 0, language = '', author = '', editorKey}) {
+  if ((entry.time ?? 0) < since) {
+    return false;
+  }
+
+  if (language && entry.language !== language) {
+    return false;
+  }
+
+  return !author || editorKey(entry.editor) === author;
+}

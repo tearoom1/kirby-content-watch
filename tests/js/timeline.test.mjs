@@ -1,7 +1,7 @@
 // Run with: npm test (node's built-in test runner, no dependencies)
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {buildTimeline, dayKey, groupByDay, relativeDay} from '../../js/timeline.js';
+import {buildTimeline, dayKey, entryMatches, groupByDay, relativeDay} from '../../js/timeline.js';
 
 // fixed local times, the npm script runs with TZ=UTC
 const at = (iso) => Date.parse(iso + 'Z') / 1000;
@@ -82,4 +82,23 @@ test('outside groups do not span midnight', () => {
 
   assert.deepEqual(items.map(item => item.type), ['row', 'row']);
   assert.deepEqual(groupByDay(items).map(day => day.day), ['2026-10-23', '2026-10-22']);
+});
+
+test('entryMatches applies the author filter to every single change', () => {
+  const editorKey = editor => editor?.id || 'outside';
+  const today = at('2026-10-23T00:00:00');
+  // Alice edited the page yesterday, Bob today
+  const entries = [
+    {time: at('2026-10-23T10:00:00'), editor: {id: 'bob'}, language: 'de'},
+    {time: at('2026-10-22T10:00:00'), editor: {id: 'alice'}, language: 'de'}
+  ];
+
+  const pick = filters => entries.filter(entry => entryMatches(entry, {editorKey, ...filters}));
+
+  assert.deepEqual(pick({since: today, author: 'alice'}), []);
+  assert.deepEqual(pick({author: 'alice'}).map(entry => entry.editor.id), ['alice']);
+  assert.deepEqual(pick({since: today}).map(entry => entry.editor.id), ['bob']);
+  assert.deepEqual(pick({language: 'fr'}), []);
+  // changes outside the Panel have no editor
+  assert.equal(entryMatches({time: today, editor: null}, {author: 'outside', editorKey}), true);
 });

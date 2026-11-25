@@ -418,7 +418,7 @@
 <script>
 import {formatDistance} from 'date-fns';
 import {editorHelp, editorLabel} from '../editor.js';
-import {buildTimeline, groupByDay, relativeDay} from '../timeline.js';
+import {buildTimeline, entryMatches, groupByDay, relativeDay} from '../timeline.js';
 import {PREVIOUS, canCompare} from '../diff-pairs.js';
 
 export default {
@@ -548,13 +548,7 @@ export default {
           : [{entry: null, entryIndex: -1, time: file.modified, editor: file.editor}];
 
         entries.forEach(({entry, entryIndex, time, editor}) => {
-          if (time < since) {
-            return;
-          }
-          if (this.selectedLanguage && entry?.language !== this.selectedLanguage) {
-            return;
-          }
-          if (this.selectedAuthor && (editor?.id || this.editorLabel(editor)) !== this.selectedAuthor) {
+          if (!entryMatches({time, editor, language: entry?.language}, this.entryFilters(since))) {
             return;
           }
 
@@ -994,11 +988,8 @@ export default {
           time_formatted: file.modified_formatted
         }];
 
-        // Apply period and language filters to the single entries, not only to the files
-        entries = entries.filter(entry =>
-          entry.time >= since &&
-          (!this.selectedLanguage || entry.language === this.selectedLanguage)
-        );
+        // Apply period, language and author filters to the single entries, not only to the files
+        entries = entries.filter(entry => entryMatches(entry, this.entryFilters(since)));
 
         entries.forEach(entry => {
           rows.push([
@@ -1136,6 +1127,16 @@ export default {
     // translated plugin string; Kirby's $t fills the {placeholders} from data
     t(key, data = {}) {
       return this.$t('tearoom1.content-watch.' + key, data);
+    },
+
+    // filters that apply to every single change, see entryMatches()
+    entryFilters(since) {
+      return {
+        since,
+        language: this.selectedLanguage,
+        author: this.selectedAuthor,
+        editorKey: editor => this.editorKey(editor)
+      };
     },
 
     // value of an editor in the author filter: the user id, or the label for outside and deleted users
