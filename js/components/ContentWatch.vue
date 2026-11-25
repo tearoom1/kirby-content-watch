@@ -741,18 +741,21 @@ export default {
       const seen = new Set();
       const options = [];
 
+      // every editor of the history counts, not only the last one of each page,
+      // so changes that a later edit by someone else covered can still be found
       this.files.forEach(file => {
-        const name = this.fileEditorName(file);
-        const value = file.editor?.id || name;
+        [file.editor, ...(file.history || []).map(entry => entry.editor)].forEach(editor => {
+          const value = this.editorKey(editor);
 
-        if (seen.has(value)) {
-          return;
-        }
+          if (seen.has(value)) {
+            return;
+          }
 
-        seen.add(value);
-        options.push({
-          text: name,
-          value
+          seen.add(value);
+          options.push({
+            text: this.editorLabel(editor),
+            value
+          });
         });
       });
 
@@ -1093,7 +1096,11 @@ export default {
       let filtered = this.baseFilteredFiles();
 
       if (this.selectedAuthor) {
-        filtered = filtered.filter(file => (file.editor?.id || this.fileEditorName(file)) === this.selectedAuthor);
+        // pages with at least one change by the selected author
+        filtered = filtered.filter(file =>
+          [file.editor, ...(file.history || []).map(entry => entry.editor)]
+            .some(editor => this.editorKey(editor) === this.selectedAuthor)
+        );
       }
 
       if (this.selectedPeriod) {
@@ -1555,6 +1562,11 @@ export default {
       }
 
       return value === null || value === undefined ? '' : String(value);
+    },
+
+    // value of an editor in the author filter: the user id, or the label for outside and deleted users
+    editorKey(editor) {
+      return editor?.id || this.editorLabel(editor);
     },
 
     fileEditorName(file) {
