@@ -1,3 +1,10 @@
+## [4.1.1](https://github.com/tearoom1/kirby-content-watch/compare/v4.1.0...v4.1.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* name the starting point in the page list when there is no change yet ([f5f56f6](https://github.com/tearoom1/kirby-content-watch/commit/f5f56f6832f4b589d7d646f397fb2f2345d7ada5))
+
 ## [4.1.0](https://github.com/tearoom1/kirby-content-watch/compare/v4.0.0...v4.1.0) (2026-11-25)
 
 
@@ -50,17 +57,4 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ### Features
 
 * diff shows what a version changed, switch to the current version in the dialog ([1c4d860](https://github.com/tearoom1/kirby-content-watch/commit/1c4d8608ff4f1781e98d285f5d9a0fd3d31a7ea7))
-
-## [3.14.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.13.1...v3.14.0) (2026-11-15)
-
-
-### Features
-
-* record content changed outside the Panel (detectExternal option) ([98d61f2](https://github.com/tearoom1/kirby-content-watch/commit/98d61f28811894dcd6b621734caaa7731483c7ba))
-
-
-### Bug Fixes
-
-* before hooks return nothing, compare page structure once, re-read under the lock ([091f4b2](https://github.com/tearoom1/kirby-content-watch/commit/091f4b2e13317d17ff228a7990a516396706877b))
-* no diff button on the newest version when it is the current content ([ca9d996](https://github.com/tearoom1/kirby-content-watch/commit/ca9d99673823c36597d0623d62b747bfc09978f7))
 
