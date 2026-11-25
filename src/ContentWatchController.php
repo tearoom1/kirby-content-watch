@@ -233,6 +233,12 @@ class ContentWatchController
             }
         }
 
+        // only starting points so far: show the newest one ("Starting point" and
+        // when it was stored), not the file date as a change outside the Panel
+        if ($record === null && $historyEntries !== []) {
+            $record = reset($historyEntries);
+        }
+
         $modified = $record !== null ? $record['time'] : $file->getMTime();
         $editor   = $this->getEditor($record);
 

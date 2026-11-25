@@ -113,9 +113,9 @@ class BaselineTest extends TestCase
         $this->assertTrue($page['history'][0]['has_snapshot']);
         $this->assertTrue($page['history'][0]['same_as_current']);
 
-        // it is no change: the page keeps its file time and no Panel user
-        $this->assertSame(filemtime($this->contentFile), $page['modified']);
-        $this->assertTrue($page['editor']['outside']);
+        // only a starting point: the page row names it and when it was stored
+        $this->assertSame($entries[0]['time'], $page['modified']);
+        $this->assertTrue($page['editor']['baseline']);
 
         // once only
         $this->scan();

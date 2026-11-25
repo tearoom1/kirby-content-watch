@@ -167,7 +167,7 @@ Details:
 
 ### Starting Points
 
-A starting point (baseline) is the content as Content Watch first found it. It looks like any other entry: it can be compared with the current version or the next change and, with `enableRestore`, restored. Its author is shown as "Starting point" (hover it for an explanation), and its tag is `baseline`. It is no change: it sends no notification, and the "By page" list keeps showing the last real change (or the file time) for a page that only has a starting point. In the history file it is an entry with `source: baseline` and no user.
+A starting point (baseline) is the content as Content Watch first found it. It looks like any other entry: it can be compared with the current version or the next change and, with `enableRestore`, restored. Its author is shown as "Starting point" (hover it for an explanation), and its tag is `baseline`. It is no change: it sends no notification, and the "By page" list shows the last real change of a page; a page that only has a starting point shows "Starting point" and when it was stored. In the history file it is an entry with `source: baseline` and no user.
 
 Starting points are stored
 
