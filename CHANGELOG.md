@@ -1,3 +1,11 @@
+## [4.1.0](https://github.com/tearoom1/kirby-content-watch/compare/v4.0.0...v4.1.0) (2026-11-25)
+
+
+### Features
+
+* show starting points and group them in the timeline ([020957c](https://github.com/tearoom1/kirby-content-watch/commit/020957c7f596c90e4860507866ffc9d0f4d82e46))
+* store a starting point for content without history ([d3e40d4](https://github.com/tearoom1/kirby-content-watch/commit/d3e40d456f4bb2a0797a01366422d8c783bda8f5))
+
 ## [4.0.0](https://github.com/tearoom1/kirby-content-watch/compare/v3.15.1...v4.0.0) (2026-11-25)
 
 
@@ -5,6 +13,8 @@
 
 * requires Kirby 6 and PHP 8.3. Blueprints must list the
 contentwatch section under `fields` instead of `sections`.
+
+Co-Authored-By: Claude <noreply@anthropic.com>
 
 ### Features
 
@@ -53,11 +63,4 @@ contentwatch section under `fields` instead of `sections`.
 
 * before hooks return nothing, compare page structure once, re-read under the lock ([091f4b2](https://github.com/tearoom1/kirby-content-watch/commit/091f4b2e13317d17ff228a7990a516396706877b))
 * no diff button on the newest version when it is the current content ([ca9d996](https://github.com/tearoom1/kirby-content-watch/commit/ca9d99673823c36597d0623d62b747bfc09978f7))
-
-## [3.13.1](https://github.com/tearoom1/kirby-content-watch/compare/v3.13.0...v3.13.1) (2026-11-10)
-
-
-### Bug Fixes
-
-* stop loading the plugin's own vendor autoloader ([0f1c62a](https://github.com/tearoom1/kirby-content-watch/commit/0f1c62a8fb783c45ad43c7ffeb24961e70438f75))
 
