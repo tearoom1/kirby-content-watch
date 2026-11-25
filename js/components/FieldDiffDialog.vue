@@ -3,7 +3,7 @@
   <k-dialog
     :visible="visible"
     size="huge"
-    cancel-button=""
+    :cancel-button="false"
     :submit-button="$t('close')"
     class="k-content-watch-diff-dialog"
     @cancel="$emit('cancel')"
@@ -89,6 +89,8 @@ export default {
   data() {
     return {
       diff: null,
+      // counts the requests: Vue 3 hands out proxies, so the diff object can't be compared
+      diffRequest: 0,
       modes: [PREVIOUS, CURRENT]
     };
   },
@@ -99,6 +101,8 @@ export default {
   },
 
   unmounted() {
+    // answers still on their way belong to the closed dialog
+    this.diffRequest++;
     window.removeEventListener('keydown', this.onKeydown);
   },
 
@@ -113,8 +117,8 @@ export default {
 
     async openDiff(entry, mode = PREVIOUS) {
       // keep the last result on screen until the new one is there
-      const diff = {entry, mode, html: this.diff?.html ?? null, loaded: this.diff?.loaded ?? false, loading: true};
-      this.diff = diff;
+      const request = ++this.diffRequest;
+      this.diff = {entry, mode, html: this.diff?.html ?? null, loaded: this.diff?.loaded ?? false, loading: true};
 
       const pair = mode === CURRENT
         ? {fromEntryId: entry.entry_id ?? null, toEntryId: CURRENT, fromTimestamp: entry.time, toTimestamp: null}
@@ -128,11 +132,11 @@ export default {
         });
 
         // ignore late answers when the user moved on to another version or mode
-        if (this.diff === diff) {
+        if (request === this.diffRequest) {
           this.diff = {entry, mode, html: response.diff, loaded: true, loading: false};
         }
       } catch (error) {
-        if (this.diff === diff) {
+        if (request === this.diffRequest) {
           this.diff = {entry, mode, html: null, loaded: true, loading: false};
         }
         window.panel.notification.error('Error loading diff: ' + (error.message || 'Unknown error'));
