@@ -1239,7 +1239,7 @@ export default {
   }
 
   .k-content-watch-status-icon-listed {
-    color: var(--color-positive-light);
+    color: var(--color-green-500);
   }
 
   .k-content-watch-status-icon-unlisted {
@@ -1247,7 +1247,7 @@ export default {
   }
 
   .k-content-watch-status-icon-draft {
-    color: var(--color-notice-light);
+    color: var(--color-orange-500);
   }
 
   .k-content-watch-status-glyph {
@@ -1261,7 +1261,7 @@ export default {
   }
 
   .k-content-watch-status-glyph-listed {
-    background: var(--color-positive-light);
+    background: var(--color-green-500);
   }
 
   .k-content-watch-status-glyph-unlisted {
@@ -1270,7 +1270,7 @@ export default {
   }
 
   .k-content-watch-status-glyph-draft {
-    border: 2px solid var(--color-notice-light);
+    border: 2px solid var(--color-orange-500);
     background: transparent;
   }
 
@@ -1326,7 +1326,7 @@ export default {
   }
 
   .k-timeline-item-current .k-timeline-item-version {
-    color: var(--color-positive);
+    color: var(--color-green-700);
   }
 
   .k-timeline-item-language {
@@ -1398,7 +1398,7 @@ export default {
   .k-restore-button {
     height: auto !important;
     line-height: 1 !important;
-    color: var(--color-positive) !important;
+    color: var(--color-green-700) !important;
   }
 
   .k-diff-button {

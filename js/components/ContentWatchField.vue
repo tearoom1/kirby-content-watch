@@ -307,7 +307,7 @@ export default {
 }
 
 .k-cw-section-item-current .k-cw-section-version {
-  color: var(--color-positive);
+  color: var(--color-green-700);
 }
 
 .k-cw-section-language {
