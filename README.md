@@ -320,10 +320,12 @@ The optional `jfcherng/php-diff` package is no longer used by the Panel.
 
 ## Requirements
 
-- Kirby 6
-- PHP 8.3 to 8.6 (as supported by Kirby 6)
+| Kirby | Plugin version | Branch |
+|---|---|---|
+| 6 | 4.x (since 4.0.0) | `main` |
+| 4 and 5 | 3.x (bug fixes only, latest 3.15.2) | `kirby-5` |
 
-For Kirby 4 and 5, use version 3 of this plugin.
+- PHP 8.3 to 8.6 (as supported by Kirby 6)
 
 ## Todo
 
