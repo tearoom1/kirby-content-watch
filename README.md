@@ -4,6 +4,8 @@ This plugin tracks all content changes in your Kirby site and adds a panel view 
 It shows modification date and editor information and the history of changes for each file.
 This allows you to keep track of what has been changed and who made the changes.
 
+This is the Kirby 4 and 5 line (bug fixes only). For Kirby 6, use version 4 (branch `main`).
+
 Additionally it provides a view to see which pages are currently locked and by whom.
 
 [![Screenshot](screenshot.jpg)](https://github.com/tearoom1/kirby-content-watch)
@@ -290,7 +292,11 @@ The optional `jfcherng/php-diff` package is no longer used by the Panel.
 
 ## Requirements
 
-- Kirby 4 or 5
+| Kirby | Plugin version | Branch |
+|---|---|---|
+| 6 | 4.x (since 4.0.0) | `main` |
+| 4 and 5 | 3.x (bug fixes only, latest 3.15.2) | `kirby-5` |
+
 - PHP 8.1+
 
 ## Todo
