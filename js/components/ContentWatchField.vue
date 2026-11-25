@@ -56,6 +56,7 @@ import {formatDistance} from 'date-fns';
 import {editorHelp, editorLabel} from '../editor.js';
 import {formatAbsolute} from '../time.js';
 import {CURRENT, PREVIOUS} from '../diff-pairs.js';
+import {latestRequest, ownDialog} from '../requests.js';
 
 /**
  * The `contentwatch` field: the section of the same name until Kirby 5.
@@ -108,13 +109,23 @@ export default {
   },
 
   watch: {
-    // a view reload brings fresh props
+    // a view reload or the next page with the same blueprint brings
+    // fresh props; answers still on their way belong to the old ones
     entries() {
-      this.loaded = null;
+      this.reset();
+    },
+    history() {
+      this.reset();
+    },
+    'endpoints.field'() {
+      this.reset();
     }
   },
 
   created() {
+    // not reactive: only the latest history request may apply its answer
+    this.requests = latestRequest();
+
     // saving the page adds a new entry
     this.$events.on('model.update', this.fetch);
   },
@@ -125,19 +136,26 @@ export default {
 
   methods: {
     async fetch() {
-      if (!this.endpoints?.field) {
+      const endpoint = this.endpoints?.field;
+
+      if (!endpoint) {
         return;
       }
 
-      const response = await this.$api.get(this.endpoints.field);
+      await this.requests.run(() => this.$api.get(endpoint), response => {
+        this.loaded = {
+          areaUrl: response.areaUrl,
+          canAccess: response.canAccess,
+          entries: response.entries || [],
+          headline: response.headline,
+          history: response.history
+        };
+      });
+    },
 
-      this.loaded = {
-        areaUrl: response.areaUrl,
-        canAccess: response.canAccess,
-        entries: response.entries || [],
-        headline: response.headline,
-        history: response.history
-      };
+    reset() {
+      this.requests.invalidate();
+      this.loaded = null;
     },
 
     // 'previous': what the version changed, 'current': the version against the content as it is now
@@ -171,12 +189,13 @@ export default {
           language: entry.language ? this.languageName(entry.language) : null
         },
         on: {
-          submit: () => this.restore(entry)
+          // the restore dialog is the open one while it submits
+          submit: () => this.restore(entry, ownDialog(this.$panel.dialog))
         }
       });
     },
 
-    async restore(entry) {
+    async restore(entry, dialog) {
       try {
         const response = await this.$api.post('/content-watch/restore', {
           dirPath: this.state.history.dirPath,
@@ -189,7 +208,8 @@ export default {
           throw new Error(response.message);
         }
 
-        this.$panel.dialog.close();
+        // only the restore dialog, not one opened while the request ran
+        dialog.close();
         window.panel.notification.success(this.$t('tearoom1.content-watch.restore.done', {version: entry.version}));
 
         // reload the form with the restored content and the new history entry
