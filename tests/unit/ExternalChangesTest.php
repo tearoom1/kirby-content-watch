@@ -122,12 +122,16 @@ class ExternalChangesTest extends TestCase
         $this->assertCount(1, $this->entries());
     }
 
-    public function testModelsWithoutHistoryAreLeftAlone(): void
+    public function testModelsWithoutHistoryGetABaselineOnce(): void
     {
         $this->app();
 
+        $this->assertTrue((new ExternalChanges())->check(kirby()->page('test-page')));
         $this->assertFalse((new ExternalChanges())->check(kirby()->page('test-page')));
-        $this->assertFileDoesNotExist($this->pageDir . '/.content-watch.json');
+
+        $entries = $this->entries();
+        $this->assertCount(1, $entries);
+        $this->assertSame('baseline', $entries[0]['source']);
     }
 
     public function testEntriesWithoutSnapshotOrHashAreNotCompared(): void
@@ -389,10 +393,12 @@ class ExternalChangesTest extends TestCase
             $page = kirby()->page('test-page')->update(['title' => 'Second save']);
 
             $this->assertSame('Second save', $page->title()->value());
+            // the first save stores the starting point before it (restore is on)
             $this->assertSame(
-                $enabled ? ['kirby', null, 'kirby'] : ['kirby', 'kirby'],
+                $enabled ? ['kirby', null, 'kirby', null] : ['kirby', 'kirby', null],
                 array_column($this->entries(), 'editor_id')
             );
+            $this->assertSame('baseline', array_reverse($this->entries())[0]['source']);
         }
     }
 

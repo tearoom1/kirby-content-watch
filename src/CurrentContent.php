@@ -30,6 +30,15 @@ class CurrentContent
         return md5(trim(str_replace("\r\n", "\n", $content)));
     }
 
+    /**
+     * Take a known hash of the current content file of a language, so the
+     * file isn't read (see ScanIndex)
+     */
+    public function assume(string $language, string $hash): void
+    {
+        $this->hashes[$language] = $hash;
+    }
+
     public function equals(array $entry): bool
     {
         if ($this->dirPath === null || $this->fileKey === null || empty($entry['content'])) {

@@ -307,12 +307,22 @@ class ChangeTrackerTest extends TestCase
     {
         $outdatedTime = time() - (40 * 86400); // 40 days ago — outside 30-day window
         $this->writeHistory($this->pageDir, [
-            $this->templateKey => [[
-                'editor_id' => 'kirby',
-                'time'      => $outdatedTime,
-                'version'   => 1,
-                'type'      => 'page',
-            ]],
+            $this->templateKey => [
+                [
+                    'editor_id' => 'kirby',
+                    'uuid'      => 'base',
+                    'time'      => $outdatedTime,
+                    'version'   => 2,
+                    'type'      => 'page',
+                ],
+                [
+                    'editor_id' => 'kirby',
+                    'uuid'      => 'older',
+                    'time'      => $outdatedTime - 86400,
+                    'version'   => 1,
+                    'type'      => 'page',
+                ],
+            ],
         ]);
 
         $this->kirby = $this->makeApp([
@@ -323,9 +333,11 @@ class ChangeTrackerTest extends TestCase
         (new ChangeTracker())->trackContentChange(kirby()->page('test-page'));
 
         $history = $this->readHistory($this->pageDir);
-        // Old entry pruned; only the new one should remain
-        $this->assertCount(1, $history[$this->templateKey]);
+        // Old entries pruned, except the newest one before the window: the
+        // state the new change started from
+        $this->assertCount(2, $history[$this->templateKey]);
         $this->assertGreaterThan($outdatedTime, $history[$this->templateKey][0]['time']);
+        $this->assertSame('base', $history[$this->templateKey][1]['uuid']);
     }
 
     public function testRetentionDaysKeepsRecentEntries(): void

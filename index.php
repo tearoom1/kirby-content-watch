@@ -19,6 +19,7 @@ load([
     'TearoomOne\\ContentWatch\\CurrentContent'         => 'src/CurrentContent.php',
     'TearoomOne\\ContentWatch\\RestoreException'       => 'src/RestoreException.php',
     'TearoomOne\\ContentWatch\\ExternalChanges'        => 'src/ExternalChanges.php',
+    'TearoomOne\\ContentWatch\\ScanIndex'              => 'src/ScanIndex.php',
 ], __DIR__);
 
 use Kirby\Filesystem\F;
@@ -40,18 +41,21 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
     'hooks' => [
         // With `detectExternal`, record changes made outside the Panel before
         // Kirby writes a Panel change, so they are kept and the diff is right.
+        // A model without history gets its starting point (baseline) here, with
+        // `detectExternal` or `enableRestore`, so its first change can be undone.
         // They must return nothing: Kirby takes a returned value as the new model.
-        'page.update:before'         => function ($page): void { (new ExternalChanges())->check($page); },
-        'page.changeTitle:before'    => function ($page): void { (new ExternalChanges())->check($page); },
-        'page.changeSlug:before'     => function ($page): void { (new ExternalChanges())->check($page); },
-        'page.changeStatus:before'   => function ($page): void { (new ExternalChanges())->check($page); },
-        'page.changeTemplate:before' => function ($page): void { (new ExternalChanges())->check($page); },
-        'site.update:before'         => function ($site): void { (new ExternalChanges())->check($site); },
-        'file.update:before'         => function ($file): void { (new ExternalChanges())->check($file); },
-        'file.changeName:before'     => function ($file): void { (new ExternalChanges())->check($file); },
-        'file.changeSort:before'     => function ($file): void { (new ExternalChanges())->check($file); },
-        'file.changeTemplate:before' => function ($file): void { (new ExternalChanges())->check($file); },
-        'file.replace:before'        => function ($file): void { (new ExternalChanges())->check($file); },
+        'page.update:before'         => function ($page): void { (new ExternalChanges())->beforePanelChange($page); },
+        'page.changeTitle:before'    => function ($page): void { (new ExternalChanges())->beforePanelChange($page); },
+        'page.changeSlug:before'     => function ($page): void { (new ExternalChanges())->beforePanelChange($page); },
+        'page.changeStatus:before'   => function ($page): void { (new ExternalChanges())->beforePanelChange($page); },
+        'page.changeTemplate:before' => function ($page): void { (new ExternalChanges())->beforePanelChange($page); },
+        'page.move:before'           => function ($page): void { (new ExternalChanges())->beforePanelChange($page); },
+        'site.update:before'         => function ($site): void { (new ExternalChanges())->beforePanelChange($site); },
+        'file.update:before'         => function ($file): void { (new ExternalChanges())->beforePanelChange($file); },
+        'file.changeName:before'     => function ($file): void { (new ExternalChanges())->beforePanelChange($file); },
+        'file.changeSort:before'     => function ($file): void { (new ExternalChanges())->beforePanelChange($file); },
+        'file.changeTemplate:before' => function ($file): void { (new ExternalChanges())->beforePanelChange($file); },
+        'file.replace:before'        => function ($file): void { (new ExternalChanges())->beforePanelChange($file); },
 
         'page.create:after' => function ($page) {
             (new ChangeTracker())->trackContentChange($page);
@@ -160,6 +164,8 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             'tearoom1.content-watch.restore.done'           => 'v{version} restored',
             'tearoom1.content-watch.editor.outside' => 'Outside the Panel',
             'tearoom1.content-watch.editor.outside.help' => 'Changed directly in the file system, e.g. by a deploy, FTP or git',
+            'tearoom1.content-watch.editor.baseline' => 'Starting point',
+            'tearoom1.content-watch.editor.baseline.help' => 'The content as Content Watch first found it. Later changes are compared with it, and it can be restored.',
             'tearoom1.content-watch.editor.deleted' => 'Deleted user',
             'tearoom1.content-watch.field.path'     => 'Parent page',
             'tearoom1.content-watch.diff.view'              => 'View changes',
@@ -230,6 +236,8 @@ Kirby::plugin('tearoom1/kirby-content-watch', [
             'tearoom1.content-watch.restore.done'           => 'v{version} wiederhergestellt',
             'tearoom1.content-watch.editor.outside' => 'Außerhalb des Panels',
             'tearoom1.content-watch.editor.outside.help' => 'Direkt im Dateisystem geändert, z. B. durch ein Deployment, FTP oder Git',
+            'tearoom1.content-watch.editor.baseline' => 'Ausgangsstand',
+            'tearoom1.content-watch.editor.baseline.help' => 'Der Inhalt, wie Content Watch ihn zuerst vorgefunden hat. Spätere Änderungen werden damit verglichen, und er lässt sich wiederherstellen.',
             'tearoom1.content-watch.editor.deleted' => 'Gelöschter Benutzer',
             'tearoom1.content-watch.field.path'     => 'Übergeordnete Seite',
             'tearoom1.content-watch.diff.view'              => 'Änderungen ansehen',

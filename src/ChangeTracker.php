@@ -209,6 +209,92 @@ class ChangeTracker
     }
 
     /**
+     * Record the content on disk as the starting point (baseline) of every
+     * given language that has no entry yet, so later changes, in the Panel
+     * or outside, are compared with it and it can be restored.
+     *
+     * A baseline is no change: it has no user, `source: baseline`, and
+     * sends no notification. It holds a snapshot with `enableRestore`,
+     * otherwise only the hash. All languages are written in one go, under
+     * the history lock; a language another request gave an entry in the
+     * meantime is skipped.
+     *
+     * @param array<string|null> $languages
+     * @return bool whether a baseline was added
+     */
+    public function recordBaselines(ModelWithContent $content, array $languages): bool
+    {
+        $records = [];
+
+        foreach ($languages as $language) {
+            [$dirPath, $fileKey, $record] = $this->buildRecord($content, [], $language, null);
+
+            // nothing to compare with later, e.g. a file without metadata
+            if (empty($fileKey) || !is_string($record['hash'] ?? null)) {
+                continue;
+            }
+
+            $record['source'] = 'baseline';
+            $records[]        = $record;
+        }
+
+        if ($records === []) {
+            return false;
+        }
+
+        $added = false;
+
+        HistoryStore::mutate($dirPath, function (array $history) use ($fileKey, $records, &$added) {
+            $entries = is_array($history[$fileKey] ?? null) ? $history[$fileKey] : [];
+            $version = 0;
+
+            foreach ($entries as $entry) {
+                $version = max($version, is_array($entry) ? (int)($entry['version'] ?? 1) : 0);
+            }
+
+            foreach ($records as $record) {
+                if (!self::needsBaseline($entries, (string)($record['language'] ?? ''))) {
+                    continue;
+                }
+
+                $record['version'] = ++$version;
+                array_unshift($entries, $record);
+                $added = true;
+            }
+
+            if ($added !== true) {
+                return null;
+            }
+
+            $history[$fileKey] = self::applyRetention($entries);
+
+            return $history;
+        });
+
+        return $added;
+    }
+
+    /**
+     * Whether a language has no entry to compare with yet. Entries stored
+     * without a language (before restore or detection was turned on) count
+     * as history of unknown language: no baseline then.
+     */
+    public static function needsBaseline(array $entries, string $language): bool
+    {
+        foreach ($entries as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+
+            if (!array_key_exists('language', $entry) || (string)$entry['language'] === $language) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * The newest entry of the record's language when the record (the content
      * on disk) differs from what the history knows, otherwise null.
      *
@@ -456,9 +542,6 @@ class ChangeTracker
             }
             $record['version'] = $latestVersion + 1;
 
-            $retentionDays  = (int)option('tearoom1.kirby-content-watch.retentionDays', 30);
-            $retentionCount = (int)option('tearoom1.kirby-content-watch.retentionCount', 10);
-            $cutoffTime     = time() - ($retentionDays * 86400);
             $requestKey     = $this->requestTrackedKey($editorFile, $fileKey, $record, $meta);
 
             $coalesced      = $this->shouldCoalesceWithinRequest($requestKey, $history[$fileKey], $record, $meta);
@@ -473,14 +556,7 @@ class ChangeTracker
                 self::$requestTrackedEntries[$requestKey] = true;
             }
 
-            // Prune entries older than the retention window
-            $history[$fileKey] = array_values(array_filter(
-                $history[$fileKey],
-                fn($entry) => isset($entry['time']) && $entry['time'] >= $cutoffTime
-            ));
-
-            // Limit to retention count, per language
-            $history[$fileKey] = self::limitPerLanguage($history[$fileKey], $retentionCount);
+            $history[$fileKey] = self::applyRetention($history[$fileKey]);
 
             return $history;
         });
@@ -530,6 +606,47 @@ class ChangeTracker
         } catch (\Throwable) {
             // A failing notification must never break saving content
         }
+    }
+
+    /**
+     * Prune a list of entries (newest first) by `retentionDays` and
+     * `retentionCount`, per language:
+     *
+     * - entries within the retention window stay,
+     * - of the older ones, the newest stays too: it is the state the first
+     *   change in the window started from, so that change can still be
+     *   compared and undone. When nothing changed within the window, it is
+     *   the last known state, which detection of changes outside the Panel
+     *   compares with. A baseline (starting point) is pruned like any other
+     *   entry once a newer entry takes over this role.
+     * - then at most `retentionCount` (at least one) entries are kept.
+     */
+    public static function applyRetention(array $entries, ?int $now = null): array
+    {
+        $retentionDays  = (int)option('tearoom1.kirby-content-watch.retentionDays', 30);
+        $retentionCount = (int)option('tearoom1.kirby-content-watch.retentionCount', 10);
+        $cutoffTime     = ($now ?? time()) - ($retentionDays * 86400);
+        $baseKept       = [];
+
+        $entries = array_values(array_filter($entries, function ($entry) use ($cutoffTime, &$baseKept) {
+            if (!is_array($entry) || !isset($entry['time'])) {
+                return false;
+            }
+
+            if ((int)$entry['time'] >= $cutoffTime) {
+                return true;
+            }
+
+            // the newest entry before the window, one per language
+            $language = (string)($entry['language'] ?? '');
+            if (isset($baseKept[$language])) {
+                return false;
+            }
+
+            return $baseKept[$language] = true;
+        }));
+
+        return self::limitPerLanguage($entries, max(1, $retentionCount));
     }
 
     /**
