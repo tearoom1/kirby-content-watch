@@ -239,6 +239,11 @@ export default {
     },
 
     entryAction(entry) {
+      // the starting point: the content as first found, not a change
+      if (entry.source === 'baseline') {
+        return 'baseline';
+      }
+
       if (entry.restored_from || entry.restored_from_id) {
         return 'restored';
       }
@@ -336,6 +341,7 @@ export default {
 .k-cw-section-tag-restored { --tag-color: var(--color-orange-500); }
 .k-cw-section-tag-moved { --tag-color: var(--color-blue-500); }
 .k-cw-section-tag-duplicated { --tag-color: var(--color-purple-500); }
+.k-cw-section-tag-baseline { --tag-color: var(--color-gray-500); }
 
 .k-cw-section-actions {
   display: flex;

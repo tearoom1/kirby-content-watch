@@ -223,17 +223,17 @@
           <div class="k-content-watch-files">
             <template
               v-for="item in day.items"
-              :key="item.type === 'outside' ? 'outside-' + item.time + '-' + item.rows.length : item.row.key"
+              :key="item.type === 'row' ? item.row.key : groupKey(item)"
             >
               <div
-                v-if="item.type === 'outside'"
+                v-if="item.type !== 'row'"
                 class="k-content-watch-file"
               >
-                <div class="k-content-watch-file-header k-content-watch-timeline-row k-content-watch-timeline-group" @click="toggleOutsideGroup(item)">
+                <div class="k-content-watch-file-header k-content-watch-timeline-row k-content-watch-timeline-group" @click="toggleGroup(item)">
                   <span class="k-content-watch-timeline-time">{{ formatTime(item.time) }}</span>
                   <span class="k-content-watch-timeline-main k-content-watch-timeline-main-wide">
-                    <strong v-cw-tooltip="$t('tearoom1.content-watch.editor.outside.help')">{{ $t('tearoom1.content-watch.editor.outside') }}</strong>
-                    · {{ outsideGroupLabel(item) }}
+                    <strong v-cw-tooltip="groupHelp(item)">{{ groupName(item) }}</strong>
+                    · {{ groupLabel(item) }}
                   </span>
                   <!-- in the actions column, right edge on the restore slot -->
                   <span class="k-timeline-item-actions">
@@ -559,7 +559,8 @@ export default {
             entryIndex,
             time,
             editor,
-            outside: !editor || editor.outside === true || editor.id === 'unknown'
+            // starting points and changes outside the Panel collapse into groups
+            group: editor?.baseline ? 'baseline' : (!editor || editor.outside === true || editor.id === 'unknown' ? 'outside' : null)
           });
         });
       });
@@ -781,16 +782,25 @@ export default {
     },
 
     groupKey(item) {
-      return item.time + '-' + item.rows.length;
+      return item.type + '-' + item.time + '-' + item.rows.length;
     },
 
-    toggleOutsideGroup(item) {
+    // "Starting point" or "Outside the Panel"
+    groupName(item) {
+      return this.t(item.type === 'baseline' ? 'editor.baseline' : 'editor.outside');
+    },
+
+    groupHelp(item) {
+      return this.t(item.type === 'baseline' ? 'editor.baseline.help' : 'editor.outside.help');
+    },
+
+    toggleGroup(item) {
       const key = this.groupKey(item);
       const index = this.expandedGroups.indexOf(key);
       index === -1 ? this.expandedGroups.push(key) : this.expandedGroups.splice(index, 1);
     },
 
-    outsideGroupLabel(item) {
+    groupLabel(item) {
       const count = new Set(item.rows.map(row => row.file.id)).size;
       return this.t('timeline.pages', {count});
     },
@@ -1086,6 +1096,11 @@ export default {
     },
 
     entryAction(entry) {
+      // the starting point: the content as first found, not a change
+      if (entry?.source === 'baseline') {
+        return 'baseline';
+      }
+
       if (entry?.restored_from || entry?.restored_from_id) {
         return 'restored';
       }
@@ -1367,6 +1382,7 @@ export default {
   .k-timeline-item-tag-restored { --tag-color: var(--color-orange-500); }
   .k-timeline-item-tag-moved { --tag-color: var(--color-blue-500); }
   .k-timeline-item-tag-duplicated { --tag-color: var(--color-purple-500); }
+  .k-timeline-item-tag-baseline { --tag-color: var(--color-gray-500); }
 
   .k-timeline-item-editor {
     flex: 1;

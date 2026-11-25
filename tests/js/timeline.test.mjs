@@ -1,7 +1,7 @@
 // Run with: npm test (node's built-in test runner, no dependencies)
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {buildTimeline, dayKey, entryMatches, groupByDay, relativeDay} from '../../js/timeline.js';
+import {buildTimeline, dayKey, entryMatches, groupByDay, relativeDay, rowGroup} from '../../js/timeline.js';
 
 // fixed local times, the npm script runs with TZ=UTC
 const at = (iso) => Date.parse(iso + 'Z') / 1000;
@@ -101,4 +101,37 @@ test('entryMatches applies the author filter to every single change', () => {
   assert.deepEqual(pick({language: 'fr'}), []);
   // changes outside the Panel have no editor
   assert.equal(entryMatches({time: today, editor: null}, {author: 'outside', editorKey}), true);
+});
+
+test('starting points stored in one scan collapse into their own group', () => {
+  const scan = at('2026-10-23T12:00:00');
+  const baselines = Array.from({length: 150}, (_, i) => ({id: 'b' + i, group: 'baseline', time: scan + (i % 3)}));
+
+  const items = buildTimeline([
+    ...baselines,
+    {id: 'deploy-1', group: 'outside', time: scan + 1},
+    {id: 'deploy-2', group: 'outside', time: scan + 2},
+    {id: 'edit', group: null, time: scan + 2}
+  ]);
+
+  // at the same time a Panel change comes first, then the outside group, then the starting points
+  assert.deepEqual(items.map(item => item.type), ['row', 'outside', 'baseline']);
+  assert.equal(items[0].row.id, 'edit');
+  assert.deepEqual(items[1].rows.map(row => row.id), ['deploy-2', 'deploy-1']);
+  assert.equal(items[2].rows.length, 150);
+});
+
+test('a single starting point stays a normal row', () => {
+  const items = buildTimeline([
+    {id: 'b', group: 'baseline', time: at('2026-10-23T12:00:00')},
+    {id: 'o', group: 'outside', time: at('2026-10-23T12:00:01')}
+  ]);
+
+  assert.deepEqual(items.map(item => item.type), ['row', 'row']);
+});
+
+test('rowGroup falls back to the outside flag', () => {
+  assert.equal(rowGroup({outside: true}), 'outside');
+  assert.equal(rowGroup({outside: false}), null);
+  assert.equal(rowGroup({group: 'baseline', outside: false}), 'baseline');
 });

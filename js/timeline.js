@@ -30,48 +30,79 @@ export function relativeDay(key, now = Date.now() / 1000) {
   return key === dayKey(yesterday.getTime() / 1000) ? 'yesterday' : null;
 }
 
+/** Order of rows with the same time: changes first, then the groups */
+const GROUP_RANK = {outside: 1, baseline: 2};
+
+/**
+ * Group a row collapses into: 'outside' for a change outside the Panel,
+ * 'baseline' for a starting point, null for a change in the Panel
+ */
+export function rowGroup(row) {
+  if (row.group !== undefined) {
+    return row.group;
+  }
+
+  return row.outside ? 'outside' : null;
+}
+
 /**
  * Flat list of timeline items, newest first.
  *
- * Each row is {time, outside, ...}. Consecutive rows changed outside the
- * Panel within `window` seconds of each other (and on the same day) become
- * one item {type: 'outside', rows, time, day}; everything else stays
+ * Each row is {time, group, ...} (or {time, outside} for a change outside
+ * the Panel). Rows of the same group within `window` seconds of each other
+ * (and on the same day) become one item {type: group, rows, time, day}:
+ * changes outside the Panel, e.g. a deploy, as 'outside', the starting
+ * points stored in one scan as 'baseline'. The two groups may interleave,
+ * a change in the Panel ends both. Everything else stays
  * {type: 'row', row, time, day}.
  */
 export function buildTimeline(rows, {window = COLLAPSE_WINDOW, minGroup = 2} = {}) {
-  const sorted = [...rows].sort((a, b) => b.time - a.time);
-  const items = [];
-  let cluster = [];
+  const rank = row => GROUP_RANK[rowGroup(row)] || 0;
+  const sorted = [...rows].sort((a, b) => b.time - a.time || rank(a) - rank(b));
 
-  const flush = () => {
-    if (cluster.length >= minGroup) {
-      items.push({type: 'outside', rows: cluster, time: cluster[0].time, day: dayKey(cluster[0].time)});
-    } else {
-      cluster.forEach(row => items.push({type: 'row', row, time: row.time, day: dayKey(row.time)}));
+  // one slot per item; a group fills the slot of its newest row
+  const slots = [];
+  const open = {};
+
+  const close = group => {
+    const cluster = open[group];
+    if (!cluster) {
+      return;
     }
-    cluster = [];
+
+    slots[cluster.slot] = cluster.rows.length >= minGroup
+      ? {type: group, rows: cluster.rows, time: cluster.rows[0].time, day: dayKey(cluster.rows[0].time)}
+      : {type: 'row', row: cluster.rows[0], time: cluster.rows[0].time, day: dayKey(cluster.rows[0].time)};
+
+    delete open[group];
   };
 
   sorted.forEach(row => {
-    const last = cluster[cluster.length - 1];
-    const joins = row.outside && last &&
-      last.time - row.time <= window &&
-      dayKey(last.time) === dayKey(row.time);
+    const group = rowGroup(row);
 
-    if (!joins) {
-      flush();
+    if (!group) {
+      Object.keys(open).forEach(close);
+      slots.push({type: 'row', row, time: row.time, day: dayKey(row.time)});
+      return;
     }
 
-    if (row.outside) {
-      cluster.push(row);
-    } else {
-      items.push({type: 'row', row, time: row.time, day: dayKey(row.time)});
+    const cluster = open[group];
+    const last = cluster?.rows[cluster.rows.length - 1];
+    const joins = last && last.time - row.time <= window && dayKey(last.time) === dayKey(row.time);
+
+    if (joins) {
+      cluster.rows.push(row);
+      return;
     }
+
+    close(group);
+    open[group] = {slot: slots.length, rows: [row]};
+    slots.push(null);
   });
 
-  flush();
+  Object.keys(open).forEach(close);
 
-  return items;
+  return slots;
 }
 
 /**
