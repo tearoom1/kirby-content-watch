@@ -349,7 +349,7 @@
         </div>
       </div>
 
-      <k-empty v-if="files.length && !listLength" icon="page" :text="view === 'timeline' ? $t('tearoom1.content-watch.timeline.empty') : $t('no.files.found')"/>
+      <k-empty v-if="files.length && !listLength" icon="page" :text="$t('tearoom1.content-watch.timeline.empty')"/>
       <k-empty v-if="!files.length" icon="page" text="No content change data available"/>
 
       <k-loader v-if="isLoading"/>
