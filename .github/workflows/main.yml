@@ -23,8 +23,11 @@ jobs:
       - name: Run tests
         run: composer test
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Run JS tests
-        run: npm test
+        run: pnpm test
 
   changelog:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
