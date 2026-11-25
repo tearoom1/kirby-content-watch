@@ -6,8 +6,6 @@
 * requires Kirby 6 and PHP 8.3. Blueprints must list the
 contentwatch section under `fields` instead of `sections`.
 
-Co-Authored-By: Claude <noreply@anthropic.com>
-
 ### Features
 
 * Kirby 6 support ([5864e38](https://github.com/tearoom1/kirby-content-watch/commit/5864e380c8983c3a347718e0353640bfcc5e6d20))
