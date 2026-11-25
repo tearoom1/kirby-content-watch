@@ -134,13 +134,16 @@ import {CURRENT, PREVIOUS, canCompare, focusOf, isTypingTarget, modeOf, pairFor,
 
 /**
  * Compares a version of a page or file with the current content or another
- * version and restores it. Emits `restored` after a successful restore.
+ * version and restores it. Calls `afterRestore` after a successful restore.
  */
 export default {
   // the Panel passes its dialog listeners, the events below are emitted explicitly
   inheritAttrs: false,
 
   props: {
+    // called after a successful restore, also when the dialog was closed meanwhile:
+    // Vue drops events of an unmounted component, a plain function call still arrives
+    afterRestore: Function,
     // open with the restore confirmation (restore buttons in the lists)
     confirmRestore: Boolean,
     enableRestore: Boolean,
@@ -149,7 +152,7 @@ export default {
     visible: Boolean
   },
 
-  emits: ['cancel', 'close', 'restored'],
+  emits: ['cancel', 'close'],
 
   data() {
     return {
@@ -311,7 +314,7 @@ export default {
         }
 
         window.panel.notification.success(this.t('restore.done', {version: entry.version}));
-        this.$emit('restored');
+        this.afterRestore?.();
       } catch (error) {
         window.panel.notification.error(error.message || 'Failed to restore content');
         this.diffRestoreConfirm = false;

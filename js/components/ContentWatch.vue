@@ -1113,13 +1113,11 @@ export default {
       this.$panel.dialog.open({
         component: 'k-content-watch-area-diff-dialog',
         props: {
+          afterRestore: () => this.refresh(),
           confirmRestore,
           enableRestore: this.enableRestore,
           entryIndex,
           file
-        },
-        on: {
-          restored: () => this.refresh()
         }
       });
     },
